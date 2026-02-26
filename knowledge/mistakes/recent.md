@@ -48,3 +48,31 @@
 **Fix:** Either use `~~` for a literal tilde, or rephrase to avoid the character.
 **Lesson:** Any `~` in a format string is a directive. Use `~~` for literal tilde.
 **Tags:** #format #idiom #cl
+
+## 2026-02-26 Category: idiom
+**What:** Used `(return-from clambda/tools:register-tool! ...)` inside a lambda inside `register-tool!`. SBCL rejected it: "return for unknown block".
+**Why:** `return-from` jumps to a named block. Functions defined with `defun` create a block with the function's name. But `register-tool!` is a function, and the lambda is a *different* function — so there's no block named `clambda/tools:register-tool!` in scope inside the lambda.
+**Fix:** Use regular conditional logic (`cond`, `if`, `when`) instead of `return-from` inside lambdas.
+**Lesson:** `return-from NAME` only works if you're lexically inside a `(block NAME ...)` or `(defun NAME ...)` form. Never use it to escape from a lambda — use `return` (from a `(block nil ...)`) or just restructure with `cond`.
+**Tags:** #idiom #control-flow #lambdas
+
+## 2026-02-26 Category: packages
+**What:** `clambda/loop` package couldn't find `session-agent`, `agent-client`, etc. at runtime — "function undefined" errors.
+**Why:** The package only imported the *class names* (`#:agent`, `#:session`) but not the accessor functions. Since `(:use #:cl)` doesn't pull in other packages, all external symbols must be explicitly imported.
+**Fix:** Added all needed accessors to `(:import-from ...)` in the `defpackage` form for `clambda/loop`.
+**Lesson:** When a package uses `(:use #:cl)` only (not other packages), every external function must be explicitly `:import-from`'d or used as a package-qualified name. The class name import does NOT automatically import its accessors.
+**Tags:** #packages #clos #imports
+
+## 2026-02-26 Category: idiom
+**What:** `(assert value "error message")` caused compile error: "value is not of type LIST".
+**Why:** CL's `assert` syntax is `(assert test [places [datum args...]])`. The second argument is `places` (a list of generalized references). A string is not a valid places list.
+**Fix:** `(assert test () "error message")` — pass empty list `()` for places, then the string datum.
+**Lesson:** CL `assert` is NOT like `assert(condition, message)` from other languages. Always write `(assert test () "message ~a" arg)`.
+**Tags:** #idiom #assert #cl
+
+## 2026-02-26 Category: runtime
+**What:** Tool parameters with nested `properties` were serialized as JSON arrays instead of objects, causing HTTP 400 from LM Studio.
+**Why:** `cl-llm/json:plist->object` only converts the top-level plist to a hash-table. Nested plists (like the `properties` value) are left as CL lists, which jzon serializes as JSON arrays.
+**Fix:** Wrote `schema-plist->ht` in `clambda/tools` — a recursive converter that specially handles the `"properties"` key by iterating its plist and recursively converting each property schema.
+**Lesson:** `plist->object` is shallow. For nested JSON schemas, write a recursive converter. The `"properties"` field in JSON Schema is a JSON object (keyed by property name), not an array.
+**Tags:** #json #schema #tools #runtime
