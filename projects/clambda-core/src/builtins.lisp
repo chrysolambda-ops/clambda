@@ -1,6 +1,62 @@
-;;;; src/builtins.lisp — Built-in tools: exec, read-file, write-file
+;;;; src/builtins.lisp — Built-in tools: exec, read-file, write-file, web-fetch
 
 (in-package #:clambda/builtins)
+
+;;; ── web-fetch helpers ────────────────────────────────────────────────────────
+
+(defparameter *web-fetch-default-max-chars* 50000
+  "Default maximum characters returned by the web-fetch tool.")
+
+(defun strip-html-tags (html)
+  "Remove HTML tags from HTML string. Returns plain text (best-effort).
+Also collapses whitespace and decodes basic HTML entities."
+  ;; Remove <script>...</script> and <style>...</style> blocks first
+  (let* ((s html)
+         ;; Remove script blocks
+         (s (cl-ppcre:regex-replace-all
+             "(?si)<script[^>]*>.*?</script>" s ""))
+         ;; Remove style blocks
+         (s (cl-ppcre:regex-replace-all
+             "(?si)<style[^>]*>.*?</style>" s ""))
+         ;; Replace block-level tags with newlines
+         (s (cl-ppcre:regex-replace-all
+             "(?i)</(p|div|h[1-6]|li|tr|br|hr|blockquote|pre|section|article|header|footer|main|nav)[^>]*>" s (format nil "~%")))
+         (s (cl-ppcre:regex-replace-all
+             "(?i)<(br|hr)[^>]*/>" s (format nil "~%")))
+         ;; Remove all remaining tags
+         (s (cl-ppcre:regex-replace-all "<[^>]+>" s ""))
+         ;; Decode common HTML entities
+         (s (cl-ppcre:regex-replace-all "&nbsp;" s " "))
+         (s (cl-ppcre:regex-replace-all "&amp;" s "&"))
+         (s (cl-ppcre:regex-replace-all "&lt;" s "<"))
+         (s (cl-ppcre:regex-replace-all "&gt;" s ">"))
+         (s (cl-ppcre:regex-replace-all "&quot;" s "\""))
+         (s (cl-ppcre:regex-replace-all "&#39;" s "'"))
+         ;; Collapse runs of whitespace / blank lines
+         (s (cl-ppcre:regex-replace-all "[ \\t]+" s " "))
+         (s (cl-ppcre:regex-replace-all "(\\n[ \\t]*){3,}" s (format nil "~%~%"))))
+    (string-trim '(#\Space #\Newline #\Return #\Tab) s)))
+
+(defun fetch-url (url &key (max-chars *web-fetch-default-max-chars*))
+  "Fetch URL via dexador and return text content.
+HTML is stripped to plain text. Content is truncated to MAX-CHARS.
+Returns (values text-string content-type-string status-code)."
+  ;; dexador:get returns (values body status headers uri)
+  (multiple-value-bind (body status headers)
+      (dexador:get url
+                   :headers '(("User-Agent"
+                               . "Mozilla/5.0 (compatible; clambda-agent/0.1)"))
+                   :force-string t)
+    (let* ((content-type (or (gethash "content-type" headers) "text/html"))
+           (html-p        (search "html" content-type :test #'char-equal))
+           (text          (if html-p (strip-html-tags body) body))
+           (truncated     (if (and max-chars (> (length text) max-chars))
+                              (concatenate 'string
+                                           (subseq text 0 max-chars)
+                                           (format nil "~%...[truncated at ~a chars]"
+                                                   max-chars))
+                              text)))
+      (values truncated content-type status))))
 
 ;;; ── exec helper ──────────────────────────────────────────────────────────────
 
@@ -131,6 +187,43 @@ Returns REGISTRY."
                  :|properties|
                  (:|path| (:|type| "string" :|description| "Directory path (default: .)"))
                  :|required| #()))
+
+  ;; ── web-fetch ─────────────────────────────────────────────────────────────
+  (clambda/tools:register-tool!
+   registry
+   "web_fetch"
+   (lambda (args)
+     (let* ((url       (gethash "url" args))
+            (max-chars (or (gethash "max_chars" args)
+                           *web-fetch-default-max-chars*)))
+       (cond
+         ((or (null url) (string= url ""))
+          (clambda/tools:tool-result-error "No URL provided"))
+         (t
+          (handler-case
+              (multiple-value-bind (text content-type status)
+                  (fetch-url url :max-chars (if (numberp max-chars)
+                                                max-chars
+                                                *web-fetch-default-max-chars*))
+                (declare (ignore content-type))
+                (if (and status (>= status 400))
+                    (clambda/tools:tool-result-error
+                     (format nil "HTTP ~a fetching ~a" status url))
+                    (clambda/tools:tool-result-ok text)))
+            (dexador:http-request-failed (e)
+              (clambda/tools:tool-result-error
+               (format nil "HTTP error fetching ~a: ~a" url e)))
+            (error (e)
+              (clambda/tools:tool-result-error
+               (format nil "web-fetch failed for ~a: ~a" url e))))))))
+   :description "Fetch a URL and return its text content. HTML is stripped to plain text."
+   :parameters '(:|type| "object"
+                 :|properties|
+                 (:|url|       (:|type| "string"
+                                :|description| "URL to fetch")
+                  :|max_chars| (:|type| "integer"
+                                :|description| "Maximum characters to return (default: 50000)"))
+                 :|required| #("url")))
 
   registry)
 

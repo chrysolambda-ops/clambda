@@ -115,6 +115,42 @@
    #:register-builtin-tools
    #:make-builtin-registry))
 
+;;; ── Structured logging ───────────────────────────────────────────────────────
+
+(defpackage #:clambda/logging
+  (:use #:cl)
+  (:export
+   ;; Configuration
+   #:*log-file*
+   #:*log-enabled*
+   ;; Log functions
+   #:log-event
+   #:log-llm-request
+   #:log-tool-call
+   #:log-tool-result
+   #:log-error-event
+   ;; Setup macro
+   #:with-logging))
+
+;;; ── Memory system ────────────────────────────────────────────────────────────
+
+(defpackage #:clambda/memory
+  (:use #:cl)
+  (:export
+   ;; Data types
+   #:memory-entry
+   #:memory-entry-name
+   #:memory-entry-path
+   #:memory-entry-content
+   ;; Workspace memory
+   #:workspace-memory
+   #:workspace-memory-entries
+   #:workspace-memory-path
+   ;; Operations
+   #:load-workspace-memory
+   #:search-memory
+   #:memory-context-string))
+
 ;;; ── Agent loop ───────────────────────────────────────────────────────────────
 
 (defpackage #:clambda/loop
@@ -168,7 +204,8 @@
                 #:session #:make-session
                 #:session-id #:session-agent #:session-messages
                 #:session-add-message #:session-clear-messages
-                #:session-message-count)
+                #:session-message-count
+                #:save-session #:load-session)
   (:import-from #:clambda/tools
                 #:tool-registry #:make-tool-registry
                 #:register-tool! #:find-tool #:list-tools
@@ -183,6 +220,18 @@
                 #:*on-tool-call* #:*on-tool-result* #:*on-llm-response*
                 #:*on-stream-delta*
                 #:loop-options #:make-loop-options)
+  (:import-from #:clambda/logging
+                #:*log-file* #:*log-enabled*
+                #:log-event #:log-llm-request #:log-tool-call
+                #:log-tool-result #:log-error-event
+                #:with-logging)
+  (:import-from #:clambda/memory
+                #:memory-entry #:memory-entry-name
+                #:memory-entry-path #:memory-entry-content
+                #:workspace-memory #:workspace-memory-entries
+                #:workspace-memory-path
+                #:load-workspace-memory #:search-memory
+                #:memory-context-string)
   (:import-from #:clambda/conditions
                 #:clambda-error #:agent-error #:session-error
                 #:tool-not-found #:tool-execution-error
@@ -198,6 +247,7 @@
    #:session-id #:session-agent #:session-messages
    #:session-add-message #:session-clear-messages
    #:session-message-count
+   #:save-session #:load-session
    ;; Tools
    #:tool-registry #:make-tool-registry
    #:register-tool! #:find-tool #:list-tools
@@ -212,6 +262,18 @@
    #:*on-tool-call* #:*on-tool-result* #:*on-llm-response*
    #:*on-stream-delta*
    #:loop-options #:make-loop-options
+   ;; Logging
+   #:*log-file* #:*log-enabled*
+   #:log-event #:log-llm-request #:log-tool-call
+   #:log-tool-result #:log-error-event
+   #:with-logging
+   ;; Memory
+   #:memory-entry #:memory-entry-name
+   #:memory-entry-path #:memory-entry-content
+   #:workspace-memory #:workspace-memory-entries
+   #:workspace-memory-path
+   #:load-workspace-memory #:search-memory
+   #:memory-context-string
    ;; Conditions
    #:clambda-error #:agent-error #:session-error
    #:tool-not-found #:tool-execution-error

@@ -46,14 +46,15 @@ Delivers:
 - `agent` + `session` structs
 - Tool registry with `register-tool!` + `define-tool`
 - `schema-plist->ht` recursive JSON schema converter
-- Built-in tools: `exec`, `read_file`, `write_file`, `list_dir`
+- Built-in tools: `exec`, `read_file`, `write_file`, `list_dir`, `web_fetch`
 - Hook system: `*on-tool-call*`, `*on-tool-result*`, `*on-llm-response*`, `*on-stream-delta*`
 - Agent loop with configurable max-turns
+- Session persistence: `save-session` / `load-session` (JSON)
+- Structured logging: `clambda/logging` module, JSONL output
+- Workspace memory: `clambda/memory` module, priority .md loading, context injection
 
 Gaps/TODOs:
-- No session persistence
 - No tool schema validation
-- `*on-stream-delta*` not re-exported by top-level `clambda` package (known, workaround exists)
 - No sub-agent spawning
 
 ---
@@ -94,17 +95,14 @@ Listed in priority order for the full rewrite:
 
 ### Priority 1 — Core Agent Infrastructure
 
-#### 1.1 Session Persistence
-**What:** Save/load conversation history to/from markdown or JSON files.
-**Why:** Currently everything is in-memory. Agent restarts lose all context.
-**Approach:** Add `save-session` / `load-session` to `clambda-core`.
-**Effort:** Small (1–2 days)
+#### ✅ 1.1 Session Persistence
+**What:** Save/load conversation history as JSON files (one per session).
+**Status:** Done. `save-session` / `load-session` in `clambda/session`.
 
-#### 1.2 Memory System
+#### ✅ 1.2 Memory System
 **What:** Daily notes, knowledge base, project state — loaded at startup.
-**Why:** OpenClaw agents read workspace files to maintain context across sessions.
-**Approach:** `clambda/memory` module — reads `.md` files, injects into system prompt.
-**Effort:** Medium (2–3 days)
+**Status:** Done. `clambda/memory` — `load-workspace-memory`, `memory-context-string`, `search-memory`.
+Priority files (SOUL.md, AGENTS.md, etc.) loaded first.
 
 #### 1.3 Skills System
 **What:** Load SKILL.md files, inject tool definitions and instructions.
@@ -148,11 +146,9 @@ Listed in priority order for the full rewrite:
 
 ### Priority 4 — Extended Tools
 
-#### 4.1 Web Fetch Tool
+#### ✅ 4.1 Web Fetch Tool
 **What:** Built-in tool to fetch and extract readable content from a URL.
-**Why:** Agents often need to look things up.
-**Approach:** Add to `clambda/builtins` using dexador + simple HTML→text stripper.
-**Effort:** Small (1 day)
+**Status:** Done. `web_fetch` in `clambda/builtins`. Uses dexador + cl-ppcre HTML stripping.
 
 #### 4.2 Browser Control
 **What:** Drive a headless browser (screenshots, clicks, form fills).
@@ -180,10 +176,9 @@ Listed in priority order for the full rewrite:
 **Approach:** Track token counts in `session`; add budget to `loop-options`.
 **Effort:** Small (1 day)
 
-#### 5.3 Structured Logging
+#### ✅ 5.3 Structured Logging
 **What:** JSON logs of all agent activity (requests, tool calls, results).
-**Approach:** Replace hook variable printfs with log appender to file.
-**Effort:** Small (1 day)
+**Status:** Done. `clambda/logging` module — JSONL output, `with-logging` macro, configurable path.
 
 ---
 
@@ -191,10 +186,10 @@ Listed in priority order for the full rewrite:
 
 | Gap | Risk | Mitigation |
 |-----|------|-----------|
-| No session persistence | Agent loses state on restart | Implement soon (Priority 1.1) |
+| ~~No session persistence~~ | ~~Agent loses state on restart~~ | ✅ Done: `save-session`/`load-session` |
 | McCLIM thread safety | Possible redisplay race conditions | Use event queue; move to CLIM's redisplay queue |
 | Tool schema not validated | LLM may call tools with wrong types | Add schema validator in tool dispatch |
-| `*on-stream-delta*` not re-exported | Downstream packages break subtly | Fix in next clambda-core update |
+| ~~`*on-stream-delta*` not re-exported~~| ~~Downstream packages break subtly~~ | ✅ Done: now exported from `clambda` |
 | No error recovery in agent loop | One bad tool call can break session | Add condition-based restart in `agent-turn` |
 | LM Studio models change | Hardcoded model names go stale | Store model config in workspace file |
 | Guix LD_LIBRARY_PATH | Fresh shells break dexador | Add to workspace startup script |
@@ -205,12 +200,12 @@ Listed in priority order for the full rewrite:
 
 Suggested starting point for the full OpenClaw rewrite:
 
-1. **Fix `*on-stream-delta*` re-export** in `clambda` package (30 min)
-2. **Session persistence** — `save-session` / `load-session` (1 day)
-3. **Memory loading** — inject workspace `.md` files into system prompt (1 day)
-4. **Web fetch builtin** — add to `clambda/builtins` (hours)
-5. **Structured logging** — replace hook printfs (1 day)
-6. **Sub-agent spawning** — first cut (2 days)
+1. ✅ **Fix `*on-stream-delta*` re-export** in `clambda` package — was already done in Layer 4
+2. ✅ **Session persistence** — `save-session` / `load-session` (JSON, one file per session)
+3. ✅ **Memory loading** — `clambda/memory` module, `load-workspace-memory`, `memory-context-string`
+4. ✅ **Web fetch builtin** — `web_fetch` in `clambda/builtins` (dexador + cl-ppcre HTML stripping)
+5. ✅ **Structured logging** — `clambda/logging` module, JSONL to configurable file, `with-logging` macro
+6. **Sub-agent spawning** — first cut (2 days) ← NEXT
 
 Completing these would make Clambda functionally comparable to the core of OpenClaw,
 minus channel plugins and browser control.

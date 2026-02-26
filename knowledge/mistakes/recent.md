@@ -13,6 +13,7 @@
 | 1 | 2026-02-26 | runtime/mcclim | `redisplay-frame-pane` before `run-frame-top-level` → NIL crash |
 | 2 | 2026-02-26 | idiom/streams | `get-output-stream-string` clears the stream on every call |
 | 3 | 2026-02-26 | packages | `*on-stream-delta*` not re-exported by top-level `clambda` package |
+| 15 | 2026-02-26 | idiom/uiop | `uiop:parse-native-namestring` wrapping the result of `uiop:ensure-directory-pathname` → type error |
 | 4 | 2026-02-26 | runtime/http | `dexador :want-stream t` returns stream as FIRST value, not extra |
 | 5 | 2026-02-26 | asdf/packaging | `parse-sse-line` used before being exported |
 | 6 | 2026-02-26 | asdf/packaging | `completion-response` missing `:conc-name` → wrong accessor names |
@@ -166,3 +167,21 @@
 **Fix:** Wrote `schema-plist->ht` in `clambda/tools` — a recursive converter that specially handles the `"properties"` key by iterating its plist and recursively converting each property schema.
 **Lesson:** `plist->object` is shallow. For nested JSON schemas, write a recursive converter. The `"properties"` field in JSON Schema is a JSON object (keyed by property name), not an array.
 **Tags:** #json #schema #tools #runtime
+
+---
+
+## Category: idiom/uiop
+
+### #15 — 2026-02-26
+**What:** Wrapped `uiop:ensure-directory-pathname` result inside `uiop:parse-native-namestring`, causing `SIMPLE-TYPE-ERROR`: "value #P\"/some/path/\" is not of type (OR STRING NULL)".
+**Why:** `uiop:ensure-directory-pathname` returns a PATHNAME object. `uiop:parse-native-namestring` expects a string. Nesting them creates a type mismatch.
+**Fix:** Accept string or pathname defensively:
+  ```lisp
+  (uiop:ensure-directory-pathname
+   (if (stringp path)
+       (uiop:parse-native-namestring path)
+       path))
+  ```
+  Or just use `uiop:ensure-directory-pathname` directly — it accepts both strings and pathnames.
+**Lesson:** `uiop:ensure-directory-pathname` already handles strings. Don't wrap its output in `parse-native-namestring`. When writing functions that accept workspace paths, accept both strings and pathnames with an `(if (stringp p) ...)` guard.
+**Tags:** #uiop #pathnames #idiom #runtime
