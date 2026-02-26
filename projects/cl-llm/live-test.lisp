@@ -1,13 +1,13 @@
-;;;; live-test.lisp — Live integration test against local Ollama (qwen2:0.5b)
+;;;; live-test.lisp — Live integration test against LM Studio
 
 (pushnew (truename #p"./") asdf:*central-registry* :test #'equal)
 (ql:quickload "cl-llm" :silent t)
 
 (defparameter *client*
   (cl-llm:make-client
-   :base-url "http://localhost:11434/v1"
-   :api-key "ollama-local"
-   :model "qwen2:0.5b"))
+   :base-url "http://192.168.1.189:1234/v1"
+   :api-key "not-needed"
+   :model "google/gemma-3-4b"))
 
 (let ((pass 0) (fail 0))
 
