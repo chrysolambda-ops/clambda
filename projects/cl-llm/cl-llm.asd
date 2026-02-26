@@ -4,7 +4,7 @@
   :description "Clean Common Lisp interface to OpenAI-compatible LLM APIs"
   :version "0.1.0"
   :author "Gensym <gensym@cl-team>"
-  :license "MIT"
+  :license "AGPL-3.0-or-later"
   :depends-on ("dexador"
                "com.inuoe.jzon"
                "alexandria"

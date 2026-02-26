@@ -4,7 +4,7 @@
   :description "ANSI terminal chat interface for cl-llm"
   :version "0.1.0"
   :author "Gensym <gensym@cl-team>"
-  :license "MIT"
+  :license "AGPL-3.0-or-later"
   :depends-on ("cl-llm"
                "alexandria"
                "cl-ppcre")

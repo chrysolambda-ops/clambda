@@ -54,4 +54,7 @@ Each sub-project is an ASDF system with its own `.asd` file and `src/` / `t/` tr
 
 ## License
 
-TBD — intended to be libre (FSF-compatible free software license).
+This program is free software: you can redistribute it and/or modify it under
+the terms of the **GNU Affero General Public License** as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version. See [LICENSE](LICENSE) for the full text.

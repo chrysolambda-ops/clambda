@@ -8,7 +8,7 @@
   :description "McCLIM graphical frontend for clambda-core"
   :version "0.1.0"
   :author "Gensym <gensym@cl-team>"
-  :license "MIT"
+  :license "AGPL-3.0-or-later"
   :depends-on ("clambda-core"
                "cl-llm"
                "mcclim"

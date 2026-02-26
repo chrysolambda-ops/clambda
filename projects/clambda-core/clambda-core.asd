@@ -6,13 +6,14 @@
 ;;;; structured logging, workspace memory, the agent loop,
 ;;;; agent registry, sub-agent spawning, channel protocol, HTTP API,
 ;;;; the Emacs-style configuration system (Layer 6a),
-;;;; and the Telegram Bot API channel (Layer 6b).
+;;;; the Telegram Bot API channel (Layer 6b),
+;;;; and the IRC client channel (Layer 6c).
 
 (defsystem "clambda-core"
   :description "Core agent platform architecture in Common Lisp"
-  :version "0.5.0"
+  :version "0.6.0"
   :author "Gensym <gensym@cl-team>"
-  :license "MIT"
+  :license "AGPL-3.0-or-later"
   :depends-on ("cl-llm"
                "alexandria"
                "com.inuoe.jzon"
@@ -20,7 +21,10 @@
                "dexador"
                "cl-ppcre"
                "bordeaux-threads"
-               "hunchentoot")
+               "hunchentoot"
+               ;; Layer 6c: IRC raw socket + TLS
+               "usocket"
+               "cl+ssl")
   :serial t
   :components ((:file "src/packages")
                (:file "src/conditions")
@@ -39,7 +43,9 @@
                ;; Layer 6a: Emacs-style config system
                (:file "src/config")
                ;; Layer 6b: Telegram Bot API channel
-               (:file "src/telegram"))
+               (:file "src/telegram")
+               ;; Layer 6c: IRC client channel (raw sockets)
+               (:file "src/irc"))
   :in-order-to ((test-op (test-op "clambda-core/tests"))))
 
 (defsystem "clambda-core/tests"
@@ -49,4 +55,6 @@
   :components ((:file "t/packages")
                (:file "t/smoke-test")
                (:file "t/test-config")
-               (:file "t/test-telegram")))
+               (:file "t/test-telegram")
+               ;; Layer 6c: IRC tests
+               (:file "t/test-irc")))

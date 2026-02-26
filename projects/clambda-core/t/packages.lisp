@@ -21,3 +21,22 @@
   ;; (clambda/telegram::%extract-message-fields ...)
   ;; (clambda/telegram::%plist->ht ...)
   )
+
+(defpackage #:clambda-core/tests/irc
+  (:use #:cl #:parachute)
+  ;; Public API
+  (:import-from #:clambda/irc
+                #:parse-irc-line
+                #:irc-build-line
+                #:prefix-nick
+                #:irc-connection
+                #:make-irc-connection
+                #:irc-server #:irc-port #:irc-tls-p
+                #:irc-nick #:irc-realname #:irc-channels
+                #:irc-allowed-users #:irc-trigger-prefix
+                #:irc-running-p #:irc-connected-p
+                #:irc-flood-queue #:irc-flood-lock #:irc-flood-cvar
+                #:*irc-send-interval*)
+  ;; Internal helpers for white-box testing
+  ;; clambda/irc::%strip-cr, clambda/irc::%extract-message-body, etc.
+  )

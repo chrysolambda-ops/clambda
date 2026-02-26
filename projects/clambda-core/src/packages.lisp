@@ -412,6 +412,72 @@
    ;; Multi-channel startup
    #:start-all-channels))
 
+;;; ── IRC Client Channel ───────────────────────────────────────────────────────
+;;;
+;;; Raw IRC protocol over TCP/TLS (usocket + cl+ssl). No external IRC library.
+;;; register-channel :irc specialisation. Loaded after clambda/config so it can
+;;; specialize register-channel.
+
+(defpackage #:clambda/irc
+  (:use #:cl)
+  (:import-from #:clambda/config
+                #:register-channel
+                #:*default-model*)
+  (:import-from #:clambda/agent
+                #:agent #:make-agent)
+  (:import-from #:clambda/session
+                #:session #:make-session)
+  (:import-from #:clambda/loop
+                #:run-agent #:make-loop-options)
+  (:import-from #:clambda/registry
+                #:find-agent #:instantiate-agent-spec #:agent-spec)
+  (:import-from #:clambda/builtins
+                #:make-builtin-registry)
+  (:export
+   ;; Global variables
+   #:*irc-connection*
+   #:*irc-send-interval*
+   #:*irc-default-system-prompt*
+   ;; Struct + constructor
+   #:irc-connection
+   #:make-irc-connection
+   ;; Config accessors
+   #:irc-server
+   #:irc-port
+   #:irc-tls-p
+   #:irc-nick
+   #:irc-realname
+   #:irc-channels
+   #:irc-nickserv-password
+   #:irc-allowed-users
+   #:irc-trigger-prefix
+   ;; Runtime accessors
+   #:irc-socket
+   #:irc-stream
+   #:irc-reader-thread
+   #:irc-flood-thread
+   #:irc-flood-queue
+   #:irc-flood-lock
+   #:irc-flood-cvar
+   #:irc-running-p
+   #:irc-reconnect-delay
+   #:irc-agent
+   #:irc-sessions
+   #:irc-sessions-lock
+   ;; Predicates
+   #:irc-connected-p
+   ;; Lifecycle
+   #:start-irc
+   #:stop-irc
+   ;; High-level commands
+   #:irc-send-privmsg
+   #:irc-join
+   #:irc-part
+   ;; Protocol helpers (exported for testing)
+   #:parse-irc-line
+   #:irc-build-line
+   #:prefix-nick))
+
 ;;; ── Top-level convenience package ────────────────────────────────────────────
 
 (defpackage #:clambda
@@ -516,6 +582,18 @@
                 #:allowed-user-p
                 #:start-telegram #:stop-telegram #:telegram-running-p
                 #:start-all-channels)
+  (:import-from #:clambda/irc
+                #:*irc-connection*
+                #:irc-connection #:make-irc-connection
+                #:irc-server #:irc-port #:irc-tls-p
+                #:irc-nick #:irc-realname #:irc-channels
+                #:irc-nickserv-password #:irc-allowed-users
+                #:irc-trigger-prefix #:irc-running-p
+                #:irc-connected-p
+                #:start-irc #:stop-irc
+                #:irc-send-privmsg #:irc-join #:irc-part
+                #:parse-irc-line #:irc-build-line #:prefix-nick
+                #:*irc-send-interval* #:*irc-default-system-prompt*)
   (:export
    ;; Agent
    #:agent #:make-agent
@@ -615,7 +693,19 @@
    #:telegram-get-updates #:telegram-send-message
    #:allowed-user-p
    #:start-telegram #:stop-telegram #:telegram-running-p
-   #:start-all-channels))
+   #:start-all-channels
+   ;; IRC channel (Layer 6c)
+   #:*irc-connection*
+   #:irc-connection #:make-irc-connection
+   #:irc-server #:irc-port #:irc-tls-p
+   #:irc-nick #:irc-realname #:irc-channels
+   #:irc-nickserv-password #:irc-allowed-users
+   #:irc-trigger-prefix #:irc-running-p
+   #:irc-connected-p
+   #:start-irc #:stop-irc
+   #:irc-send-privmsg #:irc-join #:irc-part
+   #:parse-irc-line #:irc-build-line #:prefix-nick
+   #:*irc-send-interval* #:*irc-default-system-prompt*))
 
 ;;; ── User init package (for init.lisp) ────────────────────────────────────────
 ;;;
@@ -660,6 +750,12 @@
                 #:*telegram-channel*
                 #:*telegram-llm-base-url* #:*telegram-llm-api-key*
                 #:*telegram-system-prompt*)
+  (:import-from #:clambda/irc
+                #:*irc-connection*
+                #:irc-connected-p
+                #:start-irc #:stop-irc
+                #:irc-send-privmsg #:irc-join #:irc-part
+                #:*irc-send-interval* #:*irc-default-system-prompt*)
   (:export
    ;; Re-export everything imported so users can (use-package :clambda-user)
    ;; from a downstream package if desired.
@@ -688,4 +784,10 @@
    #:telegram-running-p #:start-all-channels
    #:*telegram-channel*
    #:*telegram-llm-base-url* #:*telegram-llm-api-key*
-   #:*telegram-system-prompt*))
+   #:*telegram-system-prompt*
+   ;; IRC channel lifecycle (most useful from init.lisp)
+   #:*irc-connection*
+   #:irc-connected-p
+   #:start-irc #:stop-irc
+   #:irc-send-privmsg #:irc-join #:irc-part
+   #:*irc-send-interval* #:*irc-default-system-prompt*))
