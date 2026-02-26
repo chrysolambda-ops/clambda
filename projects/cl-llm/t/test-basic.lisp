@@ -124,15 +124,18 @@
 
 ;;; ── Network tests (require live Ollama) ──────────────────────────────────────
 
-;; Using LM Studio (Ollama appears to be down on this host)
-(defparameter *ollama-url* "http://192.168.1.189:1234/v1")
-(defparameter *ollama-model* "openai/gpt-oss-20b")
+;; Ollama endpoint — primary is remote, fallback to local
+(defparameter *ollama-url* "http://192.168.1.189:11434/v1")
+(defparameter *ollama-model* "llama3.1:8b")
+;; For local fallback (qwen2:0.5b available locally):
+;; (defparameter *ollama-url* "http://localhost:11434/v1")
+;; (defparameter *ollama-model* "qwen2:0.5b")
 
 (defun test-live-simple-chat ()
   (format t "~%[Live: simple-chat via Ollama]~%")
   (handler-case
       (let* ((client (make-client :base-url *ollama-url*
-                                  :api-key "not-needed"
+                                  :api-key "ollama-local"
                                   :model *ollama-model*))
              (response (simple-chat client "Reply with exactly: pong"
                                     :system "You are a ping-pong bot. Reply only with 'pong'.")))
@@ -147,7 +150,7 @@
   (format t "~%[Live: streaming via Ollama]~%")
   (handler-case
       (let* ((client (make-client :base-url *ollama-url*
-                                  :api-key "not-needed"
+                                  :api-key "ollama-local"
                                   :model *ollama-model*))
              (chunks-seen 0)
              (full-text (chat-stream

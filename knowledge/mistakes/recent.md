@@ -41,3 +41,10 @@
 **Fix:** Either use multiple `--eval` flags, or write to a temp file and use `--load`.
 **Lesson:** Use `--load` for anything more than a one-liner. Or write a wrapper `.lisp` script.
 **Tags:** #sbcl #shell #repl
+
+## 2026-02-26 Category: idiom
+**What:** Used `~` literally in a `format` string (as `"  ~ Streaming..."`) causing "Unknown directive" compile error.
+**Why:** `~` is the FORMAT directive prefix in CL. A literal tilde must be doubled as `~~`.
+**Fix:** Either use `~~` for a literal tilde, or rephrase to avoid the character.
+**Lesson:** Any `~` in a format string is a directive. Use `~~` for literal tilde.
+**Tags:** #format #idiom #cl
