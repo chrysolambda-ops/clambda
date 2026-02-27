@@ -642,6 +642,9 @@ Returns the acceptor."
           (or log-file
               (uiop:native-namestring
                (merge-pathnames "logs/clawmacs.jsonl" (uiop:getcwd))))))
+  ;; Ensure log directory exists
+  (when clawmacs/logging:*log-file*
+    (ensure-directories-exist clawmacs/logging:*log-file*))
   (let ((acceptor (make-instance 'hunchentoot:easy-acceptor
                                  :port port
                                  :address address

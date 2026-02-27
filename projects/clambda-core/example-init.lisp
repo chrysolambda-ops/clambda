@@ -2,7 +2,7 @@
 ;;;;
 ;;;; Copy this to ~/.clawmacs/init.lisp and customise.
 ;;;; This file is loaded automatically at startup by (clawmacs/config:load-user-config).
-;;;; It runs in the CLAMBDA-USER package — all public Clawmacs symbols are
+;;;; It runs in the CLAWMACS-USER package — all public Clawmacs symbols are
 ;;;; available without qualification. Full Common Lisp is available.
 ;;;;
 ;;;; Quick start:

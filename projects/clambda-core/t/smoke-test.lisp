@@ -41,8 +41,7 @@ Returns T on success, signals error on failure."
             (clawmacs/tools:list-tools registry))
 
     ;; 6. Set up hooks for inspection
-    (let ((tool-calls-made nil)
-          (final-text nil))
+    (let ((tool-calls-made nil))
 
       (setf clawmacs:*on-tool-call*
             (lambda (name tc)
@@ -52,7 +51,6 @@ Returns T on success, signals error on failure."
 
       (setf clawmacs:*on-llm-response*
             (lambda (text)
-              (setf final-text text)
               (format t "[hook] final response: ~a~%" text)))
 
       ;; 7. Run the agent

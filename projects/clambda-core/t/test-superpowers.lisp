@@ -239,11 +239,11 @@
     :tools (exec))
 
   (let* ((spec  (find-agent "inst-agent"))
-         (agent (handler-case
-                    (values (instantiate-agent-spec spec))
-                  (error (e)
-                    (fail "instantiate-agent-spec raised: ~a" e)
-                    nil))))
+         (agent (multiple-value-bind (value condition)
+                    (ignore-errors (instantiate-agent-spec spec))
+                  (when condition
+                    (fail "instantiate-agent-spec raised: ~a" condition))
+                  value)))
     (when agent
       (is string= "inst-agent" (clawmacs/agent:agent-name agent))
       ;; Should have a registry with the exec tool

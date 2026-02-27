@@ -9,6 +9,7 @@
 ## Index
 
 | # | Date | Category | Summary |
+| 29 | 2026-02-27 | runtime/logging | HTTP server startup wrote logs to `logs/clawmacs.jsonl` without creating parent directory |
 | 27 | 2026-02-27 | idiom/parachute | Used `is-true`/`is-false` (don't exist) instead of parachute's `true`/`false` predicates |
 | 28 | 2026-02-27 | packages | Forgot to export new accessor `agent-spec-p` and `agent-turn-error-cause` — test import failed until added |
 | 26 | 2026-02-27 | idiom/parens | Sub-agent generated one extra `)` in a deep nesting (11 instead of 10 after a streaming fallback branch); SBCL flagged "unmatched close parenthesis" at exact col — fix: count nesting levels manually |
@@ -339,3 +340,14 @@ design struct slot names and public API names independently; use `:conc-name` to
 **Fix:** Remove the extra `)`. Reliable counting: work from the innermost form outward, incrementing by 1 for each closing `(form ...)`.
 **Lesson:** When generating code with ≥8 levels of nesting, count closing parens explicitly level-by-level. SBCL's column-precise error message pinpoints the exact extra paren. For sub-agents: test compile immediately after generating deep nesting — don't batch all files before testing.
 **Tags:** #idiom #parens #sbcl #nesting
+
+---
+
+## Category: runtime/logging
+
+### #29 — 2026-02-27
+**What:** HTTP API startup failed to write the first log event because `logs/clawmacs.jsonl`'s parent directory did not exist.
+**Why:** `start-server` assigned a default log path but didn't create parent directories before calling the logger.
+**Fix:** Call `(ensure-directories-exist clawmacs/logging:*log-file*)` in `start-server` after selecting the log path.
+**Lesson:** When defaulting to on-disk log files, always ensure parent directories exist at startup.
+**Tags:** #runtime #logging #filesystem #http-server

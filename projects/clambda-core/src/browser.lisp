@@ -285,6 +285,7 @@
                                             &key headless &allow-other-keys)
   "Register browser configuration. Call (browser-launch) to start.
    Example: (register-channel :browser :headless nil)"
+  (declare (ignore args))
   (when headless
     (setf *browser-headless* headless))
   (call-next-method))

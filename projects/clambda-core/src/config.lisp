@@ -352,7 +352,7 @@ Returns TARGET-REGISTRY."
 (defun load-user-config ()
   "Find and load ~/.clawmacs/init.lisp (or $CLAWMACS_HOME/init.lisp).
 
-The file is loaded with *PACKAGE* bound to CLAMBDA-USER so all public
+The file is loaded with *PACKAGE* bound to CLAWMACS-USER so all public
 Clawmacs symbols are available without qualification.
 
 Error handling:

@@ -86,7 +86,6 @@ NAME can be a string or keyword."
 SYM may be a symbol (web-fetch → \"web_fetch\") or a string (returned as-is)."
   (etypecase sym
     (symbol (substitute #\_ #\- (string-downcase (symbol-name sym))))
-    (keyword (substitute #\_ #\- (string-downcase (symbol-name sym))))
     (string sym)))
 
 ;;; ── Instantiation ────────────────────────────────────────────────────────────
