@@ -9,6 +9,8 @@
 ## Index
 
 | # | Date | Category | Summary |
+| 27 | 2026-02-27 | idiom/parachute | Used `is-true`/`is-false` (don't exist) instead of parachute's `true`/`false` predicates |
+| 28 | 2026-02-27 | packages | Forgot to export new accessor `agent-spec-p` and `agent-turn-error-cause` — test import failed until added |
 | 26 | 2026-02-27 | idiom/parens | Sub-agent generated one extra `)` in a deep nesting (11 instead of 10 after a streaming fallback branch); SBCL flagged "unmatched close parenthesis" at exact col — fix: count nesting levels manually |
 | 22 | 2026-02-26 | asdf/packaging | `schema-plist->ht` missing from `clambda/tools` exports — broke `clambda/browser` package definition |
 | 23 | 2026-02-26 | idiom/playwright | `page.accessibility.snapshot()` removed in Playwright >=1.47; use `page.locator('body').ariaSnapshot()` |
