@@ -291,6 +291,39 @@ Returns a confirmation or 'TTS not available' if no TTS engine is installed."
                            :|description| "The text to speak aloud"))
                  :|required| #("text")))
 
+  ;; ── memory-search ────────────────────────────────────────────────────────
+  (clawmacs/tools:register-tool!
+   registry
+   "memory_search"
+   (lambda (args)
+     (let* ((query (gethash "query" args))
+            (max-results (or (gethash "max_results" args) 5)))
+       (if (or (null query) (string= query ""))
+           (clawmacs/tools:tool-result-error "No query provided")
+           (handler-case
+               (let ((hits (clawmacs/memory::memory-search query
+                                                          :max-results (if (numberp max-results)
+                                                                           max-results
+                                                                           5))))
+                 (clawmacs/tools:tool-result-ok
+                  (if hits
+                      (with-output-to-string (s)
+                        (dolist (h hits)
+                          (format s "[~a] ~a~%~a~%~%"
+                                  (getf h :score)
+                                  (getf h :file)
+                                  (getf h :excerpt))))
+                      "No memory matches.")))
+             (error (e)
+               (clawmacs/tools:tool-result-error
+                (format nil "memory_search failed: ~a" e)))))))
+   :description "Search MEMORY.md and memory/*.md files in the workspace."
+   :parameters '(:|type| "object"
+                 :|properties|
+                 (:|query| (:|type| "string" :|description| "Search query")
+                  :|max_results| (:|type| "integer" :|description| "Maximum results (default 5)"))
+                 :|required| #("query")))
+
   registry)
 
 (defun make-builtin-registry (&key workdir)

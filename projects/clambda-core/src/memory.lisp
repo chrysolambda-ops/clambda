@@ -188,3 +188,45 @@ Returns the full context string, or empty string if no entries."
           (format s "## ~a~%~%" (memory-entry-name entry))
           (write-string (memory-entry-content entry) s)
           (format s "~%~%~a~%~%" separator)))))
+
+(defun %default-memory-workspace ()
+  (or (ignore-errors
+        (let* ((pkg (find-package '#:clawmacs/config))
+               (sym (and pkg (find-symbol "*CLAWMACS-HOME*" pkg))))
+          (and sym (symbol-value sym))))
+      (uiop:ensure-directory-pathname
+       (merge-pathnames ".clawmacs/" (user-homedir-pathname)))))
+
+(defun %query-keywords (query)
+  (remove-if (lambda (s) (< (length s) 2))
+             (cl-ppcre:split "[^[:alnum:]_]+" (string-downcase query))))
+
+(defun memory-search (query &key (max-results 5))
+  "Search MEMORY.md and memory/*.md under *CLAWMACS-HOME* using substring scoring."
+  (let* ((mem (load-workspace-memory (%default-memory-workspace)
+                                     :subdirs '("memory")))
+         (keywords (%query-keywords query))
+         (results nil))
+    (dolist (entry (workspace-memory-entries mem))
+      (let* ((content (memory-entry-content entry))
+             (lower (string-downcase content))
+             (score 0)
+             (pos nil))
+        (when (search (string-downcase query) lower)
+          (incf score 4)
+          (setf pos (search (string-downcase query) lower)))
+        (dolist (kw keywords)
+          (let ((p (search kw lower)))
+            (when p
+              (incf score)
+              (unless pos (setf pos p)))))
+        (when (> score 0)
+          (let* ((start (max 0 (- (or pos 0) 100)))
+                 (end (min (length content) (+ (or pos 0) 200))))
+            (push (list :file (memory-entry-name entry)
+                        :path (memory-entry-path entry)
+                        :score score
+                        :excerpt (subseq content start end))
+                  results)))))
+    (let ((sorted (sort results #'> :key (lambda (r) (getf r :score)))))
+      (subseq sorted 0 (min max-results (length sorted))))))
