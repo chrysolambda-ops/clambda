@@ -39,6 +39,9 @@ Use REGISTER-AGENT / FIND-AGENT / LIST-AGENTS to access it.")
 (defvar *registry-lock* (bt:make-lock "agent-registry-lock")
   "Protects *AGENT-REGISTRY* for concurrent access.")
 
+(defvar *agent-message-queues* (make-hash-table :test 'equal)
+  "Per-agent FIFO queues for inter-agent messages.")
+
 ;;; ── Operations ───────────────────────────────────────────────────────────────
 
 (defun normalize-name (name)
@@ -46,6 +49,25 @@ Use REGISTER-AGENT / FIND-AGENT / LIST-AGENTS to access it.")
   (etypecase name
     (string  name)
     (keyword (string-downcase (symbol-name name)))))
+
+(defun send-to-agent (target-name message &key from)
+  "Queue MESSAGE for TARGET-NAME. Returns T when queued, NIL when target missing."
+  (let ((key (normalize-name target-name)))
+    (bt:with-lock-held (*registry-lock*)
+      (when (gethash key *agent-registry*)
+        (setf (gethash key *agent-message-queues*)
+              (append (gethash key *agent-message-queues*)
+                      (list (if from
+                                (format nil "From ~a: ~a" from message)
+                                message))))
+        t))))
+
+(defun consume-agent-messages (name)
+  "Return and clear pending inter-agent messages for NAME."
+  (let ((key (normalize-name name)))
+    (bt:with-lock-held (*registry-lock*)
+      (prog1 (copy-list (gethash key *agent-message-queues*))
+        (setf (gethash key *agent-message-queues*) nil)))))
 
 (defun %heartbeat-task-name (name)
   (format nil "heartbeat:~a" (normalize-name name)))
@@ -98,6 +120,7 @@ NAME can be a string or keyword."
   "Remove the entry for NAME from *AGENT-REGISTRY*. Returns T if removed."
   (let ((key (normalize-name name)))
     (bt:with-lock-held (*registry-lock*)
+      (remhash key *agent-message-queues*)
       (remhash key *agent-registry*))))
 
 (defun list-agents ()
@@ -113,7 +136,8 @@ NAME can be a string or keyword."
 (defun clear-registry ()
   "Remove all entries from *AGENT-REGISTRY*."
   (bt:with-lock-held (*registry-lock*)
-    (clrhash *agent-registry*)))
+    (clrhash *agent-registry*)
+    (clrhash *agent-message-queues*)))
 
 ;;; ── Tool name conversion ─────────────────────────────────────────────────────
 

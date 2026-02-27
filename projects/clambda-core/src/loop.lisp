@@ -112,6 +112,17 @@ The LLM is asked to return pure JSON. If parsing fails, returns NIL."
             ""))
     (error () "")))
 
+(defun %inject-pending-agent-messages (session)
+  (let* ((agent (session-agent session))
+         (pending (clawmacs/registry:consume-agent-messages
+                   (clawmacs/agent:agent-name agent))))
+    (when pending
+      (clawmacs/session:session-add-message
+       session
+       (cl-llm/protocol:system-message
+        (format nil "Inter-agent messages:\n~{ - ~a~%~}" pending)))))
+  session)
+
 (defun build-messages (session)
   "Build the full message list for an LLM call: system prompt + history."
   (let* ((agent (session-agent session))
@@ -272,7 +283,9 @@ OPTIONS — a LOOP-OPTIONS struct (default: standard options)."
          (registry (clawmacs/agent:agent-tool-registry agent))
          (tools    (when registry
                      (clawmacs/tools:tool-definitions-for-llm registry)))
-         (messages (build-messages session))
+         (messages (progn
+                     (%inject-pending-agent-messages session)
+                     (build-messages session)))
          (verbose  (loop-options-verbose opts)))
 
     (when verbose

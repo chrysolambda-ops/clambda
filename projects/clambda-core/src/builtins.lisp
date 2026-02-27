@@ -324,6 +324,28 @@ Returns a confirmation or 'TTS not available' if no TTS engine is installed."
                   :|max_results| (:|type| "integer" :|description| "Maximum results (default 5)"))
                  :|required| #("query")))
 
+  ;; ── send-message (inter-agent) ───────────────────────────────────────────
+  (clawmacs/tools:register-tool!
+   registry
+   "send_message"
+   (lambda (args)
+     (let ((target (gethash "target" args))
+           (message (gethash "message" args)))
+       (if (or (null target) (null message)
+               (string= target "") (string= message ""))
+           (clawmacs/tools:tool-result-error "target and message are required")
+           (if (clawmacs/registry:send-to-agent target message)
+               (clawmacs/tools:tool-result-ok
+                (format nil "Sent message to agent ~a" target))
+               (clawmacs/tools:tool-result-error
+                (format nil "Agent not found: ~a" target))))))
+   :description "Send a message to another registered agent."
+   :parameters '(:|type| "object"
+                 :|properties|
+                 (:|target| (:|type| "string" :|description| "Target agent name")
+                  :|message| (:|type| "string" :|description| "Message to send"))
+                 :|required| #("target" "message")))
+
   registry)
 
 (defun make-builtin-registry (&key workdir)

@@ -243,6 +243,8 @@
    #:list-agents
    #:unregister-agent
    #:clear-registry
+   #:send-to-agent
+   #:consume-agent-messages
    ;; Declarative definition
    #:define-agent
    ;; Agent spec
@@ -690,6 +692,7 @@
                 #:*agent-registry*
                 #:register-agent #:find-agent #:list-agents
                 #:unregister-agent #:clear-registry
+                #:send-to-agent #:consume-agent-messages
                 #:define-agent
                 #:agent-spec #:agent-spec-p #:make-agent-spec
                 #:agent-spec-name #:agent-spec-display-name
@@ -847,6 +850,7 @@
    #:*agent-registry*
    #:register-agent #:find-agent #:list-agents
    #:unregister-agent #:clear-registry
+   #:send-to-agent #:consume-agent-messages
    #:define-agent
    #:agent-spec #:agent-spec-p #:make-agent-spec
    #:agent-spec-name #:agent-spec-display-name
@@ -978,7 +982,8 @@
                 #:session #:make-session)
   (:import-from #:clawmacs/registry
                 #:define-agent #:register-agent #:find-agent
-                #:unregister-agent #:agent-spec-p
+                #:unregister-agent #:send-to-agent #:consume-agent-messages
+                #:agent-spec-p
                 #:agent-spec #:make-agent-spec
                 #:agent-spec-name #:agent-spec-model
                 #:agent-spec-tools #:agent-spec-max-turns
@@ -1045,7 +1050,8 @@
    #:agent-client #:agent-tool-registry
    #:session #:make-session
    #:define-agent #:register-agent #:find-agent
-   #:unregister-agent #:agent-spec-p
+   #:unregister-agent #:send-to-agent #:consume-agent-messages
+   #:agent-spec-p
    #:agent-spec #:make-agent-spec
    #:agent-spec-name #:agent-spec-model
    #:agent-spec-tools #:agent-spec-max-turns
