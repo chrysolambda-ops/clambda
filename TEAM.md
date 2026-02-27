@@ -225,26 +225,25 @@ After editing the config or adding new projects:
 
 ## 6. LM Studio Endpoint & Models
 
-**Base URL:** `http://localhost:1234/v1`
+**This machine has NO GPU and NO local inference server.**
+Use the remote LM Studio instance only.
 
-**Available models (as of Layer 4):**
-- `qwen2.5-7b-instruct` — fast, good for coding, default for agent tasks
-- `deepseek-r1-distill-qwen-7b` — reasoning traces, use for hard logic problems
-- *(check LM Studio UI for current loaded model)*
+**Remote Base URL:** `http://192.168.1.189:1234/v1`
+
+**Available models (check LM Studio UI on remote host for current loaded model):**
+- `google/gemma-3-4b` — smallest/fastest, good for smoke tests
+- *(others depend on what's loaded on the remote)*
 
 **Client setup:**
 
 ```lisp
 (cl-llm:make-client
-  :base-url "http://localhost:1234/v1"
+  :base-url "http://192.168.1.189:1234/v1"
   :api-key  "lm-studio"   ; any string accepted
-  :model    "qwen2.5-7b-instruct")
+  :model    "google/gemma-3-4b")
 ```
 
-**Ollama (alternative):**
-- Local: `http://localhost:11434/v1`, api-key `"ollama-local"`
-- Remote: `http://192.168.1.189:11434/v1`
-- Smallest model: `qwen2:0.5b` (for quick tests)
+**No Ollama instance is currently running.** Do not attempt localhost inference.
 
 ---
 
