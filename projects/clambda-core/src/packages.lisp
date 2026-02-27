@@ -48,6 +48,9 @@
    #:make-agent
    ;; Accessors
    #:agent-name
+   #:agent-display-name
+   #:agent-emoji
+   #:agent-theme
    #:agent-role
    #:agent-model
    #:agent-workspace
@@ -227,7 +230,8 @@
   (:use #:cl)
   (:import-from #:clawmacs/agent
                 #:agent #:make-agent
-                #:agent-name #:agent-role #:agent-model
+                #:agent-name #:agent-display-name #:agent-emoji #:agent-theme
+                #:agent-role #:agent-model
                 #:agent-workspace-path #:agent-system-prompt
                 #:agent-client #:agent-tool-registry)
   (:export
@@ -246,6 +250,9 @@
    #:agent-spec-p                     ; struct predicate
    #:make-agent-spec
    #:agent-spec-name
+   #:agent-spec-display-name
+   #:agent-spec-emoji
+   #:agent-spec-theme
    #:agent-spec-model
    #:agent-spec-system-prompt
    #:agent-spec-tools
@@ -631,7 +638,8 @@
   ;; Re-export key symbols
   (:import-from #:clawmacs/agent
                 #:agent #:make-agent
-                #:agent-name #:agent-role #:agent-model
+                #:agent-name #:agent-display-name #:agent-emoji #:agent-theme
+                #:agent-role #:agent-model
                 #:agent-workspace-path #:agent-system-prompt
                 #:agent-client #:agent-tool-registry)
   (:import-from #:clawmacs/session
@@ -682,7 +690,8 @@
                 #:unregister-agent #:clear-registry
                 #:define-agent
                 #:agent-spec #:agent-spec-p #:make-agent-spec
-                #:agent-spec-name #:agent-spec-model
+                #:agent-spec-name #:agent-spec-display-name
+                #:agent-spec-emoji #:agent-spec-theme #:agent-spec-model
                 #:agent-spec-system-prompt #:agent-spec-tools
                 #:agent-spec-role #:agent-spec-max-turns #:agent-spec-client
                 #:instantiate-agent-spec)
@@ -776,7 +785,8 @@
   (:export
    ;; Agent
    #:agent #:make-agent
-   #:agent-name #:agent-role #:agent-model
+   #:agent-name #:agent-display-name #:agent-emoji #:agent-theme
+   #:agent-role #:agent-model
    #:agent-workspace-path #:agent-system-prompt
    #:agent-client #:agent-tool-registry
    ;; Session
@@ -835,7 +845,8 @@
    #:unregister-agent #:clear-registry
    #:define-agent
    #:agent-spec #:agent-spec-p #:make-agent-spec
-   #:agent-spec-name #:agent-spec-model
+   #:agent-spec-name #:agent-spec-display-name
+   #:agent-spec-emoji #:agent-spec-theme #:agent-spec-model
    #:agent-spec-system-prompt #:agent-spec-tools
    #:agent-spec-role #:agent-spec-max-turns #:agent-spec-client
    #:instantiate-agent-spec

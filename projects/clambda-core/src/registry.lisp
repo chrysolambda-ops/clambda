@@ -13,6 +13,9 @@
 Can be registered by name and later instantiated into an AGENT."
   (name          ""  :type string)
   (role          "assistant" :type string)
+  (display-name  nil :type (or null string))
+  (emoji         nil :type (or null string))
+  (theme         nil :type (or null string))
   (model         nil :type (or null string))
   (workspace     nil :type (or null pathname))
   (system-prompt nil :type (or null string))
@@ -152,6 +155,9 @@ Returns: (values agent spec)"
      (clawmacs/agent:make-agent
       :name           (agent-spec-name spec)
       :role           (agent-spec-role spec)
+      :display-name   (agent-spec-display-name spec)
+      :emoji          (agent-spec-emoji spec)
+      :theme          (agent-spec-theme spec)
       :model          (agent-spec-model spec)
       :workspace      (or (agent-spec-workspace spec)
                           (clawmacs/agent::default-agent-workspace
@@ -171,7 +177,8 @@ Accepts symbols, keywords, or strings."
     (keyword (string-downcase (symbol-name name)))
     (symbol  (string-downcase (symbol-name name)))))
 
-(defmacro define-agent (name &key (role "assistant") model workspace system-prompt
+(defmacro define-agent (name &key (role "assistant") display-name emoji theme
+                                   model workspace system-prompt
                                    tools max-turns client)
   "High-level DSL for defining and registering an agent spec.
 
@@ -185,6 +192,9 @@ Idiomatic usage from init.lisp:
 
 NAME — a symbol, keyword, or string. Symbol names are lowercased.
 :ROLE — role label (default: \"assistant\").
+:DISPLAY-NAME — optional human-facing name.
+:EMOJI — optional identity emoji.
+:THEME — optional theme string.
 :MODEL — LLM model string. NIL uses *default-model* at instantiation time.
 :WORKSPACE — pathname/string workspace directory (default ~/.clawmacs/agents/<name>/).
 :SYSTEM-PROMPT — agent system prompt.
@@ -214,6 +224,9 @@ This macro expands to: spec creation + tool name encoding + registry registratio
     `(let ((spec (make-agent-spec
                   :name          ,name-form
                   :role          ,role
+                  :display-name  ,display-name
+                  :emoji         ,emoji
+                  :theme         ,theme
                   :model         ,model
                   :workspace     ,(if (null workspace)
                                        `(clawmacs/agent::default-agent-workspace ,name-form)
