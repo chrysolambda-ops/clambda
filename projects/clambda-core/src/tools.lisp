@@ -188,12 +188,19 @@ invokes this restart to retry without unwinding the stack."
             (tool-result-error (format nil "Tool not found: ~s" name))))))
 
     ;; Parse arguments
-    (let ((args (etypecase raw-args
+    (let ((args
+            (handler-case
+                (etypecase raw-args
                   (null (make-hash-table :test #'equal))
                   (string (if (string= raw-args "")
                               (make-hash-table :test #'equal)
                               (com.inuoe.jzon:parse raw-args)))
-                  (hash-table raw-args))))
+                  (hash-table raw-args))
+              (error (e)
+                (return-from dispatch-tool-call
+                  (tool-result-error
+                   (format nil "Invalid JSON arguments for tool ~s: ~a"
+                           name e)))))))
 
       (%try-tool-handler (tool-entry-handler entry) args name))))
 

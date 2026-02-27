@@ -1,0 +1,49 @@
+;;;; init.lisp.example — Example ~/.clambda/init.lisp
+;;;;
+;;;; Copy to ~/.clambda/init.lisp and replace placeholder credentials.
+
+(in-package #:clambda-user)
+
+;;; Core options
+(setf *default-model* "google/gemma-3-4b")
+(setf *default-max-turns* 12)
+(setf *default-stream* t)
+(setf *log-level* :info)
+(setf *startup-message* "Clambda loaded.")
+
+;;; Optional: SWANK for live debugging
+;; (setf *swank-port* 4005)
+;; (add-hook '*after-init-hook* #'start-swank)
+
+;;; Telegram (placeholder values only)
+;; (register-channel :telegram
+;;   :token "0000000000:REPLACE_WITH_BOT_TOKEN"
+;;   :allowed-users '(123456789)
+;;   :admin-users '(123456789))
+
+;;; IRC (placeholder values only)
+;; (register-channel :irc
+;;   :server "irc.example.net"
+;;   :port 6697
+;;   :tls t
+;;   :nick "clambda-bot"
+;;   :realname "Clambda Bot"
+;;   :channels '("#bots"))
+
+;;; Browser channel
+;; (register-channel :browser :headless t)
+
+;;; Remote API token (placeholder)
+;; (setf *api-token* "REPLACE_WITH_LONG_RANDOM_SECRET")
+
+;;; Start selected channels/services on init
+;; (add-hook '*after-init-hook* #'start-all-channels)
+;; (add-hook '*after-init-hook* (lambda () (start-server :port 7474 :address "127.0.0.1")))
+
+;;; Example custom user tool
+(define-user-tool ping
+  :description "Simple health check tool."
+  :parameters nil
+  :function (lambda (args)
+              (declare (ignore args))
+              "pong"))
