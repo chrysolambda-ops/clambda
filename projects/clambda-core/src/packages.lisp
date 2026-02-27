@@ -50,7 +50,9 @@
    #:agent-name
    #:agent-role
    #:agent-model
+   #:agent-workspace
    #:agent-workspace-path
+   #:default-agent-workspace
    #:agent-system-prompt
    #:agent-client
    #:agent-tool-registry
@@ -166,6 +168,7 @@
    ;; Operations
    #:load-workspace-memory
    #:search-memory
+   #:memory-search
    #:memory-context-string))
 
 ;;; ── Agent loop ───────────────────────────────────────────────────────────────
@@ -247,6 +250,7 @@
    #:agent-spec-system-prompt
    #:agent-spec-tools
    #:agent-spec-role
+   #:agent-spec-workspace
    #:agent-spec-max-turns             ; new: per-agent turn limit
    #:agent-spec-client
    ;; Instantiation
@@ -433,7 +437,9 @@
    #:*default-max-turns*
    #:*default-stream*
    #:*log-level*
-   #:*startup-message*))
+   #:*startup-message*
+   #:*fallback-models*
+   #:*heartbeat-interval*))
 
 ;;; ── Telegram Channel ─────────────────────────────────────────────────────────
 ;;;

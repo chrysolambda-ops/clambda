@@ -23,12 +23,12 @@
     :initform nil
     :type (or null string)
     :documentation "LLM model name; overrides client default if set.")
-   (workspace-path
-    :initarg :workspace-path
-    :accessor agent-workspace-path
+   (workspace
+    :initarg :workspace
+    :accessor agent-workspace
     :initform nil
-    :type (or null string)
-    :documentation "Path to the agent's workspace directory.")
+    :type (or null pathname)
+    :documentation "Pathname of the agent workspace directory.")
    (system-prompt
     :initarg :system-prompt
     :accessor agent-system-prompt
@@ -59,24 +59,45 @@ a workspace directory, a system prompt, and a set of tools."))
 
 ;;; ── Constructor ──────────────────────────────────────────────────────────────
 
-(defun make-agent (&key name role model workspace-path system-prompt client tool-registry)
+(defun default-agent-workspace (agent-name)
+  "Return the default workspace pathname for AGENT-NAME.
+
+Default: ~/.clawmacs/agents/<agent-name>/"
+  (uiop:ensure-directory-pathname
+   (merge-pathnames (format nil ".clawmacs/agents/~a/" agent-name)
+                    (user-homedir-pathname))))
+
+(defun agent-workspace-path (agent)
+  "Backward-compatible workspace path accessor as a namestring (or NIL)."
+  (let ((ws (agent-workspace agent)))
+    (when ws
+      (namestring ws))))
+
+(defun make-agent (&key name role model workspace workspace-path system-prompt client tool-registry)
   "Create a new AGENT.
 
 NAME — string identifier (default: \"agent\").
 ROLE — role label (default: \"assistant\").
 MODEL — LLM model override (string, or NIL to use client default).
-WORKSPACE-PATH — directory path string for the agent's files.
+WORKSPACE / WORKSPACE-PATH — workspace directory (pathname preferred).
 SYSTEM-PROMPT — system prompt string (or NIL to auto-generate).
 CLIENT — a CL-LLM:CLIENT instance.
 TOOL-REGISTRY — a CLAMBDA/TOOLS:TOOL-REGISTRY instance."
-  (make-instance 'agent
-                 :name           (or name "agent")
-                 :role           (or role "assistant")
-                 :model          model
-                 :workspace-path workspace-path
-                 :system-prompt  system-prompt
-                 :client         client
-                 :tool-registry  tool-registry))
+  (let* ((agent-name (or name "agent"))
+         (ws-input   (or workspace workspace-path))
+         (ws         (uiop:ensure-directory-pathname
+                      (typecase ws-input
+                        (null (default-agent-workspace agent-name))
+                        (pathname ws-input)
+                        (string (uiop:parse-native-namestring ws-input))))))
+    (make-instance 'agent
+                   :name           agent-name
+                   :role           (or role "assistant")
+                   :model          model
+                   :workspace      ws
+                   :system-prompt  system-prompt
+                   :client         client
+                   :tool-registry  tool-registry)))
 
 ;;; ── Computed properties ──────────────────────────────────────────────────────
 
@@ -96,7 +117,7 @@ Be helpful, concise, and accurate."
                  :name           (agent-name agent)
                  :role           (agent-role agent)
                  :model          (agent-model agent)
-                 :workspace-path (agent-workspace-path agent)
+                 :workspace      (agent-workspace agent)
                  :system-prompt  (agent-system-prompt agent)
                  :client         (agent-client agent)
                  :tool-registry  tool-registry))

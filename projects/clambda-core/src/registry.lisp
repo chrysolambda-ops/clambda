@@ -14,6 +14,7 @@ Can be registered by name and later instantiated into an AGENT."
   (name          ""  :type string)
   (role          "assistant" :type string)
   (model         nil :type (or null string))
+  (workspace     nil :type (or null pathname))
   (system-prompt nil :type (or null string))
   (tools         nil :type list)         ; list of tool name strings
   (max-turns     nil :type (or null integer)) ; override *default-max-turns*
@@ -43,12 +44,44 @@ Use REGISTER-AGENT / FIND-AGENT / LIST-AGENTS to access it.")
     (string  name)
     (keyword (string-downcase (symbol-name name)))))
 
+(defun %heartbeat-task-name (name)
+  (format nil "heartbeat:~a" (normalize-name name)))
+
+(defun %heartbeat-body (name)
+  (handler-case
+      (let* ((spec (find-agent name))
+             (agent (and spec (car (multiple-value-list (instantiate-agent-spec spec)))))
+             (workspace (and agent (clawmacs/agent::agent-workspace agent)))
+             (heartbeat-file (and workspace (merge-pathnames "HEARTBEAT.md" workspace))))
+        (when (and heartbeat-file (probe-file heartbeat-file))
+          (let ((prompt (string-trim '(#\Space #\Tab #\Newline #\Return)
+                                     (uiop:read-file-string heartbeat-file))))
+            (when (> (length prompt) 0)
+              (let* ((session (clawmacs/session:make-session :agent agent))
+                     (reply (clawmacs/loop:run-agent session prompt
+                                                     :options (clawmacs/loop:make-loop-options
+                                                               :max-turns (or (agent-spec-max-turns spec)
+                                                                              clawmacs/config:*default-max-turns*)))))
+                (declare (ignore reply)))))))
+    (error (e)
+      (warn "heartbeat for ~a failed: ~a" name e))))
+
+(defun %maybe-enable-heartbeat (name)
+  (when (and (boundp 'clawmacs/config::*heartbeat-interval*)
+             clawmacs/config::*heartbeat-interval*
+             (> clawmacs/config::*heartbeat-interval* 0))
+    (clawmacs/cron:schedule-task (%heartbeat-task-name name)
+                                 :every clawmacs/config::*heartbeat-interval*
+                                 :description (format nil "Heartbeat for agent ~a" name)
+                                 :function (lambda () (%heartbeat-body name)))))
+
 (defun register-agent (name spec)
   "Register SPEC (an AGENT-SPEC or an AGENT) under NAME in *AGENT-REGISTRY*.
 NAME can be a string or keyword. Returns SPEC."
   (let ((key (normalize-name name)))
     (bt:with-lock-held (*registry-lock*)
-      (setf (gethash key *agent-registry*) spec)))
+      (setf (gethash key *agent-registry*) spec))
+    (%maybe-enable-heartbeat key))
   spec)
 
 (defun find-agent (name)
@@ -120,6 +153,9 @@ Returns: (values agent spec)"
       :name           (agent-spec-name spec)
       :role           (agent-spec-role spec)
       :model          (agent-spec-model spec)
+      :workspace      (or (agent-spec-workspace spec)
+                          (clawmacs/agent::default-agent-workspace
+                           (agent-spec-name spec)))
       :system-prompt  (agent-spec-system-prompt spec)
       :client         (agent-spec-client spec)
       :tool-registry  registry)
@@ -135,7 +171,7 @@ Accepts symbols, keywords, or strings."
     (keyword (string-downcase (symbol-name name)))
     (symbol  (string-downcase (symbol-name name)))))
 
-(defmacro define-agent (name &key (role "assistant") model system-prompt
+(defmacro define-agent (name &key (role "assistant") model workspace system-prompt
                                    tools max-turns client)
   "High-level DSL for defining and registering an agent spec.
 
@@ -150,6 +186,7 @@ Idiomatic usage from init.lisp:
 NAME — a symbol, keyword, or string. Symbol names are lowercased.
 :ROLE — role label (default: \"assistant\").
 :MODEL — LLM model string. NIL uses *default-model* at instantiation time.
+:WORKSPACE — pathname/string workspace directory (default ~/.clawmacs/agents/<name>/).
 :SYSTEM-PROMPT — agent system prompt.
 :TOOLS — list of tool name symbols or strings. Symbols are converted:
          web-fetch → \"web_fetch\", browser-navigate → \"browser_navigate\".
@@ -178,6 +215,9 @@ This macro expands to: spec creation + tool name encoding + registry registratio
                   :name          ,name-form
                   :role          ,role
                   :model         ,model
+                  :workspace     ,(if (null workspace)
+                                       `(clawmacs/agent::default-agent-workspace ,name-form)
+                                       workspace)
                   :system-prompt ,system-prompt
                   :tools         ,tools-form
                   :max-turns     ,max-turns
