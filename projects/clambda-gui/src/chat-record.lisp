@@ -1,6 +1,6 @@
 ;;;; src/chat-record.lisp — In-memory chat message record
 
-(in-package #:clambda-gui)
+(in-package #:clawmacs-gui)
 
 ;;; ── Chat message struct ───────────────────────────────────────────────────────
 ;;;
@@ -37,7 +37,7 @@ TOOL-NAME — for :tool messages, the tool function name (optional)."
 ;;; ── Session → chat-log conversion ────────────────────────────────────────────
 
 (defun session-messages->chat-log (session)
-  "Convert a clambda SESSION's message history to a list of CHAT-MESSAGE structs.
+  "Convert a clawmacs SESSION's message history to a list of CHAT-MESSAGE structs.
 
 Skips system messages (those are shown in the sidebar instead).
 Returns a fresh list."

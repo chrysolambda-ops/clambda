@@ -1,4 +1,4 @@
-;;;; t/test-irc.lisp — Unit tests for clambda/irc (Layer 6c)
+;;;; t/test-irc.lisp — Unit tests for clawmacs/irc (Layer 6c)
 ;;;;
 ;;;; Tests cover:
 ;;;;   1. IRC line parser (parse-irc-line)
@@ -11,7 +11,7 @@
 ;;;; Tests do NOT require a live IRC server or network.
 ;;;; They test all pure/functional components in isolation.
 
-(in-package #:clambda-core/tests/irc)
+(in-package #:clawmacs-core/tests/irc)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 1. parse-irc-line tests
@@ -32,17 +32,17 @@
     (is string= "Hello world"   (getf r :trailing))))
 
 (define-test "parse-irc-line: PRIVMSG direct message"
-  (let ((r (parse-irc-line ":bob!b@host PRIVMSG clambda :Can you help me?")))
+  (let ((r (parse-irc-line ":bob!b@host PRIVMSG clawmacs :Can you help me?")))
     (is string= "PRIVMSG"       (getf r :command))
     (is string= "bob!b@host"   (getf r :prefix))
-    (is equal   '("clambda")   (getf r :params))
+    (is equal   '("clawmacs")   (getf r :params))
     (is string= "Can you help me?" (getf r :trailing))))
 
 (define-test "parse-irc-line: 001 RPL_WELCOME"
-  (let ((r (parse-irc-line ":irc.libera.chat 001 clambda :Welcome to Libera")))
+  (let ((r (parse-irc-line ":irc.libera.chat 001 clawmacs :Welcome to Libera")))
     (is string= "001"            (getf r :command))
     (is string= "irc.libera.chat" (getf r :prefix))
-    (is equal   '("clambda")    (getf r :params))
+    (is equal   '("clawmacs")    (getf r :params))
     (is string= "Welcome to Libera" (getf r :trailing))))
 
 (define-test "parse-irc-line: NICK change"
@@ -66,9 +66,9 @@
     (is string= "Closing Link: you (Quit: Bye)" (getf r :trailing))))
 
 (define-test "parse-irc-line: 433 nick-in-use"
-  (let ((r (parse-irc-line ":server 433 * clambda :Nickname is already in use")))
+  (let ((r (parse-irc-line ":server 433 * clawmacs :Nickname is already in use")))
     (is string= "433"           (getf r :command))
-    (is equal   '("*" "clambda") (getf r :params))
+    (is equal   '("*" "clawmacs") (getf r :params))
     (is string= "Nickname is already in use" (getf r :trailing))))
 
 (define-test "parse-irc-line: command is uppercased"
@@ -80,9 +80,9 @@
     (is string= ""  (getf r :trailing))))
 
 (define-test "parse-irc-line: multiple params before trailing"
-  (let ((r (parse-irc-line ":s 353 clambda = #chan :alice bob")))
+  (let ((r (parse-irc-line ":s 353 clawmacs = #chan :alice bob")))
     (is string= "353" (getf r :command))
-    (is equal '("clambda" "=" "#chan") (getf r :params))
+    (is equal '("clawmacs" "=" "#chan") (getf r :params))
     (is string= "alice bob" (getf r :trailing))))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -98,16 +98,16 @@
       (irc-build-line "PRIVMSG" '("#test") "Hello, world!")))
 
 (define-test "irc-build-line: JOIN (no trailing)"
-  (is string= "JOIN #clambda"
-      (irc-build-line "JOIN" '("#clambda"))))
+  (is string= "JOIN #clawmacs"
+      (irc-build-line "JOIN" '("#clawmacs"))))
 
 (define-test "irc-build-line: NICK (single param)"
   (is string= "NICK mynick"
       (irc-build-line "NICK" '("mynick"))))
 
 (define-test "irc-build-line: USER (multiple params + trailing realname)"
-  (is string= "USER bot 0 * :Clambda Bot"
-      (irc-build-line "USER" '("bot" "0" "*") "Clambda Bot")))
+  (is string= "USER bot 0 * :Clawmacs Bot"
+      (irc-build-line "USER" '("bot" "0" "*") "Clawmacs Bot")))
 
 (define-test "irc-build-line: command only"
   (is string= "QUIT"
@@ -148,9 +148,9 @@
   ;; Test the internal irc-enqueue-raw function via :: access
   (let ((conn (make-irc-connection :server "localhost" :port 6667)))
     ;; Enqueue three lines
-    (clambda/irc::irc-enqueue-raw conn "NICK testbot")
-    (clambda/irc::irc-enqueue-raw conn "USER testbot 0 * :Test")
-    (clambda/irc::irc-enqueue-raw conn "JOIN #test")
+    (clawmacs/irc::irc-enqueue-raw conn "NICK testbot")
+    (clawmacs/irc::irc-enqueue-raw conn "USER testbot 0 * :Test")
+    (clawmacs/irc::irc-enqueue-raw conn "JOIN #test")
     ;; Check queue contents (FIFO order)
     (is = 3 (length (irc-flood-queue conn)))
     (is string= "NICK testbot" (first (irc-flood-queue conn)))
@@ -158,9 +158,9 @@
 
 (define-test "flood queue: dequeue maintains FIFO order"
   (let ((conn (make-irc-connection :server "localhost" :port 6667)))
-    (clambda/irc::irc-enqueue-raw conn "FIRST")
-    (clambda/irc::irc-enqueue-raw conn "SECOND")
-    (clambda/irc::irc-enqueue-raw conn "THIRD")
+    (clawmacs/irc::irc-enqueue-raw conn "FIRST")
+    (clawmacs/irc::irc-enqueue-raw conn "SECOND")
+    (clawmacs/irc::irc-enqueue-raw conn "THIRD")
     ;; Manually dequeue (simulating what flood-sender-loop does)
     (let ((q (irc-flood-queue conn)))
       (is string= "FIRST"  (first q))
@@ -174,46 +174,46 @@
 ;; We test the internal %extract-message-body function via :: access.
 
 (define-test "trigger: DM always triggers (returns text)"
-  (let ((conn (make-irc-connection :nick "clambda")))
-    (let ((result (clambda/irc::%extract-message-body
+  (let ((conn (make-irc-connection :nick "clawmacs")))
+    (let ((result (clawmacs/irc::%extract-message-body
                     conn nil "help me please" "alice")))
       (is string= "help me please" result))))
 
 (define-test "trigger: channel message with nick: prefix triggers"
-  (let ((conn (make-irc-connection :nick "clambda")))
-    (let ((result (clambda/irc::%extract-message-body
-                    conn t "clambda: what time is it?" "alice")))
+  (let ((conn (make-irc-connection :nick "clawmacs")))
+    (let ((result (clawmacs/irc::%extract-message-body
+                    conn t "clawmacs: what time is it?" "alice")))
       (is string= "what time is it?" result))))
 
 (define-test "trigger: channel message with nick mention triggers"
-  (let ((conn (make-irc-connection :nick "clambda")))
-    (let ((result (clambda/irc::%extract-message-body
-                    conn t "hey clambda can you help?" "alice")))
-      (is string= "hey clambda can you help?" result))))
+  (let ((conn (make-irc-connection :nick "clawmacs")))
+    (let ((result (clawmacs/irc::%extract-message-body
+                    conn t "hey clawmacs can you help?" "alice")))
+      (is string= "hey clawmacs can you help?" result))))
 
 (define-test "trigger: channel message without nick does not trigger"
-  (let ((conn (make-irc-connection :nick "clambda")))
-    (let ((result (clambda/irc::%extract-message-body
+  (let ((conn (make-irc-connection :nick "clawmacs")))
+    (let ((result (clawmacs/irc::%extract-message-body
                     conn t "just chatting about stuff" "alice")))
       (is eq nil result))))
 
 (define-test "trigger: custom trigger prefix works"
-  (let ((conn (make-irc-connection :nick "clambda" :trigger-prefix "!")))
-    (let ((result (clambda/irc::%extract-message-body
+  (let ((conn (make-irc-connection :nick "clawmacs" :trigger-prefix "!")))
+    (let ((result (clawmacs/irc::%extract-message-body
                     conn t "!hello there" "alice")))
       (is string= "hello there" result))))
 
 (define-test "trigger: custom prefix, no match → nil"
-  (let ((conn (make-irc-connection :nick "clambda" :trigger-prefix "!")))
-    (let ((result (clambda/irc::%extract-message-body
+  (let ((conn (make-irc-connection :nick "clawmacs" :trigger-prefix "!")))
+    (let ((result (clawmacs/irc::%extract-message-body
                     conn t "regular message" "alice")))
       (is eq nil result))))
 
 (define-test "trigger: nick: is case-insensitive"
   (let ((conn (make-irc-connection :nick "ClAmBdA")))
-    (let ((result (clambda/irc::%extract-message-body
-                    conn t "clambda: hello" "alice")))
-      ;; "clambda:" is case-equal to "ClAmBdA:"? The effective trigger is "ClAmBdA:"
+    (let ((result (clawmacs/irc::%extract-message-body
+                    conn t "clawmacs: hello" "alice")))
+      ;; "clawmacs:" is case-equal to "ClAmBdA:"? The effective trigger is "ClAmBdA:"
       ;; Our check uses STRING-EQUAL so yes, it is case-insensitive.
       (is string= "hello" result))))
 
@@ -222,13 +222,13 @@
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
 (define-test "split-response: short text returned as single chunk"
-  (let ((chunks (clambda/irc::%split-response "Hello!" 400)))
+  (let ((chunks (clawmacs/irc::%split-response "Hello!" 400)))
     (is = 1 (length chunks))
     (is string= "Hello!" (first chunks))))
 
 (define-test "split-response: long text split into multiple chunks"
   (let* ((long-text (make-string 900 :initial-element #\a))
-         (chunks (clambda/irc::%split-response long-text 400)))
+         (chunks (clawmacs/irc::%split-response long-text 400)))
     (is = 3 (length chunks))
     ;; All chunks ≤ 400 chars
     (dolist (c chunks)
@@ -240,13 +240,13 @@
                              (make-string 399 :initial-element #\x)
                              " "
                              (make-string 10 :initial-element #\y)))
-         (chunks (clambda/irc::%split-response text 400)))
+         (chunks (clawmacs/irc::%split-response text 400)))
     (is = 2 (length chunks))
     ;; First chunk should end with "x...x" (399 chars → trimmed)
     (true (every (lambda (c) (char= c #\x)) (first chunks)))))
 
 (define-test "split-response: respects max-len parameter"
-  (let ((chunks (clambda/irc::%split-response "abcde" 3)))
+  (let ((chunks (clawmacs/irc::%split-response "abcde" 3)))
     (is = 2 (length chunks))))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -258,7 +258,7 @@
     (is string= "irc.libera.chat" (irc-server conn))
     (is = 6697 (irc-port conn))
     (is eq t (irc-tls-p conn))
-    (is string= "clambda" (irc-nick conn))
+    (is string= "clawmacs" (irc-nick conn))
     (is eq nil (irc-running-p conn))
     (is equal '() (irc-channels conn))
     (is eq nil (irc-allowed-users conn))))
@@ -289,8 +289,8 @@
 (define-test "allowed-users: nil means allow all (message body returned)"
   ;; When allowed-users is nil, all users are allowed
   ;; We test this via %extract-message-body for a DM
-  (let ((conn (make-irc-connection :nick "clambda" :allowed-users nil)))
-    (let ((result (clambda/irc::%extract-message-body
+  (let ((conn (make-irc-connection :nick "clawmacs" :allowed-users nil)))
+    (let ((result (clawmacs/irc::%extract-message-body
                     conn nil "hello" "anyone")))
       (is string= "hello" result))))
 
@@ -331,7 +331,7 @@
 (define-test "%effective-channel-allowed: no policy falls back to global"
   (let ((conn (make-irc-connection :allowed-users '("alice" "bob"))))
     ;; No channel-policies set → falls back to global allowed-users
-    (let ((result (clambda/irc::%effective-channel-allowed conn "#test")))
+    (let ((result (clawmacs/irc::%effective-channel-allowed conn "#test")))
       (is equal '("alice" "bob") result))))
 
 (define-test "%effective-channel-allowed: channel policy overrides global"
@@ -340,32 +340,32 @@
                 :channel-policies '(("#bots" :allowed-users nil)
                                     ("#priv" :allowed-users ("alice" "bob"))))))
     ;; #bots has explicit nil → all users allowed in #bots
-    (let ((bots-allowed (clambda/irc::%effective-channel-allowed conn "#bots")))
+    (let ((bots-allowed (clawmacs/irc::%effective-channel-allowed conn "#bots")))
       (is eq nil bots-allowed))   ; nil = open
     ;; #priv has explicit list
-    (let ((priv-allowed (clambda/irc::%effective-channel-allowed conn "#priv")))
+    (let ((priv-allowed (clawmacs/irc::%effective-channel-allowed conn "#priv")))
       (is equal '("alice" "bob") priv-allowed))
     ;; #other has no policy → falls back to global
-    (let ((other-allowed (clambda/irc::%effective-channel-allowed conn "#other")))
+    (let ((other-allowed (clawmacs/irc::%effective-channel-allowed conn "#other")))
       (is equal '("global-user") other-allowed))))
 
 (define-test "%effective-dm-allowed: nil dm-allowed-users falls back to global"
   (let ((conn (make-irc-connection :allowed-users '("alice"))))
-    (let ((result (clambda/irc::%effective-dm-allowed conn)))
+    (let ((result (clawmacs/irc::%effective-dm-allowed conn)))
       (is equal '("alice") result))))
 
 (define-test "%effective-dm-allowed: dm-allowed-users overrides global"
   (let ((conn (make-irc-connection
                 :allowed-users '("alice")
                 :dm-allowed-users '("bob" "carol"))))
-    (let ((result (clambda/irc::%effective-dm-allowed conn)))
+    (let ((result (clawmacs/irc::%effective-dm-allowed conn)))
       (is equal '("bob" "carol") result))))
 
 (define-test "%effective-channel-allowed: case-insensitive channel name match"
   (let ((conn (make-irc-connection
                 :channel-policies '(("#Bots" :allowed-users ("alice"))))))
     ;; Should match "#bots" (case-insensitive via string-equal)
-    (let ((result (clambda/irc::%effective-channel-allowed conn "#bots")))
+    (let ((result (clawmacs/irc::%effective-channel-allowed conn "#bots")))
       (is equal '("alice") result))))
 
 (define-test "make-irc-connection: channel-policies and dm-allowed-users stored"

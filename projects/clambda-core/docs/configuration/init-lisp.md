@@ -1,35 +1,35 @@
 # Configuration Guide — init.lisp
 
-Clambda is configured in **Common Lisp**, not JSON or YAML. Your configuration file
-is `~/.clambda/init.lisp` — a regular Lisp source file loaded at startup.
+Clawmacs is configured in **Common Lisp**, not JSON or YAML. Your configuration file
+is `~/.clawmacs/init.lisp` — a regular Lisp source file loaded at startup.
 
 This is the Emacs model: configuration *is* code. You have the full power of Common
 Lisp available: conditionals, loops, file I/O, string manipulation, anything.
 
 ## How it works
 
-1. You start Clambda (SBCL + quickload)
-2. `(clambda/config:load-user-config)` finds `~/.clambda/init.lisp`
-3. The file is loaded with `*package*` bound to `clambda-user`
-4. All public Clambda symbols are available without package qualification
+1. You start Clawmacs (SBCL + quickload)
+2. `(clawmacs/config:load-user-config)` finds `~/.clawmacs/init.lisp`
+3. The file is loaded with `*package*` bound to `clawmacs-user`
+4. All public Clawmacs symbols are available without package qualification
 5. After the file loads, `*after-init-hook*` fires (starts channels, etc.)
 
 ## File location
 
 ```
-~/.clambda/init.lisp          # default
-$CLAMBDA_HOME/init.lisp       # override with env var
+~/.clawmacs/init.lisp          # default
+$CLAWMACS_HOME/init.lisp       # override with env var
 ```
 
 Create the directory if needed:
 
 ```bash
-mkdir -p ~/.clambda
-cp /path/to/clambda/projects/clambda-core/example-init.lisp ~/.clambda/init.lisp
+mkdir -p ~/.clawmacs
+cp /path/to/clawmacs/projects/clawmacs-core/example-init.lisp ~/.clawmacs/init.lisp
 ```
 
 **Security:** `init.lisp` may contain API keys and bot tokens. Do **not** commit
-it to version control. The Clambda `.gitignore` excludes it by default.
+it to version control. The Clawmacs `.gitignore` excludes it by default.
 
 ---
 
@@ -38,7 +38,7 @@ it to version control. The Clambda `.gitignore` excludes it by default.
 Options are variables declared with `defoption`. Set them with `setf`:
 
 ```lisp
-(in-package #:clambda-user)
+(in-package #:clawmacs-user)
 
 ;; LLM model (used when no per-agent model is set)
 (setf *default-model* "google/gemma-3-4b")
@@ -53,7 +53,7 @@ Options are variables declared with `defoption`. Set them with `setf`:
 (setf *log-level* :info)
 
 ;; Message printed to stdout on startup
-(setf *startup-message* "Clambda ready. λ")
+(setf *startup-message* "Clawmacs ready. λ")
 ```
 
 See all options at the REPL:
@@ -77,7 +77,7 @@ option registry, and makes it visible to `describe-options`.
 
 ## § 2. LLM Clients
 
-Clambda uses `cl-llm` to talk to any OpenAI-compatible API.
+Clawmacs uses `cl-llm` to talk to any OpenAI-compatible API.
 
 ```lisp
 ;; LM Studio (local, free)
@@ -108,7 +108,7 @@ For Ollama, use the `/v1` OpenAI-compatibility endpoint:
 
 ## § 3. Channel Registration
 
-Channels are how Clambda receives and sends messages. Register them with
+Channels are how Clawmacs receives and sends messages. Register them with
 `register-channel`:
 
 ### Telegram
@@ -129,13 +129,13 @@ See [Telegram setup](../channels/telegram.html) for getting your bot token and u
   :server            "irc.libera.chat"
   :port              6697
   :tls               t
-  :nick              "my-clambda-bot"
-  :realname          "Clambda AI"
-  :channels          '("#clambda" "#lisp")
+  :nick              "my-clawmacs-bot"
+  :realname          "Clawmacs AI"
+  :channels          '("#clawmacs" "#lisp")
   :nickserv-password "YOUR_NICKSERV_PASSWORD"  ; omit if not registered
   :allowed-users     nil                        ; nil = all users; list nicks to restrict
   :dm-allowed-users  '("alice" "bob")           ; DM-specific allowlist
-  :channel-policies  '(("#clambda" :allowed-users nil)   ; all welcome
+  :channel-policies  '(("#clawmacs" :allowed-users nil)   ; all welcome
                        ("#priv"    :allowed-users ("alice"))))
 ```
 
@@ -145,7 +145,7 @@ See [IRC setup](../channels/irc.html) for complete IRC configuration.
 
 ```lisp
 (register-channel :browser :headless t)
-(add-hook '*after-init-hook* #'clambda/browser:browser-launch)
+(add-hook '*after-init-hook* #'clawmacs/browser:browser-launch)
 ```
 
 ### HTTP Management API
@@ -231,9 +231,9 @@ Tools defined with `define-user-tool` go into `*user-tool-registry*`. To include
 them when creating an agent manually:
 
 ```lisp
-(let ((registry (clambda:make-tool-registry)))
-  (clambda/builtins:register-builtins registry)
-  (clambda/config:merge-user-tools! registry)
+(let ((registry (clawmacs:make-tool-registry)))
+  (clawmacs/builtins:register-builtins registry)
+  (clawmacs/config:merge-user-tools! registry)
   ;; registry now has both built-in and user tools
   (make-agent :name "my-agent" :client client :tool-registry registry))
 ```
@@ -244,7 +244,7 @@ See [Custom Tools](../tools/custom-tools.html) for the full tool API.
 
 ## § 6. Hooks
 
-Hooks let you plug into Clambda's lifecycle without modifying core code.
+Hooks let you plug into Clawmacs's lifecycle without modifying core code.
 
 ```lisp
 ;;; After init: called after all of init.lisp loads
@@ -290,7 +290,7 @@ Remove a hook:
 (add-hook '*after-init-hook*
   (lambda ()
     (schedule-once "startup-ping" :after 10
-      (lambda () (format t "[cron] Clambda is up!~%"))
+      (lambda () (format t "[cron] Clawmacs is up!~%"))
       :description "Startup notification")))
 
 ;;; Cancel and inspect tasks
@@ -317,12 +317,12 @@ Because init.lisp is real Lisp, you can do anything:
     (t nil)))
 
 ;;; Read API keys from a separate secrets file
-(let ((secrets (merge-pathnames "secrets.lisp" *clambda-home*)))
+(let ((secrets (merge-pathnames "secrets.lisp" *clawmacs-home*)))
   (when (probe-file secrets)
     (load secrets)))
 
 ;;; Load additional config fragments
-(dolist (f (directory (merge-pathnames "conf.d/*.lisp" *clambda-home*)))
+(dolist (f (directory (merge-pathnames "conf.d/*.lisp" *clawmacs-home*)))
   (load f))
 ```
 
@@ -361,5 +361,5 @@ See [HTTP API Reference](../api/index.html) for full details.
 
 ## Complete Example
 
-See [`example-init.lisp`](../../projects/clambda-core/example-init.lisp) for a fully
+See [`example-init.lisp`](../../projects/clawmacs-core/example-init.lisp) for a fully
 commented example covering all features.

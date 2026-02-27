@@ -1,20 +1,20 @@
-;;;; src/memory.lisp — Workspace memory system for clambda-core
+;;;; src/memory.lisp — Workspace memory system for clawmacs-core
 ;;;;
 ;;;; Reads .md files from a workspace directory and provides them as
 ;;;; structured "memory entries" that can be injected into an agent's
 ;;;; system prompt.
 ;;;;
 ;;;; Usage:
-;;;;   (let ((mem (clambda/memory:load-workspace-memory "/path/to/workspace")))
-;;;;     (clambda/memory:memory-context-string mem))
+;;;;   (let ((mem (clawmacs/memory:load-workspace-memory "/path/to/workspace")))
+;;;;     (clawmacs/memory:memory-context-string mem))
 ;;;;
 ;;;; The context string can be prepended to an agent's system prompt:
-;;;;   (setf (clambda/agent:agent-system-prompt agent)
+;;;;   (setf (clawmacs/agent:agent-system-prompt agent)
 ;;;;         (concatenate 'string
-;;;;                      (clambda/memory:memory-context-string mem)
+;;;;                      (clawmacs/memory:memory-context-string mem)
 ;;;;                      base-prompt))
 
-(in-package #:clambda/memory)
+(in-package #:clawmacs/memory)
 
 ;;; ── Data types ───────────────────────────────────────────────────────────────
 

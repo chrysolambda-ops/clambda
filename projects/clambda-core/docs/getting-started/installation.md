@@ -12,7 +12,7 @@ Detailed installation instructions for all supported platforms.
 
 ### Optional LLM backends
 
-Clambda uses any OpenAI-compatible API:
+Clawmacs uses any OpenAI-compatible API:
 
 | Backend | URL format | Notes |
 |---------|-----------|-------|
@@ -103,7 +103,7 @@ sbcl --eval '(ql:system-apropos "dexador")' --quit
 
 ---
 
-## Install Clambda
+## Install Clawmacs
 
 ### From GitHub (recommended)
 
@@ -112,29 +112,29 @@ cd ~/projects          # or wherever you keep code
 git clone https://github.com/chrysolambda-ops/clambda.git
 ```
 
-This gives you four projects under `clambda/projects/`:
+This gives you four projects under `clawmacs/projects/`:
 
 ```
 projects/
   cl-llm/          # LLM API client
   cl-tui/          # terminal chat UI  
-  clambda-core/    # agent platform (main system)
-  clambda-gui/     # McCLIM GUI (optional)
+  clawmacs-core/    # agent platform (main system)
+  clawmacs-gui/     # McCLIM GUI (optional)
 ```
 
 ### Register with ASDF
 
-ASDF needs to know where to find the Clambda systems. Create a source registry config:
+ASDF needs to know where to find the Clawmacs systems. Create a source registry config:
 
 ```bash
 mkdir -p ~/.config/common-lisp/source-registry.conf.d/
 
-cat > ~/.config/common-lisp/source-registry.conf.d/clambda.conf << 'EOF'
-(:tree "/home/YOU/projects/clambda/projects/")
+cat > ~/.config/common-lisp/source-registry.conf.d/clawmacs.conf << 'EOF'
+(:tree "/home/YOU/projects/clawmacs/projects/")
 EOF
 ```
 
-Replace `/home/YOU/projects/clambda` with your actual path. The `:tree` directive
+Replace `/home/YOU/projects/clawmacs` with your actual path. The `:tree` directive
 makes ASDF recursively scan that directory for `.asd` files.
 
 ---
@@ -144,7 +144,7 @@ makes ASDF recursively scan that directory for `.asd` files.
 Quicklisp will download most dependencies automatically. To pre-load all of them:
 
 ```bash
-sbcl --eval '(ql:quickload :clambda-core)' --quit
+sbcl --eval '(ql:quickload :clawmacs-core)' --quit
 ```
 
 This will download and compile: `dexador`, `jzon`, `alexandria`, `cl-ppcre`,
@@ -171,10 +171,10 @@ export LD_LIBRARY_PATH="$HOME/.guix-profile/lib:$LD_LIBRARY_PATH"
 
 ## Browser Automation (optional)
 
-Browser tools require Node.js and Playwright. From the clambda-core directory:
+Browser tools require Node.js and Playwright. From the clawmacs-core directory:
 
 ```bash
-cd projects/clambda-core/browser/
+cd projects/clawmacs-core/browser/
 npm install                           # install playwright npm package
 npx playwright install chromium       # ~200MB Chromium download
 ```
@@ -183,7 +183,7 @@ Then in `init.lisp`:
 
 ```lisp
 (register-channel :browser :headless t)
-(add-hook '*after-init-hook* #'clambda/browser:browser-launch)
+(add-hook '*after-init-hook* #'clawmacs/browser:browser-launch)
 ```
 
 ---
@@ -193,8 +193,8 @@ Then in `init.lisp`:
 Run the test suite:
 
 ```bash
-sbcl --eval '(ql:quickload :clambda-core)' \
-     --eval '(asdf:test-system :clambda-core)' \
+sbcl --eval '(ql:quickload :clawmacs-core)' \
+     --eval '(asdf:test-system :clawmacs-core)' \
      --quit 2>&1 | tail -20
 ```
 
@@ -203,8 +203,8 @@ Expected: `235 tests, 0 failures`.
 Or a quick smoke test:
 
 ```bash
-sbcl --eval '(ql:quickload :clambda-core)' \
-     --eval '(format t "Clambda ~A loaded OK~%" (asdf:system-version (asdf:find-system :clambda-core)))' \
+sbcl --eval '(ql:quickload :clawmacs-core)' \
+     --eval '(format t "Clawmacs ~A loaded OK~%" (asdf:system-version (asdf:find-system :clawmacs-core)))' \
      --quit
 ```
 

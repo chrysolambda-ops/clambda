@@ -1,6 +1,6 @@
 ;;;; src/agent.lisp — Agent CLOS class
 
-(in-package #:clambda/agent)
+(in-package #:clawmacs/agent)
 
 ;;; ── Agent class ──────────────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@
     :initform nil
     :documentation "A CLAMBDA/TOOLS:TOOL-REGISTRY for this agent's tools."))
   (:documentation
-   "An agent is the primary actor in clambda-core.
+   "An agent is the primary actor in clawmacs-core.
 It has an identity (name, role), an LLM backend (client + model),
 a workspace directory, a system prompt, and a set of tools."))
 

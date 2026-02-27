@@ -24,9 +24,9 @@ Quicklisp must be installed (`~/quicklisp/setup.lisp`).
 ## Running Tests
 
 ```bash
-cd projects/clambda-core
+cd projects/clawmacs-core
 sbcl --load ~/quicklisp/setup.lisp \
-     --eval '(asdf:test-system :clambda-core/tests)' \
+     --eval '(asdf:test-system :clawmacs-core/tests)' \
      --quit
 ```
 
@@ -34,8 +34,8 @@ Targeted Layer 9 tests:
 
 ```bash
 sbcl --load ~/quicklisp/setup.lisp \
-     --eval '(asdf:load-system :clambda-core/tests)' \
-     --eval '(parachute:test :clambda-core/tests/superpowers)' \
+     --eval '(asdf:load-system :clawmacs-core/tests)' \
+     --eval '(parachute:test :clawmacs-core/tests/superpowers)' \
      --quit
 ```
 
@@ -43,10 +43,10 @@ sbcl --load ~/quicklisp/setup.lisp \
 
 1. Add package in `src/packages.lisp`.
 2. Implement module in `src/<channel>.lisp`.
-3. Specialize `clambda/config:register-channel` with `(defmethod ... ((type (eql :your-channel)) ...))`.
+3. Specialize `clawmacs/config:register-channel` with `(defmethod ... ((type (eql :your-channel)) ...))`.
 4. Export lifecycle functions (`start-...`, `stop-...`).
 5. Add tests under `t/test-<channel>.lisp`.
-6. Wire file into `clambda-core.asd` and test system.
+6. Wire file into `clawmacs-core.asd` and test system.
 
 ## Adding a Tool
 

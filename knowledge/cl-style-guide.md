@@ -1,6 +1,6 @@
 # CL Style Guide — Gensym Team
 
-> Distilled from 4 projects: cl-llm, cl-tui, clambda-core, clambda-gui.
+> Distilled from 4 projects: cl-llm, cl-tui, clawmacs-core, clawmacs-gui.
 > These are our conventions, not universal law — but follow them unless you
 > have a strong reason not to.
 
@@ -145,7 +145,7 @@ When you want struct performance but controlled construction:
 **Warning:** The top-level convenience package may not re-export everything.
 When you need the full API of a sub-package, import from it directly:
 ```lisp
-(:import-from #:clambda/loop #:*on-stream-delta*)  ; NOT via #:clambda
+(:import-from #:clawmacs/loop #:*on-stream-delta*)  ; NOT via #:clawmacs
 ```
 
 ---

@@ -1,4 +1,4 @@
-;;;; src/irc.lisp — IRC client channel for Clambda (Layer 6c)
+;;;; src/irc.lisp — IRC client channel for Clawmacs (Layer 6c)
 ;;;;
 ;;;; Raw IRC protocol implementation. No external IRC library — raw sockets only.
 ;;;; Uses USOCKET for TCP, CL+SSL for TLS.
@@ -17,22 +17,22 @@
 ;;;; Live testing setup:
 ;;;;   1. Register a bot nick on irc.libera.chat via the web:
 ;;;;      https://libera.chat/guides/registration
-;;;;   2. Start Clambda IRC channel:
-;;;;      (clambda/config:load-user-config) ; if using init.lisp
+;;;;   2. Start Clawmacs IRC channel:
+;;;;      (clawmacs/config:load-user-config) ; if using init.lisp
 ;;;;      ;; OR directly:
 ;;;;      (defparameter *conn*
-;;;;        (clambda/irc:start-irc
+;;;;        (clawmacs/irc:start-irc
 ;;;;          :server "irc.libera.chat" :port 6697 :tls t
-;;;;          :nick "clambda-bot"
+;;;;          :nick "clawmacs-bot"
 ;;;;          :channels '("#test-channel")))
-;;;;   3. In another IRC client: join #test-channel and say "clambda-bot: hello"
+;;;;   3. In another IRC client: join #test-channel and say "clawmacs-bot: hello"
 ;;;;   4. Monitor *standard-output* for connection/routing status.
-;;;;   5. To stop: (clambda/irc:stop-irc)
+;;;;   5. To stop: (clawmacs/irc:stop-irc)
 ;;;;
 ;;;; IRC protocol reference: RFC 2812 (https://tools.ietf.org/html/rfc2812)
 ;;;; This is a simplified subset — no DCC, no CTCP beyond VERSION, no channel ops.
 
-(in-package #:clambda/irc)
+(in-package #:clawmacs/irc)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 1. Globals
@@ -83,15 +83,15 @@ Slots:
     reconnect-delay — integer seconds to wait before reconnecting (doubles on failure)
 
   ROUTING:
-    agent           — clambda/agent:agent instance, a name string/keyword, or NIL
-    sessions        — hash-table: target-string → clambda/session:session
+    agent           — clawmacs/agent:agent instance, a name string/keyword, or NIL
+    sessions        — hash-table: target-string → clawmacs/session:session
     sessions-lock   — mutex protecting sessions table"
   ;; Config
   (server           "irc.libera.chat" :type string)
   (port             6697 :type integer)
   (tls-p            t)
-  (nick             "clambda" :type string)
-  (realname         "Clambda IRC Bot" :type string)
+  (nick             "clawmacs" :type string)
+  (realname         "Clawmacs IRC Bot" :type string)
   (channels         '() :type list)
   (nickserv-password nil)
   (allowed-users    nil)
@@ -199,11 +199,11 @@ Returns NIL if PREFIX is NIL or doesn't contain '!' (i.e., it's a server name)."
     (irc-build-line \"PONG\" nil \"irc.libera.chat\")
     => \"PONG :irc.libera.chat\"
 
-    (irc-build-line \"PRIVMSG\" '(\"#clambda\") \"Hello, world!\")
-    => \"PRIVMSG #clambda :Hello, world!\"
+    (irc-build-line \"PRIVMSG\" '(\"#clawmacs\") \"Hello, world!\")
+    => \"PRIVMSG #clawmacs :Hello, world!\"
 
-    (irc-build-line \"JOIN\" '(\"#clambda\"))
-    => \"JOIN #clambda\"
+    (irc-build-line \"JOIN\" '(\"#clawmacs\"))
+    => \"JOIN #clawmacs\"
 
     (irc-build-line \"NICK\" '(\"mynick\"))
     => \"NICK mynick\""
@@ -293,7 +293,7 @@ Uses flood-rate-limited queue."
       (irc-enqueue-raw conn (irc-build-line "PRIVMSG" (list target) chunk)))))
 
 (defun irc-join (channel &optional (conn *irc-connection*))
-  "Join CHANNEL (e.g. \"#clambda\"). Queued via flood protection."
+  "Join CHANNEL (e.g. \"#clawmacs\"). Queued via flood protection."
   (when conn
     (irc-enqueue-raw conn (irc-build-line "JOIN" (list channel)))))
 
@@ -349,7 +349,7 @@ Sets irc-socket and irc-stream slots. On failure, leaves them NIL."
       ;; Try to send a polite QUIT
       (handler-case
           (progn
-            (%write-raw-line stream (irc-build-line "QUIT" nil "Clambda signing off"))
+            (%write-raw-line stream (irc-build-line "QUIT" nil "Clawmacs signing off"))
             (close stream))
         (error () nil))
       (setf (irc-stream conn) nil)))
@@ -367,11 +367,11 @@ Sets irc-socket and irc-stream slots. On failure, leaves them NIL."
   (let ((client (cl-llm:make-client
                   :base-url "http://localhost:1234/v1"
                   :api-key  "lm-studio"
-                  :model    clambda/config:*default-model*)))
-    (clambda/agent:make-agent
+                  :model    clawmacs/config:*default-model*)))
+    (clawmacs/agent:make-agent
       :name          "irc-bot"
       :client        client
-      :tool-registry (clambda/builtins:make-builtin-registry)
+      :tool-registry (clawmacs/builtins:make-builtin-registry)
       :system-prompt *irc-default-system-prompt*)))
 
 (defun %resolve-agent (conn)
@@ -384,25 +384,25 @@ Sets irc-socket and irc-stream slots. On failure, leaves them NIL."
   (let ((a (irc-agent conn)))
     (cond
       ;; Already a live agent
-      ((typep a 'clambda/agent:agent) a)
+      ((typep a 'clawmacs/agent:agent) a)
 
       ;; Named agent — look up in registry
       ((or (stringp a) (keywordp a))
        (let* ((name  (if (keywordp a) (string-downcase (symbol-name a)) a))
-              (entry (clambda/registry:find-agent name)))
+              (entry (clawmacs/registry:find-agent name)))
          (if entry
              (etypecase entry
-               (clambda/agent:agent entry)
-               (clambda/registry:agent-spec (clambda/registry:instantiate-agent-spec entry)))
+               (clawmacs/agent:agent entry)
+               (clawmacs/registry:agent-spec (clawmacs/registry:instantiate-agent-spec entry)))
              (%make-fallback-agent))))
 
       ;; NIL — try "default" in registry, then fallback
       (t
-       (let ((entry (clambda/registry:find-agent "default")))
+       (let ((entry (clawmacs/registry:find-agent "default")))
          (if entry
              (etypecase entry
-               (clambda/agent:agent entry)
-               (clambda/registry:agent-spec (clambda/registry:instantiate-agent-spec entry)))
+               (clawmacs/agent:agent entry)
+               (clawmacs/registry:agent-spec (clawmacs/registry:instantiate-agent-spec entry)))
              (%make-fallback-agent)))))))
 
 (defun %find-or-create-session (conn target)
@@ -411,7 +411,7 @@ Sessions are per-target — one conversation thread per channel/DM."
   (bt:with-lock-held ((irc-sessions-lock conn))
     (or (gethash target (irc-sessions conn))
         (let* ((agent (%resolve-agent conn))
-               (sess  (clambda/session:make-session :agent agent)))
+               (sess  (clawmacs/session:make-session :agent agent)))
           (setf (gethash target (irc-sessions conn)) sess)
           sess))))
 
@@ -466,7 +466,7 @@ total; 400 chars for message text is conservative and safe."
   (let ((ctrl-a (string (code-char 1))))
     (irc-enqueue-raw conn
       (irc-build-line "NOTICE" (list sender-nick)
-                      (format nil "~AVERSION Clambda IRC Bot 0.1 (Common Lisp / SBCL)~A"
+                      (format nil "~AVERSION Clawmacs IRC Bot 0.1 (Common Lisp / SBCL)~A"
                               ctrl-a ctrl-a)))))
 
 (defun %extract-message-body (conn is-channel text sender-nick)
@@ -499,9 +499,9 @@ SENDER-NICK is included for context but responses go to REPLY-TARGET."
   (declare (ignore sender-nick))
   (handler-case
       (let* ((session  (%find-or-create-session conn reply-target))
-             (response (clambda/loop:run-agent
+             (response (clawmacs/loop:run-agent
                          session message
-                         :options (clambda/loop:make-loop-options
+                         :options (clawmacs/loop:make-loop-options
                                     :max-turns 5
                                     :stream nil))))
         (when (and response (> (length response) 0))
@@ -660,7 +660,7 @@ Implements exponential backoff reconnection (max 300 seconds)."
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
 (defun start-irc (&key server (port 6697) (tls t)
-                       nick (realname "Clambda IRC Bot")
+                       nick (realname "Clawmacs IRC Bot")
                        channels nickserv-password
                        allowed-users trigger-prefix
                        agent channel-policies dm-allowed-users
@@ -674,9 +674,9 @@ Implements exponential backoff reconnection (max 300 seconds)."
     :server            — hostname (default: \"irc.libera.chat\")
     :port              — port (default: 6697)
     :tls               — use TLS (default: T)
-    :nick              — bot nick (default: \"clambda\")
-    :realname          — IRC real name (default: \"Clambda IRC Bot\")
-    :channels          — list of channel strings to auto-join (e.g. '(\"#clambda\"))
+    :nick              — bot nick (default: \"clawmacs\")
+    :realname          — IRC real name (default: \"Clawmacs IRC Bot\")
+    :channels          — list of channel strings to auto-join (e.g. '(\"#clawmacs\"))
     :nickserv-password — optional NickServ password string
     :allowed-users     — optional list of nicks that may use the bot (nil = all)
     :trigger-prefix    — optional trigger prefix (nil = use '<nick>:')
@@ -766,11 +766,11 @@ Implements exponential backoff reconnection (max 300 seconds)."
 ;;;; § 11. register-channel :irc
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
-(defmethod clambda/config:register-channel
+(defmethod clawmacs/config:register-channel
     ((type (eql :irc))
      &rest args
      &key (server "irc.libera.chat") (port 6697) (tls t)
-          (nick "clambda") (realname "Clambda IRC Bot")
+          (nick "clawmacs") (realname "Clawmacs IRC Bot")
           channels nickserv-password allowed-users trigger-prefix
           agent channel-policies dm-allowed-users
      &allow-other-keys)
@@ -782,8 +782,8 @@ Example in init.lisp:
     :server \"irc.libera.chat\"
     :port 6697
     :tls t
-    :nick \"clambda\"
-    :channels '(\"#clambda\" \"#lisp\")
+    :nick \"clawmacs\"
+    :channels '(\"#clawmacs\" \"#lisp\")
     :nickserv-password \"s3cr3t\"
     :allowed-users '(\"alice\" \"bob\")
     :channel-policies '((\"#bots\" :allowed-users nil)
@@ -791,7 +791,7 @@ Example in init.lisp:
     :dm-allowed-users '(\"alice\"))
 
   ;; Then connect:
-  (add-hook '*after-init-hook* #'clambda/irc:start-irc)"
+  (add-hook '*after-init-hook* #'clawmacs/irc:start-irc)"
   (declare (ignore args))
   (let ((conn (make-irc-connection
                 :server            server

@@ -1,6 +1,6 @@
 ;;;; src/tools.lisp — Tool registry, define-tool macro, dispatch
 
-(in-package #:clambda/tools)
+(in-package #:clawmacs/tools)
 
 ;;; ── Tool result ──────────────────────────────────────────────────────────────
 
@@ -153,14 +153,14 @@ slot set to ARGS, so handlers and SLIME users can inspect the failing call."
               (t (tool-result-ok (format nil "~a" raw-result)))))
         (error (e)
           ;; Re-signal as tool-execution-error (with input attached)
-          (error 'clambda/conditions:tool-execution-error
+          (error 'clawmacs/conditions:tool-execution-error
                  :tool-name name
                  :cause e
                  :input args)))
-    (clambda/conditions:retry-with-fixed-input (new-args)
+    (clawmacs/conditions:retry-with-fixed-input (new-args)
       :report "Retry this tool call with fixed arguments (LLM-repaired or human-provided)."
       (%try-tool-handler handler new-args name))
-    (clambda/conditions:skip-tool-call ()
+    (clawmacs/conditions:skip-tool-call ()
       :report "Skip this tool call and return an error result."
       (tool-result-error (format nil "Tool execution skipped: ~s" name)))))
 
@@ -181,8 +181,8 @@ invokes this restart to retry without unwinding the stack."
 
     (unless entry
       (restart-case
-          (error 'clambda/conditions:tool-not-found :name name)
-        (clambda/conditions:skip-tool-call ()
+          (error 'clawmacs/conditions:tool-not-found :name name)
+        (clawmacs/conditions:skip-tool-call ()
           :report "Skip this tool call and return an error result."
           (return-from dispatch-tool-call
             (tool-result-error (format nil "Tool not found: ~s" name))))))

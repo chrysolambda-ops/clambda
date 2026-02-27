@@ -1,22 +1,22 @@
-;;;; t/test-browser.lisp — Tests for clambda/browser (Layer 7)
+;;;; t/test-browser.lisp — Tests for clawmacs/browser (Layer 7)
 ;;;;
 ;;;; Tests are split into two groups:
 ;;;;   1. Unit tests — no browser/subprocess required (config, registry, protocol)
 ;;;;   2. Integration tests — require playwright bridge + chromium
 ;;;;      (skipped automatically if bridge script is missing)
 
-(in-package #:clambda-core/tests/browser)
+(in-package #:clawmacs-core/tests/browser)
 
 ;;; ── Config tests ─────────────────────────────────────────────────────────────
 
 (define-test "config: *browser-headless* defaults to T"
-  (is eq t clambda/browser:*browser-headless*))
+  (is eq t clawmacs/browser:*browser-headless*))
 
 (define-test "config: *browser-playwright-path* defaults to node"
-  (is string= "node" clambda/browser:*browser-playwright-path*))
+  (is string= "node" clawmacs/browser:*browser-playwright-path*))
 
 (define-test "config: *browser-bridge-script* is a string"
-  (is eq t (stringp clambda/browser:*browser-bridge-script*)))
+  (is eq t (stringp clawmacs/browser:*browser-bridge-script*)))
 
 ;;; ── Lifecycle: not running ────────────────────────────────────────────────────
 
@@ -31,43 +31,43 @@
 
 (define-test "registry: make-browser-registry returns a tool-registry"
   (let ((reg (make-browser-registry)))
-    (is eq t (typep reg 'clambda/tools:tool-registry))))
+    (is eq t (typep reg 'clawmacs/tools:tool-registry))))
 
 (define-test "registry: browser registry has 6 tools"
   (let ((reg (make-browser-registry)))
-    (is = 6 (length (clambda/tools:list-tools reg)))))
+    (is = 6 (length (clawmacs/tools:list-tools reg)))))
 
 (define-test "registry: browser_navigate tool is registered"
   (let ((reg (make-browser-registry)))
-    (true (clambda/tools:find-tool reg "browser_navigate"))))
+    (true (clawmacs/tools:find-tool reg "browser_navigate"))))
 
 (define-test "registry: browser_snapshot tool is registered"
   (let ((reg (make-browser-registry)))
-    (true (clambda/tools:find-tool reg "browser_snapshot"))))
+    (true (clawmacs/tools:find-tool reg "browser_snapshot"))))
 
 (define-test "registry: browser_screenshot tool is registered"
   (let ((reg (make-browser-registry)))
-    (true (clambda/tools:find-tool reg "browser_screenshot"))))
+    (true (clawmacs/tools:find-tool reg "browser_screenshot"))))
 
 (define-test "registry: browser_click tool is registered"
   (let ((reg (make-browser-registry)))
-    (true (clambda/tools:find-tool reg "browser_click"))))
+    (true (clawmacs/tools:find-tool reg "browser_click"))))
 
 (define-test "registry: browser_type tool is registered"
   (let ((reg (make-browser-registry)))
-    (true (clambda/tools:find-tool reg "browser_type"))))
+    (true (clawmacs/tools:find-tool reg "browser_type"))))
 
 (define-test "registry: browser_evaluate tool is registered"
   (let ((reg (make-browser-registry)))
-    (true (clambda/tools:find-tool reg "browser_evaluate"))))
+    (true (clawmacs/tools:find-tool reg "browser_evaluate"))))
 
 (define-test "registry: register-browser-tools adds to existing registry"
-  (let* ((reg (clambda/tools:make-tool-registry))
+  (let* ((reg (clawmacs/tools:make-tool-registry))
          (result (register-browser-tools reg)))
     ;; Returns the same registry
     (is eq reg result)
     ;; Has 6 tools
-    (is = 6 (length (clambda/tools:list-tools reg)))))
+    (is = 6 (length (clawmacs/tools:list-tools reg)))))
 
 ;;; ── Protocol helpers (unit test via mock process) ────────────────────────────
 ;;;
@@ -131,7 +131,7 @@ rl.on('line', (line) => {
 
 (defun bridge-available-p ()
   "Return T if the playwright bridge script exists and node is available."
-  (and (probe-file clambda/browser:*browser-bridge-script*)
+  (and (probe-file clawmacs/browser:*browser-bridge-script*)
        (zerop (nth-value 2 (uiop:run-program '("node" "--version")
                                              :ignore-error-status t)))))
 
@@ -143,14 +143,14 @@ rl.on('line', (line) => {
     (is eq t (browser-launch :headless t))
     (true (browser-running-p))
     ;; Navigate to a data: URL (no network required)
-    (finish (browser-navigate "data:text/html,<html><body><h1>Hello Clambda</h1></body></html>"))
+    (finish (browser-navigate "data:text/html,<html><body><h1>Hello Clawmacs</h1></body></html>"))
     ;; Snapshot — should return the accessibility tree as a string
     (let ((tree (browser-snapshot)))
       (is eq t (stringp tree))
       (true (> (length tree) 0)))
     ;; Evaluate JS — returns a JS result
     (let ((result (browser-evaluate "document.querySelector('h1').textContent")))
-      (is string= "Hello Clambda" result))
+      (is string= "Hello Clawmacs" result))
     ;; Screenshot (base64, no path)
     (let ((img (browser-screenshot)))
       (is eq t (stringp img))

@@ -4,14 +4,14 @@ set -euo pipefail
 COMMAND="${1:-start}"
 
 if ! command -v sbcl >/dev/null 2>&1; then
-  echo "clambda: sbcl not found in PATH" >&2
+  echo "clawmacs: sbcl not found in PATH" >&2
   exit 1
 fi
 
 if [[ -f "$HOME/quicklisp/setup.lisp" ]]; then
   QUICKLISP_SETUP="$HOME/quicklisp/setup.lisp"
 else
-  echo "clambda: Quicklisp not found at $HOME/quicklisp/setup.lisp" >&2
+  echo "clawmacs: Quicklisp not found at $HOME/quicklisp/setup.lisp" >&2
   exit 1
 fi
 
@@ -20,21 +20,21 @@ export LD_LIBRARY_PATH="/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
 case "$COMMAND" in
   start)
     exec sbcl --load "$QUICKLISP_SETUP" \
-      --eval '(asdf:load-system :clambda-core)' \
+      --eval '(asdf:load-system :clawmacs-core)' \
       --eval '(asdf:load-system :cl-tui)' \
-      --eval '(ignore-errors (clambda:load-user-config))' \
-      --eval '(let ((model (or (and (boundp (quote clambda:*default-model*)) clambda:*default-model*) "google/gemma-3-4b"))) (cl-tui:run :model model))'
+      --eval '(ignore-errors (clawmacs:load-user-config))' \
+      --eval '(let ((model (or (and (boundp (quote clawmacs:*default-model*)) clawmacs:*default-model*) "google/gemma-3-4b"))) (cl-tui:run :model model))'
     ;;
 
   repl)
     exec sbcl --load "$QUICKLISP_SETUP" \
-      --eval '(asdf:load-system :clambda-core)' \
-      --eval '(ignore-errors (clambda:load-user-config))'
+      --eval '(asdf:load-system :clawmacs-core)' \
+      --eval '(ignore-errors (clawmacs:load-user-config))'
     ;;
 
   test)
     exec sbcl --load "$QUICKLISP_SETUP" \
-      --eval '(asdf:test-system :clambda-core/tests)' \
+      --eval '(asdf:test-system :clawmacs-core/tests)' \
       --quit
     ;;
 

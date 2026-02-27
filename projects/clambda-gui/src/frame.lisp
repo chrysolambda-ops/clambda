@@ -1,10 +1,10 @@
-;;;; src/frame.lisp — Main McCLIM application frame for clambda-gui
+;;;; src/frame.lisp — Main McCLIM application frame for clawmacs-gui
 
-(in-package #:clambda-gui)
+(in-package #:clawmacs-gui)
 
 ;;; ── Application frame ────────────────────────────────────────────────────────
 
-(clim:define-application-frame clambda-gui-frame ()
+(clim:define-application-frame clawmacs-gui-frame ()
   ;;
   ;; Frame slots
   ;;
@@ -12,7 +12,7 @@
     :initarg  :session
     :accessor frame-session
     :initform nil
-    :documentation "The active clambda SESSION.")
+    :documentation "The active clawmacs SESSION.")
 
    (chat-log
     :accessor frame-chat-log
@@ -104,7 +104,7 @@
           user-input))
       status-bar)))
 
-  (:command-table (clambda-gui-commands
+  (:command-table (clawmacs-gui-commands
                    :inherit-from (clim:global-command-table)))
   (:menu-bar nil))
 

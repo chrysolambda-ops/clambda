@@ -1,12 +1,12 @@
-;;;; src/packages.lisp — Package definitions for clambda-core
+;;;; src/packages.lisp — Package definitions for clawmacs-core
 
 ;;; ── Conditions ───────────────────────────────────────────────────────────────
 
-(defpackage #:clambda/conditions
+(defpackage #:clawmacs/conditions
   (:use #:cl)
   (:export
    ;; Base
-   #:clambda-error
+   #:clawmacs-error
    ;; Agent errors
    #:agent-error
    #:agent-error-agent
@@ -38,10 +38,10 @@
 
 ;;; ── Agent ────────────────────────────────────────────────────────────────────
 
-(defpackage #:clambda/agent
+(defpackage #:clawmacs/agent
   (:use #:cl)
-  (:import-from #:clambda/conditions
-                #:clambda-error #:agent-error)
+  (:import-from #:clawmacs/conditions
+                #:clawmacs-error #:agent-error)
   (:export
    ;; CLOS class
    #:agent
@@ -60,10 +60,10 @@
 
 ;;; ── Session ──────────────────────────────────────────────────────────────────
 
-(defpackage #:clambda/session
+(defpackage #:clawmacs/session
   (:use #:cl)
-  (:import-from #:clambda/agent #:agent)
-  (:import-from #:clambda/conditions
+  (:import-from #:clawmacs/agent #:agent)
+  (:import-from #:clawmacs/conditions
                 #:session-error)
   (:export
    ;; CLOS class
@@ -88,14 +88,14 @@
 
 ;;; ── Tools ────────────────────────────────────────────────────────────────────
 
-(defpackage #:clambda/tools
+(defpackage #:clawmacs/tools
   (:use #:cl)
   (:import-from #:cl-llm/protocol
                 #:tool-definition #:make-tool-definition
                 #:tool-call #:tool-call-id
                 #:tool-call-function-name
                 #:tool-call-function-arguments)
-  (:import-from #:clambda/conditions
+  (:import-from #:clawmacs/conditions
                 #:tool-not-found #:tool-execution-error
                 #:retry-with-fixed-input
                 #:skip-tool-call #:retry-tool-call)
@@ -124,9 +124,9 @@
 
 ;;; ── Built-in tools ───────────────────────────────────────────────────────────
 
-(defpackage #:clambda/builtins
+(defpackage #:clawmacs/builtins
   (:use #:cl)
-  (:import-from #:clambda/tools
+  (:import-from #:clawmacs/tools
                 #:tool-registry #:define-tool)
   (:export
    #:register-builtin-tools
@@ -134,7 +134,7 @@
 
 ;;; ── Structured logging ───────────────────────────────────────────────────────
 
-(defpackage #:clambda/logging
+(defpackage #:clawmacs/logging
   (:use #:cl)
   (:export
    ;; Configuration
@@ -151,7 +151,7 @@
 
 ;;; ── Memory system ────────────────────────────────────────────────────────────
 
-(defpackage #:clambda/memory
+(defpackage #:clawmacs/memory
   (:use #:cl)
   (:export
    ;; Data types
@@ -170,29 +170,29 @@
 
 ;;; ── Agent loop ───────────────────────────────────────────────────────────────
 
-(defpackage #:clambda/loop
+(defpackage #:clawmacs/loop
   (:use #:cl)
-  (:import-from #:clambda/logging
+  (:import-from #:clawmacs/logging
                 #:log-llm-request #:log-tool-call #:log-tool-result
                 #:log-error-event)
-  (:import-from #:clambda/agent
+  (:import-from #:clawmacs/agent
                 #:agent
                 #:agent-name
                 #:agent-client
                 #:agent-model
                 #:agent-tool-registry
                 #:agent-effective-system-prompt)
-  (:import-from #:clambda/session
+  (:import-from #:clawmacs/session
                 #:session
                 #:session-agent
                 #:session-messages
                 #:session-add-message)
-  (:import-from #:clambda/tools
+  (:import-from #:clawmacs/tools
                 #:tool-registry
                 #:tool-definitions-for-llm
                 #:dispatch-tool-call
                 #:format-tool-result)
-  (:import-from #:clambda/conditions
+  (:import-from #:clawmacs/conditions
                 #:agent-loop-error #:agent-turn-error #:abort-agent-loop
                 #:budget-exceeded
                 #:tool-execution-error
@@ -220,9 +220,9 @@
 
 ;;; ── Agent Registry ───────────────────────────────────────────────────────────
 
-(defpackage #:clambda/registry
+(defpackage #:clawmacs/registry
   (:use #:cl)
-  (:import-from #:clambda/agent
+  (:import-from #:clawmacs/agent
                 #:agent #:make-agent
                 #:agent-name #:agent-role #:agent-model
                 #:agent-workspace-path #:agent-system-prompt
@@ -254,18 +254,18 @@
 
 ;;; ── Sub-agent Spawning ───────────────────────────────────────────────────────
 
-(defpackage #:clambda/subagents
+(defpackage #:clawmacs/subagents
   (:use #:cl)
-  (:import-from #:clambda/agent
+  (:import-from #:clawmacs/agent
                 #:agent #:make-agent
                 #:agent-name #:agent-client #:agent-model
                 #:agent-tool-registry)
-  (:import-from #:clambda/session
+  (:import-from #:clawmacs/session
                 #:session #:make-session
                 #:session-id)
-  (:import-from #:clambda/loop
+  (:import-from #:clawmacs/loop
                 #:run-agent #:make-loop-options)
-  (:import-from #:clambda/registry
+  (:import-from #:clawmacs/registry
                 #:agent-spec #:instantiate-agent-spec)
   (:export
    ;; Handle struct
@@ -283,7 +283,7 @@
 
 ;;; ── Channel Protocol ─────────────────────────────────────────────────────────
 
-(defpackage #:clambda/channels
+(defpackage #:clawmacs/channels
   (:use #:cl)
   (:export
    ;; Abstract class
@@ -311,7 +311,7 @@
 
 ;;; ── Cron / Scheduled Task Scheduler (Layer 8a) ──────────────────────────────
 
-(defpackage #:clambda/cron
+(defpackage #:clawmacs/cron
   (:use #:cl)
   (:export
    ;; Task struct + constructor
@@ -346,25 +346,25 @@
 
 ;;; ── HTTP API Server ──────────────────────────────────────────────────────────
 
-(defpackage #:clambda/http-server
+(defpackage #:clawmacs/http-server
   (:use #:cl)
-  (:import-from #:clambda/logging
+  (:import-from #:clawmacs/logging
                 #:log-event #:log-error-event #:*log-file* #:*log-enabled*)
-  (:import-from #:clambda/session
+  (:import-from #:clawmacs/session
                 #:session #:make-session #:session-id #:session-messages
                 #:session-total-tokens)
-  (:import-from #:clambda/agent
+  (:import-from #:clawmacs/agent
                 #:agent #:agent-name #:agent-role #:agent-model)
-  (:import-from #:clambda/registry
+  (:import-from #:clawmacs/registry
                 #:*agent-registry* #:find-agent #:list-agents
                 #:instantiate-agent-spec #:agent-spec
                 #:agent-spec-name #:agent-spec-role #:agent-spec-model)
-  (:import-from #:clambda/loop
+  (:import-from #:clawmacs/loop
                 #:run-agent #:make-loop-options)
-  (:import-from #:clambda/channels
+  (:import-from #:clawmacs/channels
                 #:queue-channel #:make-queue-channel
                 #:channel-send #:channel-receive #:channel-poll)
-  (:import-from #:clambda/cron
+  (:import-from #:clawmacs/cron
                 #:list-tasks #:task-info)
   (:import-from #:cl-llm/protocol
                 #:message-role #:message-content)
@@ -391,18 +391,18 @@
 
 ;;; ── Config system ────────────────────────────────────────────────────────────
 ;;;
-;;; Emacs-style configuration: *clambda-home*, load-user-config, defoption,
+;;; Emacs-style configuration: *clawmacs-home*, load-user-config, defoption,
 ;;; hook system, register-channel generic.
 
-(defpackage #:clambda/config
+(defpackage #:clawmacs/config
   (:use #:cl)
-  (:import-from #:clambda/tools
+  (:import-from #:clawmacs/tools
                 #:tool-registry #:make-tool-registry
                 #:register-tool!)
   (:export
    ;; Config directory
-   #:*clambda-home*
-   #:clambda-home
+   #:*clawmacs-home*
+   #:clawmacs-home
    ;; Loading
    #:load-user-config
    #:user-config-loaded-p
@@ -438,17 +438,17 @@
 ;;; ── Telegram Channel ─────────────────────────────────────────────────────────
 ;;;
 ;;; Telegram Bot API channel — long-polling, background thread, per-chat sessions.
-;;; Specialises REGISTER-CHANNEL :TELEGRAM from clambda/config.
+;;; Specialises REGISTER-CHANNEL :TELEGRAM from clawmacs/config.
 ;;; Loaded after config so the register-channel generic is already defined.
 
-(defpackage #:clambda/telegram
+(defpackage #:clawmacs/telegram
   (:use #:cl)
   ;; Only import what we need unqualified; everything else is package-qualified.
-  (:import-from #:clambda/config
+  (:import-from #:clawmacs/config
                 #:register-channel
                 #:*registered-channels*)
   ;; Import *on-stream-delta* for the streaming callback binding.
-  (:import-from #:clambda/loop
+  (:import-from #:clawmacs/loop
                 #:*on-stream-delta*)
   (:export
    ;; Channel struct
@@ -490,23 +490,23 @@
 ;;; ── IRC Client Channel ───────────────────────────────────────────────────────
 ;;;
 ;;; Raw IRC protocol over TCP/TLS (usocket + cl+ssl). No external IRC library.
-;;; register-channel :irc specialisation. Loaded after clambda/config so it can
+;;; register-channel :irc specialisation. Loaded after clawmacs/config so it can
 ;;; specialize register-channel.
 
-(defpackage #:clambda/irc
+(defpackage #:clawmacs/irc
   (:use #:cl)
-  (:import-from #:clambda/config
+  (:import-from #:clawmacs/config
                 #:register-channel
                 #:*default-model*)
-  (:import-from #:clambda/agent
+  (:import-from #:clawmacs/agent
                 #:agent #:make-agent)
-  (:import-from #:clambda/session
+  (:import-from #:clawmacs/session
                 #:session #:make-session)
-  (:import-from #:clambda/loop
+  (:import-from #:clawmacs/loop
                 #:run-agent #:make-loop-options)
-  (:import-from #:clambda/registry
+  (:import-from #:clawmacs/registry
                 #:find-agent #:instantiate-agent-spec #:agent-spec)
-  (:import-from #:clambda/builtins
+  (:import-from #:clawmacs/builtins
                 #:make-builtin-registry)
   (:export
    ;; Global variables
@@ -558,11 +558,11 @@
 
 ;;; ── Browser control (Layer 7) ────────────────────────────────────────────────
 
-(defpackage #:clambda/browser
+(defpackage #:clawmacs/browser
   (:use #:cl)
-  (:import-from #:clambda/config
+  (:import-from #:clawmacs/config
                 #:defoption #:register-channel)
-  (:import-from #:clambda/tools
+  (:import-from #:clawmacs/tools
                 #:register-tool! #:schema-plist->ht #:make-tool-registry)
   (:import-from #:bordeaux-threads
                 #:make-lock #:with-lock-held)
@@ -590,11 +590,11 @@
 ;;; ── SWANK/SLIME Server (Layer 9 / Lisp Superpowers P0) ──────────────────────
 ;;;
 ;;; Built-in SWANK server for live SLIME/Sly inspection, hot-reload, debugging.
-;;; Loaded after clambda/browser. Requires the "swank" ASDF system.
+;;; Loaded after clawmacs/browser. Requires the "swank" ASDF system.
 
-(defpackage #:clambda/swank
+(defpackage #:clawmacs/swank
   (:use #:cl)
-  (:import-from #:clambda/config
+  (:import-from #:clawmacs/config
                 #:defoption)
   (:export
    ;; Config option
@@ -606,35 +606,35 @@
 
 ;;; ── Image Save/Restore (Layer 9 / Lisp Superpowers P1) ──────────────────────
 ;;;
-;;; Save the entire running Clambda system as a SBCL core file / executable.
+;;; Save the entire running Clawmacs system as a SBCL core file / executable.
 ;;; Restore it instantly — zero dependency resolution, all config baked in.
-;;; Genera-style: (save-clambda-image) → (./clambda-image)
+;;; Genera-style: (save-clawmacs-image) → (./clawmacs-image)
 
-(defpackage #:clambda/image
+(defpackage #:clawmacs/image
   (:use #:cl)
   (:export
    ;; Entry point for saved images
-   #:clambda-main
+   #:clawmacs-main
    ;; Save function
-   #:save-clambda-image))
+   #:save-clawmacs-image))
 
 ;;; ── Top-level convenience package ────────────────────────────────────────────
 
-(defpackage #:clambda
+(defpackage #:clawmacs
   (:use #:cl)
   ;; Re-export key symbols
-  (:import-from #:clambda/agent
+  (:import-from #:clawmacs/agent
                 #:agent #:make-agent
                 #:agent-name #:agent-role #:agent-model
                 #:agent-workspace-path #:agent-system-prompt
                 #:agent-client #:agent-tool-registry)
-  (:import-from #:clambda/session
+  (:import-from #:clawmacs/session
                 #:session #:make-session
                 #:session-id #:session-agent #:session-messages
                 #:session-add-message #:session-clear-messages
                 #:session-message-count #:session-total-tokens
                 #:save-session #:load-session)
-  (:import-from #:clambda/tools
+  (:import-from #:clawmacs/tools
                 #:tool-registry #:make-tool-registry
                 #:register-tool! #:find-tool #:list-tools
                 #:define-tool #:dispatch-tool-call
@@ -642,35 +642,35 @@
                 #:copy-tools-to-registry
                 #:tool-result #:tool-result-ok #:tool-result-error
                 #:tool-result-value #:format-tool-result)
-  (:import-from #:clambda/builtins
+  (:import-from #:clawmacs/builtins
                 #:register-builtin-tools #:make-builtin-registry)
-  (:import-from #:clambda/loop
+  (:import-from #:clawmacs/loop
                 #:agent-turn #:run-agent
                 #:*on-tool-call* #:*on-tool-result* #:*on-llm-response*
                 #:*on-stream-delta*
                 #:loop-options #:make-loop-options
                 #:loop-options-max-turns #:loop-options-max-tokens
                 #:loop-options-stream #:loop-options-verbose)
-  (:import-from #:clambda/logging
+  (:import-from #:clawmacs/logging
                 #:*log-file* #:*log-enabled*
                 #:log-event #:log-llm-request #:log-tool-call
                 #:log-tool-result #:log-error-event
                 #:with-logging)
-  (:import-from #:clambda/memory
+  (:import-from #:clawmacs/memory
                 #:memory-entry #:memory-entry-name
                 #:memory-entry-path #:memory-entry-content
                 #:workspace-memory #:workspace-memory-entries
                 #:workspace-memory-path
                 #:load-workspace-memory #:search-memory
                 #:memory-context-string)
-  (:import-from #:clambda/conditions
-                #:clambda-error #:agent-error #:session-error
+  (:import-from #:clawmacs/conditions
+                #:clawmacs-error #:agent-error #:session-error
                 #:tool-not-found #:tool-execution-error
                 #:agent-loop-error
                 #:budget-exceeded
                 #:budget-exceeded-kind #:budget-exceeded-limit
                 #:budget-exceeded-current)
-  (:import-from #:clambda/registry
+  (:import-from #:clawmacs/registry
                 #:*agent-registry*
                 #:register-agent #:find-agent #:list-agents
                 #:unregister-agent #:clear-registry
@@ -680,20 +680,20 @@
                 #:agent-spec-system-prompt #:agent-spec-tools
                 #:agent-spec-role #:agent-spec-max-turns #:agent-spec-client
                 #:instantiate-agent-spec)
-  (:import-from #:clambda/subagents
+  (:import-from #:clawmacs/subagents
                 #:subagent-handle
                 #:subagent-handle-thread #:subagent-handle-session
                 #:subagent-handle-status #:subagent-handle-result
                 #:subagent-handle-error
                 #:spawn-subagent #:subagent-wait
                 #:subagent-status #:subagent-kill)
-  (:import-from #:clambda/channels
+  (:import-from #:clawmacs/channels
                 #:channel #:channel-send #:channel-receive
                 #:channel-poll #:channel-close #:channel-open-p
                 #:repl-channel #:make-repl-channel
                 #:queue-channel #:make-queue-channel
                 #:channel-closed-error #:channel-timeout-error)
-  (:import-from #:clambda/cron
+  (:import-from #:clawmacs/cron
                 #:scheduled-task #:make-scheduled-task
                 #:task-name #:task-kind #:task-interval #:task-fire-at
                 #:task-function #:task-thread #:task-active-p
@@ -703,7 +703,7 @@
                 #:cancel-task #:find-task #:list-tasks #:clear-tasks
                 #:task-info #:describe-tasks
                 #:*cron-sleep-interval* #:*task-registry*)
-  (:import-from #:clambda/http-server
+  (:import-from #:clawmacs/http-server
                 #:*default-port* #:start-server #:stop-server
                 #:server-running-p #:restart-server
                 #:*server* #:*server-start-time* #:uptime-seconds
@@ -711,8 +711,8 @@
                 #:*http-sessions*
                 #:http-session-get #:http-session-create
                 #:http-session-delete #:list-http-sessions)
-  (:import-from #:clambda/config
-                #:*clambda-home* #:clambda-home
+  (:import-from #:clawmacs/config
+                #:*clawmacs-home* #:clawmacs-home
                 #:load-user-config #:user-config-loaded-p
                 #:defoption #:*option-registry* #:describe-options
                 #:add-hook #:remove-hook #:run-hook #:run-hook-with-args
@@ -723,7 +723,7 @@
                 #:merge-user-tools! #:*user-tool-registry*
                 #:*default-model* #:*default-max-turns*
                 #:*default-stream* #:*log-level* #:*startup-message*)
-  (:import-from #:clambda/telegram
+  (:import-from #:clawmacs/telegram
                 #:telegram-channel #:make-telegram-channel
                 #:telegram-channel-token #:telegram-channel-allowed-users
                 #:telegram-channel-polling-interval
@@ -738,7 +738,7 @@
                 #:allowed-user-p
                 #:start-telegram #:stop-telegram #:telegram-running-p
                 #:start-all-channels)
-  (:import-from #:clambda/irc
+  (:import-from #:clawmacs/irc
                 #:*irc-connection*
                 #:irc-connection #:make-irc-connection
                 #:irc-server #:irc-port #:irc-tls-p
@@ -752,7 +752,7 @@
                 #:parse-irc-line #:irc-build-line #:prefix-nick
                 #:*irc-send-interval* #:*irc-default-system-prompt*)
   ;; Layer 7: Browser control
-  (:import-from #:clambda/browser
+  (:import-from #:clawmacs/browser
                 #:*browser-headless*
                 #:*browser-playwright-path*
                 #:*browser-bridge-script*
@@ -761,12 +761,12 @@
                 #:browser-click #:browser-type #:browser-evaluate
                 #:register-browser-tools #:make-browser-registry)
   ;; Lisp Superpowers: SWANK server
-  (:import-from #:clambda/swank
+  (:import-from #:clawmacs/swank
                 #:*swank-port*
                 #:start-swank #:stop-swank #:swank-running-p)
   ;; Lisp Superpowers: Image save/restore
-  (:import-from #:clambda/image
-                #:clambda-main #:save-clambda-image)
+  (:import-from #:clawmacs/image
+                #:clawmacs-main #:save-clawmacs-image)
   (:export
    ;; Agent
    #:agent #:make-agent
@@ -809,7 +809,7 @@
    #:load-workspace-memory #:search-memory
    #:memory-context-string
    ;; Conditions
-   #:clambda-error #:agent-error #:session-error
+   #:clawmacs-error #:agent-error #:session-error
    #:tool-not-found
    #:tool-execution-error
    #:tool-execution-error-tool-name #:tool-execution-error-cause
@@ -865,7 +865,7 @@
    #:http-session-get #:http-session-create
    #:http-session-delete #:list-http-sessions
    ;; Config system
-   #:*clambda-home* #:clambda-home
+   #:*clawmacs-home* #:clawmacs-home
    #:load-user-config #:user-config-loaded-p
    #:defoption #:*option-registry* #:describe-options
    #:add-hook #:remove-hook #:run-hook #:run-hook-with-args
@@ -916,18 +916,18 @@
    #:*swank-port*
    #:start-swank #:stop-swank #:swank-running-p
    ;; Lisp Superpowers: Image save/restore (P1)
-   #:clambda-main #:save-clambda-image))
+   #:clawmacs-main #:save-clawmacs-image))
 
 ;;; ── User init package (for init.lisp) ────────────────────────────────────────
 ;;;
 ;;; This package is the default *package* when init.lisp is loaded.
-;;; It gives users access to all public Clambda API without qualification.
+;;; It gives users access to all public Clawmacs API without qualification.
 ;;; Full CL is available — no sandboxing.
 
-(defpackage #:clambda-user
+(defpackage #:clawmacs-user
   (:use #:cl)
   ;; Config API — the most important things for init.lisp
-  (:import-from #:clambda/config
+  (:import-from #:clawmacs/config
                 #:defoption
                 #:add-hook #:remove-hook #:run-hook #:run-hook-with-args
                 #:*after-init-hook* #:*before-agent-turn-hook*
@@ -938,20 +938,20 @@
                 #:*default-model* #:*default-max-turns*
                 #:*default-stream* #:*log-level* #:*startup-message*
                 #:describe-options #:*option-registry*
-                #:*clambda-home* #:clambda-home
+                #:*clawmacs-home* #:clawmacs-home
                 #:load-user-config)
-  ;; Core clambda API — so users can make-agent etc. from init.lisp
-  (:import-from #:clambda/tools
+  ;; Core clawmacs API — so users can make-agent etc. from init.lisp
+  (:import-from #:clawmacs/tools
                 #:tool-registry #:make-tool-registry
                 #:register-tool! #:find-tool #:list-tools
                 #:define-tool)
-  (:import-from #:clambda/agent
+  (:import-from #:clawmacs/agent
                 #:agent #:make-agent
                 #:agent-name #:agent-system-prompt
                 #:agent-client #:agent-tool-registry)
-  (:import-from #:clambda/session
+  (:import-from #:clawmacs/session
                 #:session #:make-session)
-  (:import-from #:clambda/registry
+  (:import-from #:clawmacs/registry
                 #:define-agent #:register-agent #:find-agent
                 #:unregister-agent #:agent-spec-p
                 #:agent-spec #:make-agent-spec
@@ -960,21 +960,21 @@
                 #:instantiate-agent-spec)
   (:import-from #:cl-llm
                 #:make-client)
-  (:import-from #:clambda/telegram
+  (:import-from #:clawmacs/telegram
                 #:start-telegram #:stop-telegram
                 #:telegram-running-p #:start-all-channels
                 #:*telegram-channel*
                 #:*telegram-llm-base-url* #:*telegram-llm-api-key*
                 #:*telegram-system-prompt*
                 #:*telegram-streaming* #:*telegram-stream-debounce-ms*)
-  (:import-from #:clambda/irc
+  (:import-from #:clawmacs/irc
                 #:*irc-connection*
                 #:irc-connected-p
                 #:irc-channel-policies #:irc-dm-allowed-users
                 #:start-irc #:stop-irc
                 #:irc-send-privmsg #:irc-join #:irc-part
                 #:*irc-send-interval* #:*irc-default-system-prompt*)
-  (:import-from #:clambda/browser
+  (:import-from #:clawmacs/browser
                 #:*browser-headless*
                 #:*browser-playwright-path*
                 #:*browser-bridge-script*
@@ -982,22 +982,22 @@
                 #:browser-navigate #:browser-snapshot #:browser-screenshot
                 #:browser-click #:browser-type #:browser-evaluate
                 #:register-browser-tools #:make-browser-registry)
-  (:import-from #:clambda/cron
+  (:import-from #:clawmacs/cron
                 #:schedule-task #:schedule-once
                 #:cancel-task #:find-task #:list-tasks #:clear-tasks
                 #:task-info #:describe-tasks
                 #:*cron-sleep-interval*)
-  (:import-from #:clambda/http-server
+  (:import-from #:clawmacs/http-server
                 #:*api-token* #:start-server #:stop-server
                 #:server-running-p #:restart-server
                 #:*default-port*)
   ;; Lisp Superpowers — available from init.lisp
-  (:import-from #:clambda/swank
+  (:import-from #:clawmacs/swank
                 #:*swank-port* #:start-swank #:stop-swank #:swank-running-p)
-  (:import-from #:clambda/image
-                #:clambda-main #:save-clambda-image)
+  (:import-from #:clawmacs/image
+                #:clawmacs-main #:save-clawmacs-image)
   (:export
-   ;; Re-export everything imported so users can (use-package :clambda-user)
+   ;; Re-export everything imported so users can (use-package :clawmacs-user)
    ;; from a downstream package if desired.
    #:defoption
    #:add-hook #:remove-hook #:run-hook #:run-hook-with-args
@@ -1009,7 +1009,7 @@
    #:*default-model* #:*default-max-turns*
    #:*default-stream* #:*log-level* #:*startup-message*
    #:describe-options #:*option-registry*
-   #:*clambda-home* #:clambda-home
+   #:*clawmacs-home* #:clawmacs-home
    #:tool-registry #:make-tool-registry
    #:register-tool! #:find-tool #:list-tools
    #:define-tool
@@ -1058,4 +1058,4 @@
    ;; Lisp Superpowers: SWANK/SLIME server
    #:*swank-port* #:start-swank #:stop-swank #:swank-running-p
    ;; Lisp Superpowers: Image save/restore
-   #:clambda-main #:save-clambda-image))
+   #:clawmacs-main #:save-clawmacs-image))

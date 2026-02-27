@@ -1,6 +1,6 @@
-# Lisp Superpowers for Clambda
+# Lisp Superpowers for Clawmacs
 
-> How to leverage Common Lisp's unique features to make Clambda do things
+> How to leverage Common Lisp's unique features to make Clawmacs do things
 > that OpenClaw (Node.js) structurally cannot. Inspired by Symbolics Genera
 > and GNU Emacs.
 
@@ -12,9 +12,9 @@
 debugger offered *restarts* — structured recovery options that let you fix the
 problem and continue without losing state.
 
-**For Clambda:**
+**For Clawmacs:**
 ```lisp
-(define-condition tool-execution-error (clambda-error)
+(define-condition tool-execution-error (clawmacs-error)
   ((tool-name :initarg :tool-name)
    (input :initarg :input)
    (inner-error :initarg :inner-error)))
@@ -45,22 +45,22 @@ problem and continue without losing state.
 could `save-world` at any point and restore exactly where you left off — running
 processes, open connections, everything.
 
-**For Clambda:**
+**For Clawmacs:**
 ```lisp
-(defun save-clambda-image (&optional (path "clambda.core"))
-  "Save the entire running Clambda state as a core file."
+(defun save-clawmacs-image (&optional (path "clawmacs.core"))
+  "Save the entire running Clawmacs state as a core file."
   (sb-ext:save-lisp-and-die path
-    :toplevel #'clambda-main
+    :toplevel #'clawmacs-main
     :executable t
     :compression t))
 ```
 
 **What this enables:**
-- Deploy Clambda as a single executable with all config, agents, and loaded
+- Deploy Clawmacs as a single executable with all config, agents, and loaded
   tools baked in — no dependency resolution at startup
 - Checkpoint a running system before risky changes
 - "Fork" an agent: save image, load it on another machine, instant clone
-- Distribute pre-configured Clambda images (like Docker, but Lispier)
+- Distribute pre-configured Clawmacs images (like Docker, but Lispier)
 - Startup time: near-zero (just mmap the core file)
 
 ---
@@ -70,7 +70,7 @@ processes, open connections, everything.
 **Emacs inspiration:** You never restart Emacs. You `eval-defun` to redefine a
 function, and the running system picks it up immediately. Genera was the same.
 
-**For Clambda:**
+**For Clawmacs:**
 ```lisp
 ;; Agent is running, handling messages. You connect via SLIME/Sly and:
 (defmethod handle-tool-call :around ((tool (eql :web-fetch)) args)
@@ -97,7 +97,7 @@ function, and the running system picks it up immediately. Genera was the same.
 extensible. Presentation types, command tables, sheet hierarchies — all
 customizable via method combination.
 
-**For Clambda:**
+**For Clawmacs:**
 ```lisp
 ;; Channel protocol — add a new channel by defining methods
 (defclass matrix-channel (channel) 
@@ -135,7 +135,7 @@ customizable via method combination.
 **Emacs inspiration:** `defcustom`, `define-minor-mode`, `use-package` —
 Emacs is full of macros that create mini-languages for specific domains.
 
-**For Clambda:**
+**For Clawmacs:**
 ```lisp
 ;; Agent definition DSL
 (define-agent researcher
@@ -165,7 +165,7 @@ Emacs is full of macros that create mini-languages for specific domains.
 **Genera inspiration:** Genera had reader macros for everything — special
 syntax for dates, file paths, network addresses, etc.
 
-**For Clambda:**
+**For Clawmacs:**
 ```lisp
 ;; #T for Telegram message literals (for testing)
 (set-dispatch-macro-character #\# #\T
@@ -189,7 +189,7 @@ syntax for dates, file paths, network addresses, etc.
 exactly where it left off?**
 
 ```lisp
-(define-condition human-input-needed (clambda-condition)
+(define-condition human-input-needed (clawmacs-condition)
   ((question :initarg :question)
    (context :initarg :context)))
 
@@ -213,8 +213,8 @@ and continues from exactly that point when you answer.**
 **Genera inspiration:** The Inspector let you examine any object in the running
 system — click into its slots, modify them live, follow references.
 
-**For Clambda:**
-- Connect SLIME to a running Clambda instance
+**For Clawmacs:**
+- Connect SLIME to a running Clawmacs instance
 - `(inspect (find-agent :researcher))` — see all slots, session history,
   pending tool calls, token counts
 - Modify agent state live: `(setf (agent-model agent) "gpt-4o")`
@@ -229,7 +229,7 @@ system — click into its slots, modify them live, follow references.
 **Genera inspiration:** Activities were like workspaces — each with its own
 windows, state, and context. You could switch between them seamlessly.
 
-**For Clambda with McCLIM:**
+**For Clawmacs with McCLIM:**
 - Each agent gets an "activity" — a CLIM application frame
 - Switch between agents like Genera activities
 - Each activity has: chat pane, tool output pane, inspector pane, log pane
@@ -288,6 +288,6 @@ can't save/restore the entire runtime state.
 ---
 
 *The key insight: OpenClaw is a **configuration** of an agent framework.
-Clambda is a **programmable** agent framework. The difference is the same as
+Clawmacs is a **programmable** agent framework. The difference is the same as
 the difference between a word processor and Emacs — one does what it's told,
 the other becomes whatever you need.*

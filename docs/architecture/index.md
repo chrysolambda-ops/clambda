@@ -1,16 +1,16 @@
 # Architecture Overview
 
-Clambda is built in layers. Each layer builds on the one below it. You can use
+Clawmacs is built in layers. Each layer builds on the one below it. You can use
 any layer in isolation.
 
 ## System Dependency Graph
 
 ```
-                    clambda-gui (Layer 3)
+                    clawmacs-gui (Layer 3)
                          │
                          │ :depends-on
                          ▼
-                  clambda-core (Layer 2b)
+                  clawmacs-core (Layer 2b)
                          │
               ┌──────────┴───────────┐
               │                      │
@@ -25,7 +25,7 @@ any layer in isolation.
       hunchentoot, parachute
 ```
 
-**Build order:** `cl-llm` → `cl-tui` (standalone) | `clambda-core` → `clambda-gui`
+**Build order:** `cl-llm` → `cl-tui` (standalone) | `clawmacs-core` → `clawmacs-gui`
 
 ---
 
@@ -69,11 +69,11 @@ any layer in isolation.
 
 Slash commands: `/model`, `/system`, `/clear`, `/quit`
 
-Single-threaded. Does not use clambda-core (direct `cl-llm` usage).
+Single-threaded. Does not use clawmacs-core (direct `cl-llm` usage).
 
 ---
 
-## Layer 2b: clambda-core — Agent Platform
+## Layer 2b: clawmacs-core — Agent Platform
 
 **Purpose:** The core agent platform. Multi-turn tool-calling agent loop, channels,
 session persistence, memory loading, sub-agents.
@@ -82,24 +82,24 @@ session persistence, memory loading, sub-agents.
 
 | Module | Purpose |
 |--------|---------|
-| `clambda/agent` | `agent` struct: name, client, tool-registry, system-prompt |
-| `clambda/session` | `session` struct: agent + message history + token tracking |
-| `clambda/tools` | Tool registry, `register-tool!`, `define-tool` macro |
-| `clambda/builtins` | Built-in tools: exec, read_file, write_file, list_dir, web_fetch, tts |
-| `clambda/loop` | `run-agent`, `agent-turn`, hook variables |
-| `clambda/conditions` | `tool-error`, `agent-error`, `budget-exceeded` |
-| `clambda/logging` | JSONL structured logging, `with-logging` macro |
-| `clambda/session` | Save/load session as JSON (one file per conversation) |
-| `clambda/memory` | Load workspace memory files at startup (SOUL.md, AGENTS.md, etc.) |
-| `clambda/registry` | Named agent registry (`define-agent`, `find-agent`) |
-| `clambda/subagents` | Spawn parallel agent threads (`spawn-subagent`, `subagent-wait`) |
-| `clambda/channels` | Abstract channel protocol (repl, queue channels) |
-| `clambda/http-server` | Hunchentoot HTTP management API |
-| `clambda/config` | Emacs-style config system (init.lisp, defoption, hooks) |
-| `clambda/telegram` | Telegram Bot API long-polling channel |
-| `clambda/irc` | Raw IRC client with TLS, NickServ, flood protection, reconnect |
-| `clambda/browser` | Playwright-backed browser control |
-| `clambda/cron` | Thread-based periodic/one-shot task scheduler |
+| `clawmacs/agent` | `agent` struct: name, client, tool-registry, system-prompt |
+| `clawmacs/session` | `session` struct: agent + message history + token tracking |
+| `clawmacs/tools` | Tool registry, `register-tool!`, `define-tool` macro |
+| `clawmacs/builtins` | Built-in tools: exec, read_file, write_file, list_dir, web_fetch, tts |
+| `clawmacs/loop` | `run-agent`, `agent-turn`, hook variables |
+| `clawmacs/conditions` | `tool-error`, `agent-error`, `budget-exceeded` |
+| `clawmacs/logging` | JSONL structured logging, `with-logging` macro |
+| `clawmacs/session` | Save/load session as JSON (one file per conversation) |
+| `clawmacs/memory` | Load workspace memory files at startup (SOUL.md, AGENTS.md, etc.) |
+| `clawmacs/registry` | Named agent registry (`define-agent`, `find-agent`) |
+| `clawmacs/subagents` | Spawn parallel agent threads (`spawn-subagent`, `subagent-wait`) |
+| `clawmacs/channels` | Abstract channel protocol (repl, queue channels) |
+| `clawmacs/http-server` | Hunchentoot HTTP management API |
+| `clawmacs/config` | Emacs-style config system (init.lisp, defoption, hooks) |
+| `clawmacs/telegram` | Telegram Bot API long-polling channel |
+| `clawmacs/irc` | Raw IRC client with TLS, NickServ, flood protection, reconnect |
+| `clawmacs/browser` | Playwright-backed browser control |
+| `clawmacs/cron` | Thread-based periodic/one-shot task scheduler |
 
 ### Agent Loop Flow
 
@@ -131,28 +131,28 @@ run-agent session user-message
 
 ```lisp
 ;; Available hook variables:
-clambda/config:*after-init-hook*         ; () → runs after init.lisp loads
-clambda/config:*before-agent-turn-hook*  ; (session msg) → before each turn
-clambda/config:*after-tool-call-hook*    ; (tool-name result) → after tool runs
-clambda/config:*channel-message-hook*    ; (channel msg) → inbound channel message
+clawmacs/config:*after-init-hook*         ; () → runs after init.lisp loads
+clawmacs/config:*before-agent-turn-hook*  ; (session msg) → before each turn
+clawmacs/config:*after-tool-call-hook*    ; (tool-name result) → after tool runs
+clawmacs/config:*channel-message-hook*    ; (channel msg) → inbound channel message
 
 ;; Loop hooks (on the agent loop directly):
-clambda/loop:*on-stream-delta*   ; (delta) → per streaming token
-clambda/loop:*on-tool-call*      ; (name call) → tool invocation
-clambda/loop:*on-tool-result*    ; (name result) → tool result
-clambda/loop:*on-llm-response*   ; (text) → final LLM response
+clawmacs/loop:*on-stream-delta*   ; (delta) → per streaming token
+clawmacs/loop:*on-tool-call*      ; (name call) → tool invocation
+clawmacs/loop:*on-tool-result*    ; (name result) → tool result
+clawmacs/loop:*on-llm-response*   ; (text) → final LLM response
 ```
 
 ---
 
-## Layer 3: clambda-gui — McCLIM Graphical Frontend
+## Layer 3: clawmacs-gui — McCLIM Graphical Frontend
 
 **Purpose:** A native windowed chat interface using McCLIM (the free Common Lisp
-GUI framework). Optional — Clambda works fine without it.
+GUI framework). Optional — Clawmacs works fine without it.
 
 ```lisp
-(ql:quickload :clambda-gui)
-(clambda-gui:run-gui :session my-session)
+(ql:quickload :clawmacs-gui)
+(clawmacs-gui:run-gui :session my-session)
 ```
 
 The GUI uses a background `bordeaux-threads` worker for LLM calls so the
@@ -167,7 +167,7 @@ interface stays responsive during streaming.
 ```
 User sends Telegram message
   │
-  └── clambda/telegram: polling thread receives update
+  └── clawmacs/telegram: polling thread receives update
         │
         ├── check allowed-users allowlist
         │
@@ -185,7 +185,7 @@ User sends Telegram message
 ```
 IRC server sends PRIVMSG
   │
-  └── clambda/irc: reader-thread receives line
+  └── clawmacs/irc: reader-thread receives line
         │
         ├── parse-irc-line → command="PRIVMSG"
         │
@@ -220,9 +220,9 @@ IRC server sends PRIVMSG
 
 1. Create a new module (`src/my-channel.lisp`)
 2. Define a struct for connection state
-3. Implement `(defmethod clambda/config:register-channel ((type (eql :my-channel)) &rest args ...))`
+3. Implement `(defmethod clawmacs/config:register-channel ((type (eql :my-channel)) &rest args ...))`
 4. Add a `start-my-channel` function that starts a background thread
-5. Export symbols from `clambda` and `clambda-user` packages
+5. Export symbols from `clawmacs` and `clawmacs-user` packages
 
 ### Add a new LLM backend
 
@@ -236,8 +236,8 @@ IRC server sends PRIVMSG
 | Version | Milestone |
 |---------|----------|
 | 0.1.0 | Layer 1: cl-llm |
-| 0.2.0 | Layer 2: clambda-core + cl-tui |
-| 0.3.0 | Layer 3: clambda-gui |
+| 0.2.0 | Layer 2: clawmacs-core + cl-tui |
+| 0.3.0 | Layer 3: clawmacs-gui |
 | 0.4.0 | Layer 6a: config system (init.lisp) |
 | 0.5.0 | Layer 6b: Telegram channel |
 | 0.6.0 | Layer 6c: IRC channel |

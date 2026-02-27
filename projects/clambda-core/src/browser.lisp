@@ -1,6 +1,6 @@
 ;;;; src/browser.lisp — Layer 7: Browser Control
 ;;;;
-;;;; Provides browser automation for Clambda agents via a Playwright subprocess.
+;;;; Provides browser automation for Clawmacs agents via a Playwright subprocess.
 ;;;; Communicates with browser/playwright-bridge.js over JSON-over-stdin/stdout.
 ;;;;
 ;;;; Architecture:
@@ -18,7 +18,7 @@
 ;;;;   (setf *browser-playwright-path* "/usr/bin/node")
 ;;;;   (setf *browser-bridge-script* "/path/to/playwright-bridge.js")
 
-(in-package #:clambda/browser)
+(in-package #:clawmacs/browser)
 
 ;;; ── Config options ───────────────────────────────────────────────────────────
 
@@ -33,7 +33,7 @@
 (defoption *browser-bridge-script*
     (namestring
      (or (ignore-errors
-          (asdf:system-relative-pathname :clambda-core "browser/playwright-bridge.js"))
+          (asdf:system-relative-pathname :clawmacs-core "browser/playwright-bridge.js"))
          #p"browser/playwright-bridge.js"))
   :type string
   :doc "Path to the playwright-bridge.js script.")
@@ -188,7 +188,7 @@
 (defun register-browser-tools (registry)
   "Register browser automation tools into REGISTRY.
    Call (browser-launch) before the agent uses any of these tools."
-  (clambda/tools:register-tool!
+  (clawmacs/tools:register-tool!
    registry "browser_navigate"
    (lambda (params)
      (let ((url (gethash "url" params)))
@@ -196,23 +196,23 @@
        (browser-navigate url)
        (format nil "Navigated to: ~a" url)))
    :description "Navigate the browser to a URL. Returns confirmation."
-   :parameters (clambda/tools:schema-plist->ht
+   :parameters (clawmacs/tools:schema-plist->ht
                 '(:type "object"
                   :properties (:url (:type "string"
                                      :description "The URL to navigate to"))
                   :required ("url"))))
 
-  (clambda/tools:register-tool!
+  (clawmacs/tools:register-tool!
    registry "browser_snapshot"
    (lambda (_params)
      (declare (ignore _params))
      (let ((tree (browser-snapshot)))
        (or tree "No accessibility tree available (page may be empty)")))
    :description "Get the accessibility tree of the current browser page as text. Use this to understand the page structure before clicking or typing."
-   :parameters (clambda/tools:schema-plist->ht
+   :parameters (clawmacs/tools:schema-plist->ht
                 '(:type "object" :properties ())))
 
-  (clambda/tools:register-tool!
+  (clawmacs/tools:register-tool!
    registry "browser_screenshot"
    (lambda (params)
      (let ((path (gethash "path" params nil)))
@@ -221,12 +221,12 @@
              (format nil "Screenshot saved to: ~a" result)
              (format nil "Screenshot taken (~a bytes base64)" (length result))))))
    :description "Take a screenshot of the current browser page. Optionally save to a file path."
-   :parameters (clambda/tools:schema-plist->ht
+   :parameters (clawmacs/tools:schema-plist->ht
                 '(:type "object"
                   :properties (:path (:type "string"
                                       :description "Optional file path to save the screenshot")))))
 
-  (clambda/tools:register-tool!
+  (clawmacs/tools:register-tool!
    registry "browser_click"
    (lambda (params)
      (let ((selector (gethash "selector" params)))
@@ -234,13 +234,13 @@
        (browser-click selector)
        (format nil "Clicked: ~a" selector)))
    :description "Click an element in the browser by CSS selector."
-   :parameters (clambda/tools:schema-plist->ht
+   :parameters (clawmacs/tools:schema-plist->ht
                 '(:type "object"
                   :properties (:selector (:type "string"
                                           :description "CSS selector for the element to click"))
                   :required ("selector"))))
 
-  (clambda/tools:register-tool!
+  (clawmacs/tools:register-tool!
    registry "browser_type"
    (lambda (params)
      (let ((selector (gethash "selector" params))
@@ -249,7 +249,7 @@
        (browser-type selector text)
        (format nil "Typed ~s into ~a" text selector)))
    :description "Type text into an input element in the browser by CSS selector."
-   :parameters (clambda/tools:schema-plist->ht
+   :parameters (clawmacs/tools:schema-plist->ht
                 '(:type "object"
                   :properties (:selector (:type "string"
                                           :description "CSS selector for the input element")
@@ -257,7 +257,7 @@
                                       :description "Text to type"))
                   :required ("selector" "text"))))
 
-  (clambda/tools:register-tool!
+  (clawmacs/tools:register-tool!
    registry "browser_evaluate"
    (lambda (params)
      (let ((js (gethash "js" params)))
@@ -265,7 +265,7 @@
        (let ((result (browser-evaluate js)))
          (format nil "~a" result))))
    :description "Evaluate JavaScript in the current browser page and return the result."
-   :parameters (clambda/tools:schema-plist->ht
+   :parameters (clawmacs/tools:schema-plist->ht
                 '(:type "object"
                   :properties (:js (:type "string"
                                     :description "JavaScript expression to evaluate"))
@@ -275,13 +275,13 @@
 
 (defun make-browser-registry ()
   "Create a new tool registry populated with all browser tools."
-  (let ((registry (clambda/tools:make-tool-registry)))
+  (let ((registry (clawmacs/tools:make-tool-registry)))
     (register-browser-tools registry)
     registry))
 
 ;;; ── register-channel integration ─────────────────────────────────────────────
 
-(defmethod clambda/config:register-channel ((type (eql :browser)) &rest args
+(defmethod clawmacs/config:register-channel ((type (eql :browser)) &rest args
                                             &key headless &allow-other-keys)
   "Register browser configuration. Call (browser-launch) to start.
    Example: (register-channel :browser :headless nil)"

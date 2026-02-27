@@ -1,8 +1,8 @@
-;;;; src/config.lisp — Emacs-style configuration system for Clambda
+;;;; src/config.lisp — Emacs-style configuration system for Clawmacs
 ;;;;
-;;;; This module provides the Clambda equivalent of Emacs init.el:
-;;;;   - Config directory: ~/.clambda/ (or $CLAMBDA_HOME)
-;;;;   - Entry point: ~/.clambda/init.lisp  — loaded at startup
+;;;; This module provides the Clawmacs equivalent of Emacs init.el:
+;;;;   - Config directory: ~/.clawmacs/ (or $CLAWMACS_HOME)
+;;;;   - Entry point: ~/.clawmacs/init.lisp  — loaded at startup
 ;;;;   - defoption macro: defcustom analog with type/doc/registry
 ;;;;   - Hook system: add-hook, remove-hook, run-hook + standard hooks
 ;;;;   - register-channel generic: declare channels from init.lisp
@@ -11,26 +11,26 @@
 ;;;; Design: no sandboxing, no JSON, no YAML. Full CL. Trust the user.
 ;;;; Errors in init.lisp are caught and reported clearly, not propagated.
 
-(in-package #:clambda/config)
+(in-package #:clawmacs/config)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 1. Config Directory
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
-(defvar *clambda-home*
-  (let ((env (uiop:getenv "CLAMBDA_HOME")))
+(defvar *clawmacs-home*
+  (let ((env (uiop:getenv "CLAWMACS_HOME")))
     (if (and env (not (string= env "")))
         (uiop:ensure-directory-pathname env)
         (uiop:ensure-directory-pathname
-         (merge-pathnames ".clambda/" (user-homedir-pathname)))))
-  "The Clambda configuration directory pathname.
-Defaults to ~/.clambda/ or $CLAMBDA_HOME if set.
+         (merge-pathnames ".clawmacs/" (user-homedir-pathname)))))
+  "The Clawmacs configuration directory pathname.
+Defaults to ~/.clawmacs/ or $CLAWMACS_HOME if set.
 Settable from init.lisp or startup code.")
 
-(defun clambda-home ()
-  "Return the resolved Clambda configuration directory pathname.
+(defun clawmacs-home ()
+  "Return the resolved Clawmacs configuration directory pathname.
 This is the value of *CLAMBDA-HOME*."
-  *clambda-home*)
+  *clawmacs-home*)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 2. Options Registry (defoption / defcustom analog)
@@ -42,7 +42,7 @@ Each entry: (symbol :default VAL :type TYPE :doc DOCSTRING).
 Options are setf-able from init.lisp.")
 
 (defmacro defoption (name default &key (type t) doc)
-  "Define a configurable Clambda option variable. Analog of Emacs `defcustom`.
+  "Define a configurable Clawmacs option variable. Analog of Emacs `defcustom`.
 
 NAME    — a symbol, typically *earmuff-style*.
 DEFAULT — the initial value expression.
@@ -60,7 +60,7 @@ Example:
   ;; In init.lisp:
   (setf *default-model* \"anthropic/claude-sonnet-4\")"
   (let ((doc-str (or doc
-                     (format nil "Clambda option ~A (default: ~S)." name default))))
+                     (format nil "Clawmacs option ~A (default: ~S)." name default))))
     `(progn
        (defvar ,name ,default ,doc-str)
        ;; Register (or update) in the options registry
@@ -70,9 +70,9 @@ Example:
        ',name)))
 
 (defun describe-options ()
-  "Print all known Clambda options with current values and documentation.
+  "Print all known Clawmacs options with current values and documentation.
 Useful from init.lisp or the REPL to discover what's configurable."
-  (format t "~&Clambda Options (~A defined):~2%" (length *option-registry*))
+  (format t "~&Clawmacs Options (~A defined):~2%" (length *option-registry*))
   (dolist (entry (reverse *option-registry*))
     (destructuring-bind (sym &key default type doc) entry
       (declare (ignore default))
@@ -177,7 +177,7 @@ execution continues with the next hook function.
         (funcall fn)
       (error (e)
         (format *error-output*
-                "~&[clambda/config] Hook ~A: error in ~A: ~A~%"
+                "~&[clawmacs/config] Hook ~A: error in ~A: ~A~%"
                 hook-var fn e)))))
 
 (defun run-hook-with-args (hook-var &rest args)
@@ -192,7 +192,7 @@ Errors are caught per-function and reported to *ERROR-OUTPUT*.
         (apply fn args)
       (error (e)
         (format *error-output*
-                "~&[clambda/config] Hook ~A: error in ~A: ~A~%"
+                "~&[clawmacs/config] Hook ~A: error in ~A: ~A~%"
                 hook-var fn e)))))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -221,7 +221,7 @@ Examples:
   ;; IRC
   (register-channel :irc
     :server \"irc.libera.chat\" :port 6697
-    :tls t :nick \"clambda\" :channels '(\"#clambda\"))
+    :tls t :nick \"clawmacs\" :channels '(\"#clawmacs\"))
 
   ;; REPL (always available; no config needed)
   (register-channel :repl)"))
@@ -233,7 +233,7 @@ Channel plugins should :CALL-NEXT-METHOD after starting the channel."
   (setf *registered-channels*
         (cons (cons type args)
               (remove type *registered-channels* :key #'car)))
-  (format t "~&[clambda/config] Channel ~A registered~@[ (no plugin loaded for ~A)~].~%"
+  (format t "~&[clawmacs/config] Channel ~A registered~@[ (no plugin loaded for ~A)~].~%"
           type
           (unless (eq type :repl) type))
   type)
@@ -253,7 +253,7 @@ Merge this into your agent's registry at startup:
   ;; At agent creation time:
   (let ((registry (make-builtin-registry)))
     ;; Merge user tools
-    (clambda/config:merge-user-tools! registry)
+    (clawmacs/config:merge-user-tools! registry)
     (make-agent :tool-registry registry ...))")
 
 (defun %params-list->schema (params)
@@ -327,8 +327,8 @@ Example:
   "Merge all tools from *USER-TOOL-REGISTRY* into TARGET-REGISTRY.
 Call this when building an agent to include user-defined tools.
 Returns TARGET-REGISTRY."
-  (let ((src-table (clambda/tools::registry-table *user-tool-registry*))
-        (dst-table (clambda/tools::registry-table target-registry)))
+  (let ((src-table (clawmacs/tools::registry-table *user-tool-registry*))
+        (dst-table (clawmacs/tools::registry-table target-registry)))
     (maphash (lambda (name entry)
                (setf (gethash name dst-table) entry))
              src-table))
@@ -347,13 +347,13 @@ Returns TARGET-REGISTRY."
 
 (defun %init-lisp-path ()
   "Return the pathname of the user's init.lisp."
-  (merge-pathnames "init.lisp" *clambda-home*))
+  (merge-pathnames "init.lisp" *clawmacs-home*))
 
 (defun load-user-config ()
-  "Find and load ~/.clambda/init.lisp (or $CLAMBDA_HOME/init.lisp).
+  "Find and load ~/.clawmacs/init.lisp (or $CLAWMACS_HOME/init.lisp).
 
 The file is loaded with *PACKAGE* bound to CLAMBDA-USER so all public
-Clambda symbols are available without qualification.
+Clawmacs symbols are available without qualification.
 
 Error handling:
   - If init.lisp does not exist: prints a notice and returns NIL.
@@ -368,26 +368,26 @@ After successful load:
 Returns: T on success, NIL if not found or errored.
 
 Example startup:
-  (clambda/config:load-user-config)
+  (clawmacs/config:load-user-config)
   (let ((agent (make-agent :model *default-model* ...)))
     ...)"
   (let ((path (%init-lisp-path)))
     (cond
       ;; No init.lisp found
       ((not (probe-file path))
-       (format t "~&[clambda] No init.lisp at ~A — running with defaults.~%"
+       (format t "~&[clawmacs] No init.lisp at ~A — running with defaults.~%"
                (namestring path))
        nil)
 
       ;; Load it
       (t
-       (format t "~&[clambda] Loading ~A ...~%" (namestring path))
+       (format t "~&[clawmacs] Loading ~A ...~%" (namestring path))
        (handler-case
-           (let ((*package* (find-package '#:clambda-user)))
+           (let ((*package* (find-package '#:clawmacs-user)))
              (load path :verbose nil :print nil)
              ;; Success
              (setf *user-config-loaded* t)
-             (format t "~&[clambda] init.lisp loaded.~%")
+             (format t "~&[clawmacs] init.lisp loaded.~%")
              ;; Print startup message if set
              (when *startup-message*
                (format t "~&~A~%" *startup-message*))
@@ -398,8 +398,8 @@ Example startup:
          ;; Catch load errors — report clearly, don't crash
          (error (e)
            (format *error-output*
-                   "~&[clambda] ERROR loading ~A:~%~
+                   "~&[clawmacs] ERROR loading ~A:~%~
                     ~%  ~A~%~
-                    ~%  Fix the error and call (clambda/config:load-user-config) again.~%"
+                    ~%  Fix the error and call (clawmacs/config:load-user-config) again.~%"
                    (namestring path) e)
            nil))))))

@@ -1,4 +1,4 @@
-# Clambda Migration Report
+# Clawmacs Migration Report
 
 **Date:** 2026-02-27  
 **Agent:** Planner subagent of Chrysolambda (ceo_chryso)  
@@ -8,7 +8,7 @@
 
 ## Phase 1: init.lisp — COMPLETE ✅
 
-**File created:** `~/.clambda/init.lisp` (never committed to git)
+**File created:** `~/.clawmacs/init.lisp` (never committed to git)
 
 **Translated from OpenClaw config:**
 - Telegram channel: `ceo_chryso_bot` token, allowlist `535004273`
@@ -21,7 +21,7 @@
 **Missing features identified** → `missing-features.md`
 
 **One bug fixed in init.lisp during Phase 2:**
-- `clambda/logging:log-info` → `log-event` (correct API name)
+- `clawmacs/logging:log-info` → `log-event` (correct API name)
 - `schedule-task` positional function arg → `:function` keyword arg
 
 ---
@@ -73,7 +73,7 @@
 
 ## Phase 3: Documentation — COMPLETE ✅
 
-**12 documentation pages created in `projects/clambda-core/docs/`:**
+**12 documentation pages created in `projects/clawmacs-core/docs/`:**
 
 | File | Content |
 |------|---------|
@@ -98,7 +98,7 @@
 
 ## Phase 4: GitHub Pages — COMPLETE ✅
 
-**Live URL:** `https://chrysolambda-ops.github.io/clambda/`  
+**Live URL:** `https://chrysolambda-ops.github.io/clawmacs/`  
 **Branch:** `gh-pages` (orphan branch with built HTML)  
 **Builder:** pandoc 3.1.11.1 (Markdown → HTML5 with custom dark-mode template)  
 **HTTPS:** Enforced by GitHub  
@@ -106,7 +106,7 @@
 
 **Deploy command for future updates:**
 ```bash
-cd projects/clambda-core
+cd projects/clawmacs-core
 bash docs/build.sh docs/_site
 # Then push docs/_site/ to gh-pages branch
 ```
@@ -142,13 +142,13 @@ Branches:
 
 ## Key Operational Note
 
-To run Clambda on Slopbian:
+To run Clawmacs on Slopbian:
 
 ```bash
 export LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:$HOME/.guix-profile/lib"
 ~/.guix-profile/bin/sbcl \
-  --eval "(ql:quickload :clambda-core :silent t)" \
-  --eval "(clambda/config:load-user-config)" \
+  --eval "(ql:quickload :clawmacs-core :silent t)" \
+  --eval "(clawmacs/config:load-user-config)" \
   --eval "(loop (sleep 3600))"
 ```
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# build.sh — Build Clambda docs site using pandoc
+# build.sh — Build Clawmacs docs site using pandoc
 #
 # Usage: bash docs/build.sh [output-dir]
 # Default output: docs/_site/
@@ -17,7 +17,7 @@ if ! command -v pandoc &>/dev/null; then
   exit 1
 fi
 
-echo "Building Clambda docs..."
+echo "Building Clawmacs docs..."
 echo "  Source: $DOCS_DIR"
 echo "  Output: $OUTPUT_DIR"
 

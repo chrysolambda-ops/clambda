@@ -7,7 +7,7 @@
 ;;;; its own fresh SESSION, and the final text response is captured in
 ;;;; the handle's result slot.
 
-(in-package #:clambda/subagents)
+(in-package #:clawmacs/subagents)
 
 ;;; ── Status values ────────────────────────────────────────────────────────────
 
@@ -55,16 +55,16 @@ Returns a SUBAGENT-HANDLE immediately.
 Use SUBAGENT-WAIT to block for the result, or SUBAGENT-STATUS to poll."
   ;; Resolve spec → agent
   (let* ((agent (typecase agent-or-spec
-                  (clambda/agent:agent agent-or-spec)
-                  (clambda/registry:agent-spec
-                   (clambda/registry:instantiate-agent-spec agent-or-spec))
+                  (clawmacs/agent:agent agent-or-spec)
+                  (clawmacs/registry:agent-spec
+                   (clawmacs/registry:instantiate-agent-spec agent-or-spec))
                   (t (error "SPAWN-SUBAGENT: expected AGENT or AGENT-SPEC, got ~s"
                             agent-or-spec))))
          (sid     (or session-id
                       (format nil "subagent-~a-~a"
-                              (clambda/agent:agent-name agent)
+                              (clawmacs/agent:agent-name agent)
                               (get-universal-time))))
-         (sess    (clambda/session:make-session
+         (sess    (clawmacs/session:make-session
                    :id sid :agent agent))
          (lock    (bt:make-lock "subagent-lock"))
          (cvar    (bt:make-condition-variable :name "subagent-cvar"))
@@ -78,7 +78,7 @@ Use SUBAGENT-WAIT to block for the result, or SUBAGENT-STATUS to poll."
            (bt:make-thread
             (lambda ()
               (handler-case
-                  (let ((result (clambda/loop:run-agent sess task-message
+                  (let ((result (clawmacs/loop:run-agent sess task-message
                                                         :options options)))
                     ;; Store result and signal completion
                     (bt:with-lock-held (lock)

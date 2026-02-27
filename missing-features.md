@@ -1,4 +1,4 @@
-# Clambda Missing Features (vs OpenClaw)
+# Clawmacs Missing Features (vs OpenClaw)
 
 > Identified during Phase 1 of the migration pipeline.
 > Date: 2026-02-27
@@ -13,18 +13,18 @@
 tokens. OpenClaw's `streaming: "partial"` config sends an initial placeholder message
 and calls `editMessageText` repeatedly as tokens accumulate.
 
-**Clambda current state:** `%handle-message` in `src/telegram.lisp` calls `run-agent`
+**Clawmacs current state:** `%handle-message` in `src/telegram.lisp` calls `run-agent`
 with `:stream nil`. The full response is sent in one `sendMessage` call after the agent
 loop completes.
 
 **What's needed:**
 1. Set `:stream t` in the Telegram `run-agent` call
 2. Send an initial "thinking..." placeholder via `sendMessage` (capturing the `message_id`)
-3. Bind `clambda/loop:*on-stream-delta*` to accumulate tokens into a buffer
+3. Bind `clawmacs/loop:*on-stream-delta*` to accumulate tokens into a buffer
 4. Debounce `editMessageText` calls — update every ~500ms or every N chars (not every token)
 5. After `run-agent` returns, do a final `editMessageText` with the complete response
 6. Handle Telegram's 4096-char message limit (split if needed, editing splits separately)
-7. Add `*telegram-streaming*` option (boolean, default T) to `clambda/telegram`
+7. Add `*telegram-streaming*` option (boolean, default T) to `clawmacs/telegram`
 8. Expose streaming option via `register-channel :telegram :streaming t`
 
 **Files to modify:** `src/telegram.lisp`
@@ -38,7 +38,7 @@ loop completes.
 - `dmPolicy: allowlist, allowFrom: ["tay"]` — only `tay` can DM the bot
 - `groups.#bots.allowFrom: ["*"]` — any user in #bots can address the bot
 
-**Clambda current state:** `irc-connection` has a single `allowed-users` list for the
+**Clawmacs current state:** `irc-connection` has a single `allowed-users` list for the
 entire connection. Setting it to `'("tay")` blocks #bots users; setting to `nil` allows
 all DMs.
 
@@ -65,7 +65,7 @@ all DMs.
 
 **OpenClaw behaviour:** Uses Anthropic's native API for Claude models directly.
 
-**Clambda current state:** `cl-llm` only supports OpenAI-compatible APIs.
+**Clawmacs current state:** `cl-llm` only supports OpenAI-compatible APIs.
 Anthropic can be reached via OpenRouter (OpenAI shim) but lacks:
 - Prompt caching headers
 - Streaming with native format
@@ -90,12 +90,12 @@ Anthropic can be reached via OpenRouter (OpenAI shim) but lacks:
 **OpenClaw behaviour:** Skills directories contain `SKILL.md` files describing tools
 and capability instructions. Skills are loaded at startup and injected into agent prompts.
 
-**Clambda current state:** No skills system. Users define tools via `define-user-tool` in
+**Clawmacs current state:** No skills system. Users define tools via `define-user-tool` in
 `init.lisp` (which is actually more powerful — but loses the portability of SKILL.md files).
 
 **What's needed:**
-1. `clambda/skills` module
-2. Scan `~/.clambda/skills/` (and workspace-local `skills/`) for `SKILL.md` files
+1. `clawmacs/skills` module
+2. Scan `~/.clawmacs/skills/` (and workspace-local `skills/`) for `SKILL.md` files
 3. Parse SKILL.md: extract tool descriptions, parameter schemas, and prompt injection text
 4. Register found tools into agent registries at startup
 5. Add skill instructions to system prompt via hook
@@ -115,23 +115,23 @@ Low priority for initial migration.
 ### 3.2 Agent Identity / Theme System
 
 OpenClaw has `identity.name`, `identity.theme`, `identity.emoji` per agent.
-Clambda has no equivalent. Could be implemented as metadata on `agent` structs.
+Clawmacs has no equivalent. Could be implemented as metadata on `agent` structs.
 
 ### 3.3 Compaction / Safeguard Mode
 
 OpenClaw has context compaction with `safeguard` mode (warns before compaction).
-Clambda has token budget (`budget-exceeded` condition) but no automatic compaction.
+Clawmacs has token budget (`budget-exceeded` condition) but no automatic compaction.
 Could summarise session history when approaching token limit.
 
 ### 3.4 Pairing System for DMs
 
 OpenClaw has `dmPolicy: pairing` where new DM users must be paired first.
-Clambda only has allowlist (must pre-configure user IDs). No pairing handshake.
+Clawmacs only has allowlist (must pre-configure user IDs). No pairing handshake.
 
 ### 3.5 Multiple Simultaneous Telegram Accounts
 
 OpenClaw runs multiple bot accounts simultaneously (one per agent).
-Clambda's current `register-channel :telegram` supports only one bot at a time.
+Clawmacs's current `register-channel :telegram` supports only one bot at a time.
 Would require refactoring to a list of channels rather than a singleton `*telegram-channel*`.
 
 ---

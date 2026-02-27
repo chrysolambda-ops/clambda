@@ -1,6 +1,6 @@
 ;;;; src/session.lisp — Session management
 
-(in-package #:clambda/session)
+(in-package #:clawmacs/session)
 
 ;;; ── ID generation ────────────────────────────────────────────────────────────
 

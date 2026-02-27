@@ -24,19 +24,19 @@ Key design decisions:
 
 ```lisp
 ;; Load memory
-(let* ((mem (clambda:load-workspace-memory "/path/to/workspace"
+(let* ((mem (clawmacs:load-workspace-memory "/path/to/workspace"
                                            :subdirs '("memory" "knowledge")))
-       (ctx (clambda:memory-context-string mem)))
+       (ctx (clawmacs:memory-context-string mem)))
 
   ;; Inject into system prompt
-  (setf (clambda/agent:agent-system-prompt agent)
+  (setf (clawmacs/agent:agent-system-prompt agent)
         (concatenate 'string ctx base-prompt))
 
   ;; Or search for specific context
-  (let ((hits (clambda:search-memory mem "CLOS")))
+  (let ((hits (clawmacs:search-memory mem "CLOS")))
     (dolist (hit hits)
       (format t "Found in ~a: ~a~%"
-              (clambda:memory-entry-name (car hit))
+              (clawmacs:memory-entry-name (car hit))
               (cdr hit)))))
 ```
 
@@ -58,4 +58,4 @@ directory pathnames through `parse-native-namestring` (which expects a string).
 
 - Session initialization for any agent with a workspace directory
 - Loading SOUL.md, TEAM.md, daily notes into context
-- Implementing the OpenClaw-style memory system in Clambda
+- Implementing the OpenClaw-style memory system in Clawmacs

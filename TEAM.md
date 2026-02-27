@@ -1,7 +1,7 @@
 # TEAM.md — Gensym Team Operations Manual
 
 > The definitive reference for how this team works. Updated after Layer 4
-> (post cl-llm, cl-tui, clambda-core, clambda-gui). Read this before starting
+> (post cl-llm, cl-tui, clawmacs-core, clawmacs-gui). Read this before starting
 > any new project.
 
 ---
@@ -274,7 +274,7 @@ All work lives in the workspace repo. Commit early and often.
 | `knowledge/patterns/*.md` | Named reusable patterns — one file per pattern |
 | `knowledge/reference/` | Cached docs, snippets, API notes |
 | `knowledge/cl-style-guide.md` | CL coding standards |
-| `knowledge/architecture.md` | Clambda system architecture |
+| `knowledge/architecture.md` | Clawmacs system architecture |
 
 **Always check before implementing.** The knowledge base exists so we don't
 repeat mistakes. If you find a new pattern or make a new mistake, document it

@@ -1,8 +1,8 @@
-;;;; init.lisp.example — Example ~/.clambda/init.lisp
+;;;; init.lisp.example — Example ~/.clawmacs/init.lisp
 ;;;;
-;;;; Copy to ~/.clambda/init.lisp and replace placeholder credentials.
+;;;; Copy to ~/.clawmacs/init.lisp and replace placeholder credentials.
 
-(in-package #:clambda-user)
+(in-package #:clawmacs-user)
 
 ;;; Core options
 (setf *default-model* "google/gemma-3-4b")
@@ -26,7 +26,7 @@
 ;;   :server "irc.example.net"
 ;;   :port 6697
 ;;   :tls t
-;;   :nick "clambda-bot"
+;;   :nick "clawmacs-bot"
 ;;   :realname "Clambda Bot"
 ;;   :channels '("#bots"))
 

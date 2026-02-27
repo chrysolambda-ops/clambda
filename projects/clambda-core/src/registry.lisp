@@ -4,7 +4,7 @@
 ;;;; Specs can be created declaratively with DEFINE-AGENT and
 ;;;; instantiated into live AGENT objects with INSTANTIATE-AGENT-SPEC.
 
-(in-package #:clambda/registry)
+(in-package #:clawmacs/registry)
 
 ;;; ── Agent Spec ───────────────────────────────────────────────────────────────
 
@@ -104,20 +104,20 @@ Returns: (values agent spec)"
          (when (agent-spec-tools spec)
            ;; Build a registry containing only the specified built-in tools.
            (handler-case
-               (let ((builtin (clambda/builtins:make-builtin-registry))
-                     (new     (clambda/tools:make-tool-registry)))
+               (let ((builtin (clawmacs/builtins:make-builtin-registry))
+                     (new     (clawmacs/tools:make-tool-registry)))
                  (dolist (tool-name (agent-spec-tools spec))
-                   (unless (clambda/tools:find-tool builtin tool-name)
+                   (unless (clawmacs/tools:find-tool builtin tool-name)
                      (warn "define-agent: tool ~s not found in builtin registry"
                            tool-name)))
-                 (clambda/tools:copy-tools-to-registry
+                 (clawmacs/tools:copy-tools-to-registry
                   builtin new (agent-spec-tools spec))
                  new)
              (error (e)
                (warn "instantiate-agent-spec: error building tool registry: ~a" e)
                nil)))))
     (values
-     (clambda/agent:make-agent
+     (clawmacs/agent:make-agent
       :name           (agent-spec-name spec)
       :role           (agent-spec-role spec)
       :model          (agent-spec-model spec)

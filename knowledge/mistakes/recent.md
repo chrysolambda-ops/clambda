@@ -12,18 +12,18 @@
 | 27 | 2026-02-27 | idiom/parachute | Used `is-true`/`is-false` (don't exist) instead of parachute's `true`/`false` predicates |
 | 28 | 2026-02-27 | packages | Forgot to export new accessor `agent-spec-p` and `agent-turn-error-cause` — test import failed until added |
 | 26 | 2026-02-27 | idiom/parens | Sub-agent generated one extra `)` in a deep nesting (11 instead of 10 after a streaming fallback branch); SBCL flagged "unmatched close parenthesis" at exact col — fix: count nesting levels manually |
-| 22 | 2026-02-26 | asdf/packaging | `schema-plist->ht` missing from `clambda/tools` exports — broke `clambda/browser` package definition |
+| 22 | 2026-02-26 | asdf/packaging | `schema-plist->ht` missing from `clawmacs/tools` exports — broke `clawmacs/browser` package definition |
 | 23 | 2026-02-26 | idiom/playwright | `page.accessibility.snapshot()` removed in Playwright >=1.47; use `page.locator('body').ariaSnapshot()` |
 | 24 | 2026-02-26 | idiom/pathname | `merge-pathnames` on result of `asdf:system-relative-pathname` doubled the path segment — don't wrap, use directly |
 | 25 | 2026-02-26 | idiom/parachute | `skip-on (not (my-fn))` fails — parachute's skip-on walks `and/or/not` combinators recursively; function calls as the innermost leaf are not supported; use `(when ...)` inside the test body instead |
-| 20 | 2026-02-26 | packages | `clambda/irc` placed before `clambda/config` in packages.lisp — forward-ref error since it imports `register-channel` from config |
+| 20 | 2026-02-26 | packages | `clawmacs/irc` placed before `clawmacs/config` in packages.lisp — forward-ref error since it imports `register-channel` from config |
 | 21 | 2026-02-26 | idiom/sbcl | Loading test package that uses `#:parachute` before parachute is loaded → PACKAGE-DOES-NOT-EXIST |
-| 18 | 2026-02-26 | packages | `merge-user-tools!` defined in config.lisp but omitted from `clambda/config` exports |
+| 18 | 2026-02-26 | packages | `merge-user-tools!` defined in config.lisp but omitted from `clawmacs/config` exports |
 | 19 | 2026-02-26 | idiom/clos | `(find-class '(eql :kw))` in `find-method` — wrong; use `sb-mop:intern-eql-specializer` |
 |---|------|---------|---------|
 | 1 | 2026-02-26 | runtime/mcclim | `redisplay-frame-pane` before `run-frame-top-level` → NIL crash |
 | 2 | 2026-02-26 | idiom/streams | `get-output-stream-string` clears the stream on every call |
-| 3 | 2026-02-26 | packages | `*on-stream-delta*` not re-exported by top-level `clambda` package |
+| 3 | 2026-02-26 | packages | `*on-stream-delta*` not re-exported by top-level `clawmacs` package |
 | 15 | 2026-02-26 | idiom/uiop | `uiop:parse-native-namestring` wrapping the result of `uiop:ensure-directory-pathname` → type error |
 | 4 | 2026-02-26 | runtime/http | `dexador :want-stream t` returns stream as FIRST value, not extra |
 | 5 | 2026-02-26 | asdf/packaging | `parse-sse-line` used before being exported |
@@ -33,7 +33,7 @@
 | 9 | 2026-02-26 | idiom/sbcl | `--eval` with multiple top-level forms |
 | 10 | 2026-02-26 | idiom/format | Literal `~` in format string → "Unknown directive" |
 | 11 | 2026-02-26 | idiom/control | `return-from NAME` inside a lambda → "unknown block" |
-| 12 | 2026-02-26 | packages | `clambda/loop` missing accessor imports for CLOS class |
+| 12 | 2026-02-26 | packages | `clawmacs/loop` missing accessor imports for CLOS class |
 | 13 | 2026-02-26 | idiom/assert | `(assert cond "message")` → "value not of type LIST" |
 | 14 | 2026-02-26 | runtime/json | Nested plist → JSON array not object (shallow `plist->object`) |
 | 16 | 2026-02-26 | idiom/bordeaux-threads | `bt:condition-broadcast` doesn't exist in bordeaux-threads v0.9.4 |
@@ -66,16 +66,16 @@
 ## Category: packages
 
 ### #3 — 2026-02-26
-**What:** `*on-stream-delta*` is exported from `clambda/loop` but NOT re-exported by the top-level `clambda` package.
-**Why:** The `clambda` package only `:import-from`s `#:*on-tool-call*`, `#:*on-tool-result*`, `#:*on-llm-response*` from `clambda/loop` — omits `*on-stream-delta*`.
-**Fix:** `:import-from #:clambda/loop #:*on-stream-delta*` directly in the downstream package.
-**Lesson:** The `clambda` convenience package is incomplete. Always check which symbols are re-exported when using convenience packages. Prefer `#:clambda/loop` when you need the full loop API.
-**Tags:** #packages #exports #clambda
+**What:** `*on-stream-delta*` is exported from `clawmacs/loop` but NOT re-exported by the top-level `clawmacs` package.
+**Why:** The `clawmacs` package only `:import-from`s `#:*on-tool-call*`, `#:*on-tool-result*`, `#:*on-llm-response*` from `clawmacs/loop` — omits `*on-stream-delta*`.
+**Fix:** `:import-from #:clawmacs/loop #:*on-stream-delta*` directly in the downstream package.
+**Lesson:** The `clawmacs` convenience package is incomplete. Always check which symbols are re-exported when using convenience packages. Prefer `#:clawmacs/loop` when you need the full loop API.
+**Tags:** #packages #exports #clawmacs
 
 ### #12 — 2026-02-26
-**What:** `clambda/loop` package couldn't find `session-agent`, `agent-client`, etc. at runtime — "function undefined" errors.
+**What:** `clawmacs/loop` package couldn't find `session-agent`, `agent-client`, etc. at runtime — "function undefined" errors.
 **Why:** The package only imported the *class names* (`#:agent`, `#:session`) but not the accessor functions. Since `(:use #:cl)` doesn't pull in other packages, all external symbols must be explicitly imported.
-**Fix:** Added all needed accessors to `(:import-from ...)` in the `defpackage` form for `clambda/loop`.
+**Fix:** Added all needed accessors to `(:import-from ...)` in the `defpackage` form for `clawmacs/loop`.
 **Lesson:** When a package uses `(:use #:cl)` only (not other packages), every external function must be explicitly `:import-from`'d or used as a package-qualified name. The class name import does NOT automatically import its accessors.
 **Tags:** #packages #clos #imports
 
@@ -153,8 +153,8 @@
 ## Category: idiom/control
 
 ### #11 — 2026-02-26
-**What:** Used `(return-from clambda/tools:register-tool! ...)` inside a lambda inside `register-tool!`. SBCL rejected it: "return for unknown block".
-**Why:** `return-from` jumps to a named block. Functions defined with `defun` create a block with the function's name. But `register-tool!` is a function, and the lambda is a *different* function — so there's no block named `clambda/tools:register-tool!` in scope inside the lambda.
+**What:** Used `(return-from clawmacs/tools:register-tool! ...)` inside a lambda inside `register-tool!`. SBCL rejected it: "return for unknown block".
+**Why:** `return-from` jumps to a named block. Functions defined with `defun` create a block with the function's name. But `register-tool!` is a function, and the lambda is a *different* function — so there's no block named `clawmacs/tools:register-tool!` in scope inside the lambda.
 **Fix:** Use regular conditional logic (`cond`, `if`, `when`) instead of `return-from` inside lambdas.
 **Lesson:** `return-from NAME` only works if you're lexically inside a `(block NAME ...)` or `(defun NAME ...)` form. Never use it to escape from a lambda — use `return` (from a `(block nil ...)`) or just restructure with `cond`.
 **Tags:** #idiom #control-flow #lambdas
@@ -177,7 +177,7 @@
 ### #14 — 2026-02-26
 **What:** Tool parameters with nested `properties` were serialized as JSON arrays instead of objects, causing HTTP 400 from LM Studio.
 **Why:** `cl-llm/json:plist->object` only converts the top-level plist to a hash-table. Nested plists (like the `properties` value) are left as CL lists, which jzon serializes as JSON arrays.
-**Fix:** Wrote `schema-plist->ht` in `clambda/tools` — a recursive converter that specially handles the `"properties"` key by iterating its plist and recursively converting each property schema.
+**Fix:** Wrote `schema-plist->ht` in `clawmacs/tools` — a recursive converter that specially handles the `"properties"` key by iterating its plist and recursively converting each property schema.
 **Lesson:** `plist->object` is shallow. For nested JSON schemas, write a recursive converter. The `"properties"` field in JSON Schema is a JSON object (keyed by property name), not an array.
 **Tags:** #json #schema #tools #runtime
 
@@ -236,10 +236,10 @@ design struct slot names and public API names independently; use `:conc-name` to
 ## Category: packages
 
 ### #18 — 2026-02-26
-**What:** `merge-user-tools!` was defined and used in `src/config.lisp` but omitted from the `clambda/config` package's `:export` list in `src/packages.lisp`. Caused a compile error in the test file when it referenced `clambda/config:merge-user-tools!`.
+**What:** `merge-user-tools!` was defined and used in `src/config.lisp` but omitted from the `clawmacs/config` package's `:export` list in `src/packages.lisp`. Caused a compile error in the test file when it referenced `clawmacs/config:merge-user-tools!`.
 **Why:** Added the function after drafting the initial export list; forgot to update the exports.
-**Fix:** Added `#:merge-user-tools!` to the `:export` list of `clambda/config` in `packages.lisp`, and also to the `clambda` package's `:import-from` and `:export` sections, and to `clambda-user`.
-**Lesson:** When adding a function to a module after initial package design, immediately update ALL three places: (1) package `:export`, (2) top-level `clambda` `:import-from` + `:export`, (3) `clambda-user` if it's user-facing. A grep for the function name across packages.lisp catches omissions.
+**Fix:** Added `#:merge-user-tools!` to the `:export` list of `clawmacs/config` in `packages.lisp`, and also to the `clawmacs` package's `:import-from` and `:export` sections, and to `clawmacs-user`.
+**Lesson:** When adding a function to a module after initial package design, immediately update ALL three places: (1) package `:export`, (2) top-level `clawmacs` `:import-from` + `:export`, (3) `clawmacs-user` if it's user-facing. A grep for the function name across packages.lisp catches omissions.
 **Tags:** #packages #exports #config
 
 ---
@@ -258,9 +258,9 @@ design struct slot names and public API names independently; use `:conc-name` to
 ## Category: packages
 
 ### #20 — 2026-02-26
-**What:** Initially placed `clambda/irc` defpackage BEFORE `clambda/config` in packages.lisp. Got PACKAGE-DOES-NOT-EXIST at load time: `clambda/irc` imports `register-channel` and `*default-model*` from `clambda/config`, but `clambda/config` wasn't defined yet.
+**What:** Initially placed `clawmacs/irc` defpackage BEFORE `clawmacs/config` in packages.lisp. Got PACKAGE-DOES-NOT-EXIST at load time: `clawmacs/irc` imports `register-channel` and `*default-model*` from `clawmacs/config`, but `clawmacs/config` wasn't defined yet.
 **Why:** When working in a file with many packages, it's easy to place a new package in a "logical" position (before the config section) instead of the correct dependency-ordered position (after config).
-**Fix:** Moved `clambda/irc` to AFTER `clambda/config` and the Telegram package, just before the top-level `clambda` convenience package.
+**Fix:** Moved `clawmacs/irc` to AFTER `clawmacs/config` and the Telegram package, just before the top-level `clawmacs` convenience package.
 **Lesson:** Package load order in `packages.lisp` MUST match dependency order. When a new package specialises a generic from another package (e.g., `register-channel`), it MUST be defined after that package. Draw out the dependency graph before placing the defpackage.
 **Tags:** #packages #load-order #defpackage
 
@@ -270,8 +270,8 @@ design struct slot names and public API names independently; use `:conc-name` to
 
 ### #21 — 2026-02-26
 **What:** In a test runner script, loaded test packages (which use `(:use #:parachute)`) before `parachute` was quickloaded. Got PACKAGE-DOES-NOT-EXIST: "The name PARACHUTE does not designate any package."
-**Why:** The main system (`clambda-core`) doesn't depend on `parachute` — only `clambda-core/tests` does. When we manually load `t/packages.lisp` in a script that already loaded `clambda-core` (not `clambda-core/tests`), parachute is not in the image.
-**Fix:** Always `(ql:quickload :parachute :silent t)` BEFORE loading any test package that `(:use #:parachute)`. Or load the full `clambda-core/tests` ASDF system instead of individual files.
+**Why:** The main system (`clawmacs-core`) doesn't depend on `parachute` — only `clawmacs-core/tests` does. When we manually load `t/packages.lisp` in a script that already loaded `clawmacs-core` (not `clawmacs-core/tests`), parachute is not in the image.
+**Fix:** Always `(ql:quickload :parachute :silent t)` BEFORE loading any test package that `(:use #:parachute)`. Or load the full `clawmacs-core/tests` ASDF system instead of individual files.
 **Lesson:** Test packages must have their dependencies explicitly loaded before `defpackage` is evaluated. Don't assume a test runner has pre-loaded all test dependencies. When writing script-driven test runners, always quickload test dependencies at the top.
 **Tags:** #packages #parachute #testing #sbcl
 
@@ -280,9 +280,9 @@ design struct slot names and public API names independently; use `:conc-name` to
 ## Category: asdf/packaging
 
 ### #22 — 2026-02-26
-**What:** `schema-plist->ht` was defined in `clambda/tools` but not exported. When the new `clambda/browser` package tried to `(:import-from #:clambda/tools #:schema-plist->ht)`, SBCL raised "no symbol named SCHEMA-PLIST->HT in CLAMBDA/TOOLS".
+**What:** `schema-plist->ht` was defined in `clawmacs/tools` but not exported. When the new `clawmacs/browser` package tried to `(:import-from #:clawmacs/tools #:schema-plist->ht)`, SBCL raised "no symbol named SCHEMA-PLIST->HT in CLAMBDA/TOOLS".
 **Why:** `schema-plist->ht` was added as a helper function but never added to the `:export` list in the package definition.
-**Fix:** Added `#:schema-plist->ht` to the `:export` section of `clambda/tools` in `packages.lisp`.
+**Fix:** Added `#:schema-plist->ht` to the `:export` section of `clawmacs/tools` in `packages.lisp`.
 **Lesson:** When adding a new function to an existing module that other packages will need, immediately update ALL export lists. Grep for all packages that import from the modified package to catch missed updates.
 **Tags:** #packages #exports #tools
 
@@ -302,11 +302,11 @@ design struct slot names and public API names independently; use `:conc-name` to
 ## Category: idiom/pathname
 
 ### #24 — 2026-02-26
-**What:** Used `(merge-pathnames "browser/playwright-bridge.js" (asdf:system-relative-pathname :clambda-core "browser/playwright-bridge.js"))` — the result had double `browser/browser/` path segment.
+**What:** Used `(merge-pathnames "browser/playwright-bridge.js" (asdf:system-relative-pathname :clawmacs-core "browser/playwright-bridge.js"))` — the result had double `browser/browser/` path segment.
 **Why:** `asdf:system-relative-pathname` already returns the full path including the relative component. Wrapping it in `merge-pathnames` with the same relative component appended it again.
 **Fix:** Use `asdf:system-relative-pathname` directly without wrapping in `merge-pathnames`:
   ```lisp
-  (asdf:system-relative-pathname :clambda-core "browser/playwright-bridge.js")
+  (asdf:system-relative-pathname :clawmacs-core "browser/playwright-bridge.js")
   ```
 **Lesson:** `asdf:system-relative-pathname` returns the fully resolved path. Don't wrap it in `merge-pathnames` with the same relative component — that doubles the path.
 **Tags:** #asdf #pathnames #idiom

@@ -1,6 +1,6 @@
 # IRC Channel
 
-Clambda includes a full IRC client implemented from scratch in Common Lisp — no
+Clawmacs includes a full IRC client implemented from scratch in Common Lisp — no
 external IRC library needed. Supports TLS, NickServ registration, flood protection,
 automatic reconnection, and per-channel access policies.
 
@@ -9,15 +9,15 @@ automatic reconnection, and per-channel access policies.
 ### Step 1: Configure init.lisp
 
 ```lisp
-(in-package #:clambda-user)
+(in-package #:clawmacs-user)
 
 (register-channel :irc
   :server            "irc.libera.chat"   ; IRC server hostname
   :port              6697                ; port (6667 = plaintext, 6697 = TLS)
   :tls               t                  ; use TLS (recommended)
-  :nick              "my-clambda-bot"   ; bot's IRC nick
-  :realname          "Clambda AI"       ; IRC GECOS/realname field
-  :channels          '("#clambda")      ; channels to join on connect
+  :nick              "my-clawmacs-bot"   ; bot's IRC nick
+  :realname          "Clawmacs AI"       ; IRC GECOS/realname field
+  :channels          '("#clawmacs")      ; channels to join on connect
   :nickserv-password "YOUR_PASSWORD"    ; omit if not registered with NickServ
   :allowed-users     nil)               ; nil = all users; list to restrict
 ```
@@ -25,7 +25,7 @@ automatic reconnection, and per-channel access policies.
 ### Step 2: Start the connection
 
 ```lisp
-(add-hook '*after-init-hook* #'clambda/irc:start-irc)
+(add-hook '*after-init-hook* #'clawmacs/irc:start-irc)
 ```
 
 ### Step 3: Trigger the bot
@@ -33,14 +33,14 @@ automatic reconnection, and per-channel access policies.
 In a channel the bot has joined:
 
 ```
-<alice> my-clambda-bot: what is 2 + 2?
-<my-clambda-bot> 2 + 2 = 4
+<alice> my-clawmacs-bot: what is 2 + 2?
+<my-clawmacs-bot> 2 + 2 = 4
 ```
 
 In a direct message (DM):
 
 ```
-/msg my-clambda-bot hello there
+/msg my-clawmacs-bot hello there
 ```
 
 ---
@@ -52,9 +52,9 @@ In a direct message (DM):
   :server            "irc.libera.chat"  ; Required
   :port              6697               ; Default: 6697
   :tls               t                  ; Default: t
-  :nick              "clambda"          ; Required
-  :realname          "Clambda AI"       ; Default: nick value
-  :channels          '("#clambda")      ; Channels to auto-join
+  :nick              "clawmacs"          ; Required
+  :realname          "Clawmacs AI"       ; Default: nick value
+  :channels          '("#clawmacs")      ; Channels to auto-join
   :nickserv-password "secret"           ; Optional
   :allowed-users     nil                ; Global nick allowlist (nil = all)
   :dm-allowed-users  '("alice" "bob")  ; DM-specific allowlist
@@ -112,7 +112,7 @@ Policy resolution order:
 
 ### Nick collision handling
 
-If the configured nick is taken, Clambda appends `_` and retries (e.g., `chryso_`, `chryso__`).
+If the configured nick is taken, Clawmacs appends `_` and retries (e.g., `chryso_`, `chryso__`).
 
 ---
 
@@ -138,7 +138,7 @@ In DMs (PRIVMSG directly to the bot):
 
 ## Flood Protection
 
-Clambda uses a background flood-sender thread to rate-limit outgoing messages.
+Clawmacs uses a background flood-sender thread to rate-limit outgoing messages.
 
 - Maximum: **2 messages per second** (configurable via `*irc-send-interval*`)
 - Long responses are split into multiple PRIVMSGs at word boundaries (max 400 chars)
@@ -146,14 +146,14 @@ Clambda uses a background flood-sender thread to rate-limit outgoing messages.
 
 ```lisp
 ;; Adjust send rate (default 0.5 = 2/sec)
-(setf clambda/irc:*irc-send-interval* 1.0)  ; 1/sec = slower
+(setf clawmacs/irc:*irc-send-interval* 1.0)  ; 1/sec = slower
 ```
 
 ---
 
 ## Reconnection
 
-Clambda automatically reconnects after disconnection with exponential backoff:
+Clawmacs automatically reconnects after disconnection with exponential backoff:
 
 - First retry: 5 seconds
 - Second retry: 10 seconds
@@ -169,19 +169,19 @@ The NickServ IDENTIFY is re-sent after each successful reconnect.
 
 ```lisp
 ;; Start IRC connection (background thread)
-(clambda/irc:start-irc)
+(clawmacs/irc:start-irc)
 
 ;; Stop IRC connection (sends QUIT, exits threads)
-(clambda/irc:stop-irc)
+(clawmacs/irc:stop-irc)
 
 ;; Check connection status
-(clambda/irc:irc-connected-p)
+(clawmacs/irc:irc-connected-p)
 
 ;; Send a message directly (bypasses agent loop)
-(clambda/irc:irc-send-privmsg "#clambda" "Hello channel!")
+(clawmacs/irc:irc-send-privmsg "#clawmacs" "Hello channel!")
 
 ;; Join a channel after connect
-(clambda/irc:irc-join "#another-channel")
+(clawmacs/irc:irc-join "#another-channel")
 ```
 
 ---
@@ -191,7 +191,7 @@ The NickServ IDENTIFY is re-sent after each successful reconnect.
 To register your bot's nick with NickServ (persistent nick ownership):
 
 1. Connect without `:nickserv-password` first
-2. In the REPL, send: `(clambda/irc:irc-send-privmsg "NickServ" "REGISTER password email@example.com")`
+2. In the REPL, send: `(clawmacs/irc:irc-send-privmsg "NickServ" "REGISTER password email@example.com")`
 3. Follow NickServ's instructions
 4. Add `:nickserv-password "yourpassword"` to `register-channel` in init.lisp
 
@@ -233,7 +233,7 @@ to multiple simultaneous users.
 - On Guix, you may need: `export LD_LIBRARY_PATH="$HOME/.guix-profile/lib:$LD_LIBRARY_PATH"`
 
 **Nick "already in use":**
-- Clambda auto-appends `_` — the bot will appear as `mybot_`
+- Clawmacs auto-appends `_` — the bot will appear as `mybot_`
 - Register the nick with NickServ to own it
 
 **Reconnects repeatedly:**

@@ -12,7 +12,7 @@ to avoid external config formats. Especially appropriate for Lisp-native tools.
 
 ### 1. Config directory variable
 ```lisp
-(defvar *clambda-home*
+(defvar *clawmacs-home*
   (let ((env (uiop:getenv "MY_APP_HOME")))
     (if (and env (not (string= env "")))
         (uiop:ensure-directory-pathname env)
@@ -83,7 +83,7 @@ to avoid external config formats. Especially appropriate for Lisp-native tools.
 1. **No sandboxing** — init.lisp is full CL. Errors are caught but not prevented.
 2. **defoption creates real DEFVAR** — options are just CL special variables; setf works normally.
 3. **hook-var is a symbol** — `(add-hook '*my-hook* fn)` takes the quoted symbol so `setf` works via `symbol-value`. This is the idiomatic CL hook pattern.
-4. **clambda-user package** — init.lisp runs in a dedicated package that imports the public API. Users don't need to write package qualifiers for common operations.
+4. **clawmacs-user package** — init.lisp runs in a dedicated package that imports the public API. Users don't need to write package qualifiers for common operations.
 5. **Error recovery** — load errors are caught and printed; the system continues with defaults. This is the Emacs approach (init errors shown but Emacs still starts).
 
 ## Generic function for channel registration
@@ -108,7 +108,7 @@ to avoid external config formats. Especially appropriate for Lisp-native tools.
 - **Guile/Chicken embed** — not applicable
 - **Quicklisp `ql:add-to-init-file`** — for library initialization, not application config
 
-## Files in clambda
+## Files in clawmacs
 - `src/config.lisp` — full implementation
 - `example-init.lisp` — annotated example showing all features
 - `t/test-config.lisp` — 24 integration tests (all pass)

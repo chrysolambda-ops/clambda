@@ -3,7 +3,7 @@
 (load (merge-pathnames "quicklisp/setup.lisp" (user-homedir-pathname)))
 (asdf:clear-source-registry)
 (asdf:initialize-source-registry)
-(ql:quickload "clambda-core" :silent t)
+(ql:quickload "clawmacs-core" :silent t)
 
 (defvar *base-url* "http://192.168.1.189:1234/v1")
 (defvar *api-key* "not-needed")
@@ -18,22 +18,22 @@
 ;;; ── Test 1: Registry + instantiate ──────────────────────────────────────────
 (format t "~%=== Test 1: Registry + instantiate-agent-spec ===~%")
 
-(clambda:define-agent :test-bot
+(clawmacs:define-agent :test-bot
   :model *model*
   :system-prompt "You are a terse test bot. Respond in at most one sentence."
   :role "test")
 
-(let* ((spec   (clambda:find-agent :test-bot))
+(let* ((spec   (clawmacs:find-agent :test-bot))
        (client (make-test-client))
-       (agent  (clambda:instantiate-agent-spec spec)))
+       (agent  (clawmacs:instantiate-agent-spec spec)))
   ;; Wire the client in
-  (setf (clambda:agent-client agent) client)
+  (setf (clawmacs:agent-client agent) client)
   (format t "Instantiated: ~a~%" agent)
 
   ;; Create a session and run one turn
-  (let* ((sess (clambda:make-session :id "test-registry-session" :agent agent))
-         (resp (clambda:run-agent sess "Say the word 'hello' and nothing else."
-                                  :options (clambda:make-loop-options :max-turns 3))))
+  (let* ((sess (clawmacs:make-session :id "test-registry-session" :agent agent))
+         (resp (clawmacs:run-agent sess "Say the word 'hello' and nothing else."
+                                  :options (clawmacs:make-loop-options :max-turns 3))))
     (format t "Registry+turn response: ~s~%" resp)
     (assert (and resp (> (length resp) 0)) ()
             "Expected non-empty response, got ~s" resp)))
@@ -44,18 +44,18 @@
 (format t "~%=== Test 2: Sub-agent spawning ===~%")
 
 (let* ((client (make-test-client))
-       (spec   (clambda:find-agent :test-bot))
-       (agent  (clambda:instantiate-agent-spec spec)))
-  (setf (clambda:agent-client agent) client)
+       (spec   (clawmacs:find-agent :test-bot))
+       (agent  (clawmacs:instantiate-agent-spec spec)))
+  (setf (clawmacs:agent-client agent) client)
 
-  (let ((handle (clambda:spawn-subagent
+  (let ((handle (clawmacs:spawn-subagent
                  agent
                  "Reply with exactly 'pong' and nothing else.")))
 
-    (format t "Subagent spawned, status: ~a~%" (clambda:subagent-status handle))
+    (format t "Subagent spawned, status: ~a~%" (clawmacs:subagent-status handle))
 
     (multiple-value-bind (result status)
-        (clambda:subagent-wait handle :timeout 60)
+        (clawmacs:subagent-wait handle :timeout 60)
       (format t "Subagent finished. Status: ~a, Result: ~s~%"
               status result)
       (assert (eq status :done) ()
@@ -70,15 +70,15 @@
 
 ;; Register an agent in the registry with a client (for HTTP use)
 (let* ((client (make-test-client))
-       (spec   (clambda:find-agent :test-bot))
-       (agent  (clambda:instantiate-agent-spec spec)))
-  (setf (clambda:agent-client agent) client)
+       (spec   (clawmacs:find-agent :test-bot))
+       (agent  (clawmacs:instantiate-agent-spec spec)))
+  (setf (clawmacs:agent-client agent) client)
   ;; Register the live agent (not spec) under a different name
-  (clambda:register-agent "live-bot" agent))
+  (clawmacs:register-agent "live-bot" agent))
 
 ;; Start the server
-(clambda:start-server :port 7474)
-(assert (clambda:server-running-p) () "Server should be running")
+(clawmacs:start-server :port 7474)
+(assert (clawmacs:server-running-p) () "Server should be running")
 (format t "HTTP server started~%")
 
 (sleep 0.5)
@@ -118,8 +118,8 @@
 (format t "POST /chat: PASSED~%")
 
 ;; Stop the server
-(clambda:stop-server)
-(assert (not (clambda:server-running-p)) () "Server should be stopped")
+(clawmacs:stop-server)
+(assert (not (clawmacs:server-running-p)) () "Server should be stopped")
 
 (format t "~%=== ALL LIVE TESTS PASSED ===~%")
 (quit)

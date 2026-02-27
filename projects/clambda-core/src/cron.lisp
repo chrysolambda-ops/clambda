@@ -1,6 +1,6 @@
 ;;;; src/cron.lisp — Cron / Scheduled Task Scheduler (Layer 8a)
 ;;;;
-;;;; Provides a thread-based task scheduler for Clambda agents.
+;;;; Provides a thread-based task scheduler for Clawmacs agents.
 ;;;;
 ;;;; Two task kinds:
 ;;;;   :periodic  — repeats every N seconds until cancelled
@@ -21,7 +21,7 @@
 ;;;;   (task-info task)            → hash-table (for JSON / display)
 ;;;;
 ;;;; Integration with init.lisp:
-;;;;   ;; In ~/.clambda/init.lisp:
+;;;;   ;; In ~/.clawmacs/init.lisp:
 ;;;;   (schedule-task "check-email" :every (* 30 60) #'check-email-fn
 ;;;;                  :description "Poll mailbox every 30 minutes")
 ;;;;   (schedule-once "startup-ping" :after 5 #'ping-fn
@@ -29,17 +29,17 @@
 ;;;;
 ;;;; Error handling:
 ;;;;   Errors in the task function are caught, stored in task-last-error,
-;;;;   logged (via clambda/logging if available), and the task continues
+;;;;   logged (via clawmacs/logging if available), and the task continues
 ;;;;   (periodic tasks keep firing; once tasks just exit after the error).
 
-(in-package #:clambda/cron)
+(in-package #:clawmacs/cron)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 1. Data Types
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
 (defstruct (scheduled-task (:conc-name task-))
-  "A scheduled task managed by the Clambda cron system."
+  "A scheduled task managed by the Clawmacs cron system."
   (name        ""    :type string)
   (kind        :once :type keyword)        ; :periodic or :once
   (interval    0     :type real)           ; seconds (fire interval or initial delay)
@@ -62,7 +62,7 @@
 Protected by *TASK-LOCK*.")
 
 (defvar *task-lock*
-  (bt:make-lock "clambda/cron:*task-lock*")
+  (bt:make-lock "clawmacs/cron:*task-lock*")
   "Lock protecting *TASK-REGISTRY*.")
 
 (defvar *cron-sleep-interval* 0.5
@@ -84,14 +84,14 @@ Smaller = more responsive cancellation, higher CPU overhead.")
     (remhash name *task-registry*)))
 
 (defun %log (fmt &rest args)
-  "Emit a log entry if clambda/logging is loaded and enabled."
+  "Emit a log entry if clawmacs/logging is loaded and enabled."
   (handler-case
-      (when (boundp 'clambda/logging:*log-enabled*)
-        (when clambda/logging:*log-enabled*
-          (clambda/logging:log-event "cron" "message" (apply #'format nil fmt args))))
+      (when (boundp 'clawmacs/logging:*log-enabled*)
+        (when clawmacs/logging:*log-enabled*
+          (clawmacs/logging:log-event "cron" "message" (apply #'format nil fmt args))))
     (error () nil))
   ;; Always print to stderr
-  (apply #'format *error-output* (concatenate 'string "~&[clambda/cron] " fmt "~%") args))
+  (apply #'format *error-output* (concatenate 'string "~&[clawmacs/cron] " fmt "~%") args))
 
 (defun %sleep-until (target-time task)
   "Sleep in *CRON-SLEEP-INTERVAL* increments until TARGET-TIME (universal-time),

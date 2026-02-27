@@ -4,7 +4,7 @@
 (load "~/quicklisp/setup.lisp")
 (asdf:clear-source-registry)
 (asdf:initialize-source-registry)
-(ql:quickload '(:clambda-core :cl-llm) :silent t)
+(ql:quickload '(:clawmacs-core :cl-llm) :silent t)
 
 (defpackage #:layer5-test
   (:use #:cl))
@@ -28,17 +28,17 @@
        (format t "  FAIL  ~a — error: ~a~%" ,label e))))
 
 ;;; ─────────────────────────────────────────────────────────────────────────────
-;;; Task 1.0: *on-stream-delta* re-exported from clambda package
+;;; Task 1.0: *on-stream-delta* re-exported from clawmacs package
 ;;; ─────────────────────────────────────────────────────────────────────────────
 
 (format t "~%=== Task 1.0: *on-stream-delta* re-export ===~%")
 
-(check "*on-stream-delta* exported from clambda"
-       (find-symbol "*ON-STREAM-DELTA*" :clambda))
+(check "*on-stream-delta* exported from clawmacs"
+       (find-symbol "*ON-STREAM-DELTA*" :clawmacs))
 
-(check "*on-stream-delta* is same object as clambda/loop version"
-       (eq (find-symbol "*ON-STREAM-DELTA*" :clambda)
-           (find-symbol "*ON-STREAM-DELTA*" :clambda/loop)))
+(check "*on-stream-delta* is same object as clawmacs/loop version"
+       (eq (find-symbol "*ON-STREAM-DELTA*" :clawmacs)
+           (find-symbol "*ON-STREAM-DELTA*" :clawmacs/loop)))
 
 ;;; ─────────────────────────────────────────────────────────────────────────────
 ;;; Task 1.1: Session persistence (save/load)
@@ -50,49 +50,49 @@
                 :base-url "http://192.168.1.189:1234/v1"
                 :api-key "not-needed"
                 :model "google/gemma-3-4b"))
-       (agent  (clambda:make-agent
+       (agent  (clawmacs:make-agent
                 :name "test-agent"
                 :client client
                 :model "google/gemma-3-4b"))
-       (session (clambda:make-session :agent agent))
+       (session (clawmacs:make-session :agent agent))
        (tmpfile (format nil "/tmp/test-session-~a.json"
                         (random 99999))))
 
   ;; Add some messages
-  (clambda:session-add-message session (cl-llm/protocol:user-message "Hello!"))
-  (clambda:session-add-message session (cl-llm/protocol:assistant-message "Hi there!"))
-  (clambda:session-add-message session (cl-llm/protocol:user-message "How are you?"))
+  (clawmacs:session-add-message session (cl-llm/protocol:user-message "Hello!"))
+  (clawmacs:session-add-message session (cl-llm/protocol:assistant-message "Hi there!"))
+  (clawmacs:session-add-message session (cl-llm/protocol:user-message "How are you?"))
 
   (check "session has 3 messages before save"
-         (= 3 (clambda:session-message-count session)))
+         (= 3 (clawmacs:session-message-count session)))
 
   ;; Save
   (check "save-session returns path"
-         (stringp (clambda:save-session session tmpfile)))
+         (stringp (clawmacs:save-session session tmpfile)))
 
   (check "session file exists"
          (probe-file tmpfile))
 
   ;; Load
-  (let ((restored (clambda:load-session agent tmpfile)))
+  (let ((restored (clawmacs:load-session agent tmpfile)))
     (check "load-session returns a session"
-           (typep restored 'clambda/session:session))
+           (typep restored 'clawmacs/session:session))
 
     (check "restored session has same ID"
-           (string= (clambda:session-id session)
-                    (clambda:session-id restored)))
+           (string= (clawmacs:session-id session)
+                    (clawmacs:session-id restored)))
 
     (check "restored session has 3 messages"
-           (= 3 (clambda:session-message-count restored)))
+           (= 3 (clawmacs:session-message-count restored)))
 
     (check "first message is user role"
            (eq :user (cl-llm/protocol:message-role
-                      (first (clambda:session-messages restored)))))
+                      (first (clawmacs:session-messages restored)))))
 
     (check "first message content correct"
            (string= "Hello!"
                     (cl-llm/protocol:message-content
-                     (first (clambda:session-messages restored))))))
+                     (first (clawmacs:session-messages restored))))))
 
   ;; Cleanup
   (ignore-errors (delete-file tmpfile)))
@@ -104,35 +104,35 @@
 (format t "~%=== Task 1.2: Memory System ===~%")
 
 (let* ((workspace "/home/slime/.openclaw/workspace-gensym")
-       (mem (clambda:load-workspace-memory workspace)))
+       (mem (clawmacs:load-workspace-memory workspace)))
 
   (check "load-workspace-memory returns workspace-memory"
-         (typep mem 'clambda/memory:workspace-memory))
+         (typep mem 'clawmacs/memory:workspace-memory))
 
   (check "workspace-memory has entries"
-         (> (length (clambda:workspace-memory-entries mem)) 0))
+         (> (length (clawmacs:workspace-memory-entries mem)) 0))
 
   (check "workspace-memory path is set"
-         (> (length (clambda/memory:workspace-memory-path mem)) 0))
+         (> (length (clawmacs/memory:workspace-memory-path mem)) 0))
 
   ;; Check priority files loaded first
-  (let ((first-entry (first (clambda:workspace-memory-entries mem))))
+  (let ((first-entry (first (clawmacs:workspace-memory-entries mem))))
     (check "first entry has a name"
-           (> (length (clambda:memory-entry-name first-entry)) 0))
+           (> (length (clawmacs:memory-entry-name first-entry)) 0))
     (check "first entry has content"
-           (> (length (clambda:memory-entry-content first-entry)) 0))
+           (> (length (clawmacs:memory-entry-content first-entry)) 0))
     (format t "       (first loaded: ~a)~%"
-            (clambda:memory-entry-name first-entry)))
+            (clawmacs:memory-entry-name first-entry)))
 
   ;; Search
-  (let ((results (clambda:search-memory mem "Gensym")))
+  (let ((results (clawmacs:search-memory mem "Gensym")))
     (check "search returns results for 'Gensym'"
            (> (length results) 0))
     (format t "       (search 'Gensym': ~a matches)~%"
             (length results)))
 
   ;; Context string
-  (let ((ctx (clambda:memory-context-string mem)))
+  (let ((ctx (clawmacs:memory-context-string mem)))
     (check "memory-context-string is non-empty"
            (> (length ctx) 0))
     (check "context string contains '# Workspace Memory' header"
@@ -150,7 +150,7 @@
 (let* ((html "<html><head><title>Test</title><style>.x{}</style></head>
 <body><h1>Hello World</h1><p>This is a <b>test</b> page.</p>
 <script>alert('hi')</script></body></html>")
-       (stripped (clambda/builtins::strip-html-tags html)))
+       (stripped (clawmacs/builtins::strip-html-tags html)))
   (check "strip-html-tags removes tags"
          (not (search "<html>" stripped)))
   (check "strip-html-tags removes script content"
@@ -162,19 +162,19 @@
   (format t "       stripped: ~s~%" stripped))
 
 ;; Test web-fetch tool is registered in builtin registry
-(let ((registry (clambda:make-builtin-registry)))
+(let ((registry (clawmacs:make-builtin-registry)))
   (check "web_fetch tool is registered"
-         (clambda:find-tool registry "web_fetch"))
+         (clawmacs:find-tool registry "web_fetch"))
   (check "exec tool is registered"
-         (clambda:find-tool registry "exec"))
+         (clawmacs:find-tool registry "exec"))
   (check "read_file tool is registered"
-         (clambda:find-tool registry "read_file")))
+         (clawmacs:find-tool registry "read_file")))
 
 ;; Test actual HTTP fetch (httpbin.org is reliable for testing)
 (format t "       Testing HTTP fetch (httpbin.org/get)...~%")
 (handler-case
     (multiple-value-bind (text ct status)
-        (clambda/builtins::fetch-url "http://httpbin.org/get" :max-chars 500)
+        (clawmacs/builtins::fetch-url "http://httpbin.org/get" :max-chars 500)
       (check "HTTP fetch returns status 200"
              (= status 200))
       (check "HTTP fetch returns non-empty text"
@@ -190,16 +190,16 @@
 
 (format t "~%=== Task 1.4: Structured Logging ===~%")
 
-(let ((logfile "/tmp/test-clambda-log.jsonl"))
+(let ((logfile "/tmp/test-clawmacs-log.jsonl"))
   (ignore-errors (delete-file logfile))
 
-  (clambda:with-logging (logfile)
-    (clambda:log-llm-request "test-agent" "gemma-3-4b" 3 :tools-count 4)
-    (clambda:log-tool-call   "test-agent" "exec" "ls -la")
-    (clambda:log-tool-result "test-agent" "exec" t 1024)
-    (clambda:log-error-event "test-agent" "tool_error" "Something went wrong"
+  (clawmacs:with-logging (logfile)
+    (clawmacs:log-llm-request "test-agent" "gemma-3-4b" 3 :tools-count 4)
+    (clawmacs:log-tool-call   "test-agent" "exec" "ls -la")
+    (clawmacs:log-tool-result "test-agent" "exec" t 1024)
+    (clawmacs:log-error-event "test-agent" "tool_error" "Something went wrong"
                              :context "exec tool")
-    (clambda:log-event "custom_event" "key" "value" "count" 42))
+    (clawmacs:log-event "custom_event" "key" "value" "count" 42))
 
   (check "log file was created"
          (probe-file logfile))
@@ -236,10 +236,10 @@
   (ignore-errors (delete-file logfile)))
 
 ;; Test with-logging disabling
-(let ((logfile "/tmp/test-clambda-log-disabled.jsonl"))
+(let ((logfile "/tmp/test-clawmacs-log-disabled.jsonl"))
   (ignore-errors (delete-file logfile))
-  (clambda:with-logging (logfile :enabled nil)
-    (clambda:log-event "should-not-appear" "x" 1))
+  (clawmacs:with-logging (logfile :enabled nil)
+    (clawmacs:log-event "should-not-appear" "x" 1))
   (check "logging disabled: no file created"
          (not (probe-file logfile))))
 

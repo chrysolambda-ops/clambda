@@ -1,8 +1,8 @@
-;;;; t/packages.lisp — Test package for clambda-gui
+;;;; t/packages.lisp — Test package for clawmacs-gui
 
-(defpackage #:clambda-gui/tests
+(defpackage #:clawmacs-gui/tests
   (:use #:clim-lisp)
-  (:import-from #:clambda-gui
+  (:import-from #:clawmacs-gui
                 #:make-chat-message
                 #:chat-message-role
                 #:chat-message-content

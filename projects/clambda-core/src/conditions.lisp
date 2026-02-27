@@ -1,16 +1,16 @@
-;;;; src/conditions.lisp — Condition hierarchy for clambda-core
+;;;; src/conditions.lisp — Condition hierarchy for clawmacs-core
 
-(in-package #:clambda/conditions)
+(in-package #:clawmacs/conditions)
 
 ;;; ── Base ─────────────────────────────────────────────────────────────────────
 
-(define-condition clambda-error (error)
+(define-condition clawmacs-error (error)
   ()
-  (:documentation "Base condition for all clambda-core errors."))
+  (:documentation "Base condition for all clawmacs-core errors."))
 
 ;;; ── Agent errors ─────────────────────────────────────────────────────────────
 
-(define-condition agent-error (clambda-error)
+(define-condition agent-error (clawmacs-error)
   ((agent :initarg :agent :reader agent-error-agent))
   (:report (lambda (c s)
              (format s "Agent error~@[ for ~a~]"
@@ -19,7 +19,7 @@
 
 ;;; ── Session errors ───────────────────────────────────────────────────────────
 
-(define-condition session-error (clambda-error)
+(define-condition session-error (clawmacs-error)
   ((session :initarg :session :reader session-error-session))
   (:report (lambda (c s)
              (format s "Session error~@[ for ~a~]"
@@ -28,14 +28,14 @@
 
 ;;; ── Tool errors ──────────────────────────────────────────────────────────────
 
-(define-condition tool-not-found (clambda-error)
+(define-condition tool-not-found (clawmacs-error)
   ((name :initarg :name :reader tool-not-found-name))
   (:report (lambda (c s)
              (format s "No tool registered with name: ~s"
                      (tool-not-found-name c))))
   (:documentation "Signalled when a tool name is not found in the registry."))
 
-(define-condition tool-execution-error (clambda-error)
+(define-condition tool-execution-error (clawmacs-error)
   ((tool-name :initarg :tool-name :reader tool-execution-error-tool-name)
    (cause     :initarg :cause     :reader tool-execution-error-cause)
    (input     :initarg :input     :reader tool-execution-error-input
@@ -52,13 +52,13 @@ via SLIME) can supply corrected arguments and retry without unwinding."))
 
 ;;; ── Loop errors ──────────────────────────────────────────────────────────────
 
-(define-condition agent-loop-error (clambda-error)
+(define-condition agent-loop-error (clawmacs-error)
   ((message :initarg :message :initform "Agent loop error" :reader agent-loop-error-message))
   (:report (lambda (c s)
              (write-string (agent-loop-error-message c) s)))
   (:documentation "Error in the agent loop (e.g., max turns exceeded)."))
 
-(define-condition agent-turn-error (clambda-error)
+(define-condition agent-turn-error (clawmacs-error)
   ((session :initarg :session :reader agent-turn-error-session :initform nil)
    (cause   :initarg :cause   :reader agent-turn-error-cause   :initform nil))
   (:report (lambda (c s)
@@ -70,7 +70,7 @@ Offers the ABORT-AGENT-LOOP restart."))
 
 ;;; ── Budget errors ────────────────────────────────────────────────────────────
 
-(define-condition budget-exceeded (clambda-error)
+(define-condition budget-exceeded (clawmacs-error)
   ((kind    :initarg :kind    :reader budget-exceeded-kind
             :documentation "Either :tokens or :turns.")
    (limit   :initarg :limit   :reader budget-exceeded-limit)

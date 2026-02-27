@@ -1,7 +1,7 @@
 {
-  "name": "clambda-playwright-bridge",
+  "name": "clawmacs-playwright-bridge",
   "version": "1.0.0",
-  "description": "Playwright bridge for Clambda browser automation",
+  "description": "Playwright bridge for Clawmacs browser automation",
   "main": "playwright-bridge.js",
   "scripts": {
     "start": "node playwright-bridge.js"

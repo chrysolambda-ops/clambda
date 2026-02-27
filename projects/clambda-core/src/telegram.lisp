@@ -1,4 +1,4 @@
-;;;; src/telegram.lisp — Telegram Bot API channel for Clambda
+;;;; src/telegram.lisp — Telegram Bot API channel for Clawmacs
 ;;;;
 ;;;; Implements a Telegram channel using long-polling (getUpdates).
 ;;;; Integrates with the config system: users call (register-channel :telegram ...)
@@ -14,16 +14,16 @@
 ;;;; Testing live:
 ;;;;   1. Create a Telegram bot via @BotFather — note the token.
 ;;;;   2. In SBCL:
-;;;;        (ql:quickload :clambda-core)
-;;;;        (clambda/config:register-channel :telegram :token "TOKEN")
-;;;;        (clambda/telegram:start-telegram)
+;;;;        (ql:quickload :clawmacs-core)
+;;;;        (clawmacs/config:register-channel :telegram :token "TOKEN")
+;;;;        (clawmacs/telegram:start-telegram)
 ;;;;        ;; Now send a message to your bot in Telegram.
-;;;;        (clambda/telegram:stop-telegram)
+;;;;        (clawmacs/telegram:stop-telegram)
 ;;;;
 ;;;; Unit tests (no real token needed) are in t/test-telegram.lisp.
 ;;;; Mock tests simulate update parsing and allowlist logic without HTTP.
 
-(in-package #:clambda/telegram)
+(in-package #:clawmacs/telegram)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 1. Global State and Options
@@ -36,7 +36,7 @@ Set automatically by REGISTER-CHANNEL :TELEGRAM.")
 (defvar *telegram-llm-base-url* "http://localhost:1234/v1"
   "LLM API base URL for the Telegram channel agent.
 Defaults to LM Studio local endpoint. Override in init.lisp:
-  (setf clambda/telegram:*telegram-llm-base-url* \"http://...\").")
+  (setf clawmacs/telegram:*telegram-llm-base-url* \"http://...\").")
 
 (defvar *telegram-llm-api-key* "lm-studio"
   "LLM API key for the Telegram channel agent.")
@@ -205,7 +205,7 @@ Rules:
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
 (defun %make-telegram-agent ()
-  "Build a default Clambda agent for Telegram.
+  "Build a default Clawmacs agent for Telegram.
 
 Client:  *TELEGRAM-LLM-BASE-URL* + *TELEGRAM-LLM-API-KEY* + *DEFAULT-MODEL*.
 Tools:   builtin registry (exec, read_file, write_file, list_dir, web_fetch, tts).
@@ -215,16 +215,16 @@ Users can override any of these vars in init.lisp before starting the channel."
   (let* ((client   (cl-llm:make-client
                     :base-url *telegram-llm-base-url*
                     :api-key  *telegram-llm-api-key*
-                    :model    clambda/config:*default-model*))
-         (registry (clambda/builtins:make-builtin-registry)))
-    (clambda/agent:make-agent
+                    :model    clawmacs/config:*default-model*))
+         (registry (clawmacs/builtins:make-builtin-registry)))
+    (clawmacs/agent:make-agent
      :name          "telegram-bot"
      :client        client
      :tool-registry registry
      :system-prompt *telegram-system-prompt*)))
 
 (defun find-or-create-session (chan chat-id)
-  "Find the Clambda session for CHAT-ID in CHAN, creating one if needed.
+  "Find the Clawmacs session for CHAT-ID in CHAN, creating one if needed.
 
 Each chat_id gets its own isolated session (separate conversation history
 and agent instance). Thread-safe: protected by CHAN's SESSIONS-LOCK.
@@ -233,7 +233,7 @@ Returns the session."
   (bt:with-lock-held ((telegram-channel-sessions-lock chan))
     (let ((tbl (telegram-channel-sessions chan)))
       (or (gethash chat-id tbl)
-          (let ((session (clambda/session:make-session
+          (let ((session (clawmacs/session:make-session
                           :agent (%make-telegram-agent))))
             (setf (gethash chat-id tbl) session)
             session)))))
@@ -325,11 +325,11 @@ Steps:
                                          (gethash "result" placeholder-resp)))))
     (if (null placeholder-id)
         ;; Fallback: non-streaming (placeholder send failed)
-        (let* ((opts     (clambda/loop:make-loop-options
-                          :max-turns clambda/config:*default-max-turns*
+        (let* ((opts     (clawmacs/loop:make-loop-options
+                          :max-turns clawmacs/config:*default-max-turns*
                           :stream    nil))
                (response (handler-case
-                              (clambda/loop:run-agent session text :options opts)
+                              (clawmacs/loop:run-agent session text :options opts)
                             (error (e)
                               (format *error-output*
                                       "~&[telegram] Agent error (chat ~A): ~A~%"
@@ -343,11 +343,11 @@ Steps:
                                          :fill-pointer 0
                                          :adjustable   t))
                (last-edit-ms (%current-time-ms))
-               (opts         (clambda/loop:make-loop-options
-                              :max-turns clambda/config:*default-max-turns*
+               (opts         (clawmacs/loop:make-loop-options
+                              :max-turns clawmacs/config:*default-max-turns*
                               :stream    t)))
           (handler-case
-              (let ((clambda/loop:*on-stream-delta*
+              (let ((clawmacs/loop:*on-stream-delta*
                       (lambda (delta)
                         (loop for ch across delta
                               do (vector-push-extend ch buf))
@@ -362,7 +362,7 @@ Steps:
                               (telegram-edit-message chan chat-id placeholder-id
                                                      edit-text))
                             (setf last-edit-ms now))))))
-                (clambda/loop:run-agent session text :options opts))
+                (clawmacs/loop:run-agent session text :options opts))
             (error (e)
               (format *error-output*
                       "~&[telegram] Streaming agent error (chat ~A): ~A~%"
@@ -432,7 +432,7 @@ rather than crashing the polling loop."
                      text))
 
          ;; Fire channel-message-hook
-         (clambda/config:run-hook-with-args 'clambda/config:*channel-message-hook*
+         (clawmacs/config:run-hook-with-args 'clawmacs/config:*channel-message-hook*
                                              chan text)
 
          ;; Get or create session for this chat, then dispatch
@@ -441,11 +441,11 @@ rather than crashing the polling loop."
                ;; Streaming: send placeholder, edit as tokens arrive
                (%run-agent-streaming chan chat-id session text)
                ;; Non-streaming: run agent, then sendMessage
-               (let* ((opts     (clambda/loop:make-loop-options
-                                 :max-turns clambda/config:*default-max-turns*
+               (let* ((opts     (clawmacs/loop:make-loop-options
+                                 :max-turns clawmacs/config:*default-max-turns*
                                  :stream    nil))
                       (response (handler-case
-                                    (clambda/loop:run-agent session text :options opts)
+                                    (clawmacs/loop:run-agent session text :options opts)
                                   (error (e)
                                     (format *error-output*
                                             "~&[telegram] Agent error (chat ~A): ~A~%"
@@ -524,7 +524,7 @@ Returns CHAN."
   (setf (telegram-channel-thread chan)
         (bt:make-thread
          (lambda () (%polling-loop chan))
-         :name "clambda-telegram-poll"))
+         :name "clawmacs-telegram-poll"))
   (setf *telegram-channel* chan)
   (format t "~&[telegram] Channel started.~%")
   chan)
@@ -556,11 +556,11 @@ Call this after loading init.lisp and registering channels:
   (register-channel :telegram :token \"BOT_TOKEN\")
 
   ;; After loading:
-  (clambda/telegram:start-all-channels)
+  (clawmacs/telegram:start-all-channels)
 
 Returns the list of successfully started channel objects."
   (let ((started '()))
-    (dolist (entry clambda/config:*registered-channels*)
+    (dolist (entry clawmacs/config:*registered-channels*)
       (let ((type (car entry)))
         (case type
           (:telegram
@@ -578,7 +578,7 @@ Returns the list of successfully started channel objects."
 ;;;; § 11. register-channel Specialization
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
-(defmethod clambda/config:register-channel
+(defmethod clawmacs/config:register-channel
     ((type (eql :telegram)) &rest args
      &key token
           (allowed-users nil)
@@ -598,9 +598,9 @@ Usage:
     :streaming t)               ; enable streaming partial responses (default T)
 
 After init.lisp loads, start the channel explicitly:
-  (clambda/telegram:start-telegram)
+  (clawmacs/telegram:start-telegram)
   ;; or, to start all registered channels:
-  (clambda/telegram:start-all-channels)"
+  (clawmacs/telegram:start-all-channels)"
   (declare (ignore args))
   (unless (and token (not (string= token "")))
     (error "[telegram] register-channel :telegram requires a :token argument."))

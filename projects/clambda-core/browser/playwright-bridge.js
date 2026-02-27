@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * playwright-bridge.js — Playwright subprocess bridge for Clambda
+ * playwright-bridge.js — Playwright subprocess bridge for Clawmacs
  *
  * Protocol: JSON-over-stdin/stdout, one object per line.
  *

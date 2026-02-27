@@ -1,6 +1,6 @@
 # HTTP API Reference
 
-Clambda includes a REST management API built on Hunchentoot. It lets you inspect,
+Clawmacs includes a REST management API built on Hunchentoot. It lets you inspect,
 control, and send messages to agents programmatically.
 
 ## Starting the API Server
@@ -18,7 +18,7 @@ In `init.lisp`:
 Or start manually from the REPL:
 
 ```lisp
-(clambda/http-server:start-server
+(clawmacs/http-server:start-server
   :port    18789
   :address "127.0.0.1"
   :api-token "YOUR_SECRET_TOKEN")
@@ -69,7 +69,7 @@ curl -H "Authorization: Bearer TOKEN" http://localhost:18789/api/system
 {
   "version": "0.8.0",
   "uptimeSeconds": 3600,
-  "logFile": "logs/clambda.jsonl",
+  "logFile": "logs/clawmacs.jsonl",
   "agents": 2,
   "sessions": 1,
   "tasks": 3,
@@ -295,21 +295,21 @@ curl -N -X POST \
 
 ```lisp
 ;; Start (idempotent — returns existing server if already running)
-(clambda/http-server:start-server :port 18789 :address "127.0.0.1")
+(clawmacs/http-server:start-server :port 18789 :address "127.0.0.1")
 
 ;; Stop
-(clambda/http-server:stop-server)
+(clawmacs/http-server:stop-server)
 
 ;; Restart (stop + start)
-(clambda/http-server:restart-server)
+(clawmacs/http-server:restart-server)
 
 ;; Check status
-clambda/http-server:*server*            ; server object or NIL
-(clambda/http-server:server-uptime-seconds)
+clawmacs/http-server:*server*            ; server object or NIL
+(clawmacs/http-server:server-uptime-seconds)
 
 ;; Configure
-clambda/http-server:*api-token*         ; bearer token string
-clambda/http-server:*default-port*      ; default: 7474
+clawmacs/http-server:*api-token*         ; bearer token string
+clawmacs/http-server:*default-port*      ; default: 7474
 ```
 
 ---
@@ -341,7 +341,7 @@ curl -sX DELETE "$BASE/api/agents/coder/stop" $AUTH | jq .
 All API requests and responses are logged in JSONL format:
 
 ```bash
-tail -f logs/clambda.jsonl | jq .
+tail -f logs/clawmacs.jsonl | jq .
 ```
 
 Each line is a JSON object with fields:
@@ -352,7 +352,7 @@ Each line is a JSON object with fields:
 The log file location is configured via:
 
 ```lisp
-(clambda/http-server:start-server :log-file "/path/to/clambda.jsonl")
+(clawmacs/http-server:start-server :log-file "/path/to/clawmacs.jsonl")
 ```
 
-Default: `logs/clambda.jsonl` relative to the process working directory.
+Default: `logs/clawmacs.jsonl` relative to the process working directory.

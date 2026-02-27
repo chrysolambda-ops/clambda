@@ -3,10 +3,10 @@
 ;;;; Tests for:
 ;;;;   P0: Condition-based live error recovery (retry-with-fixed-input restart)
 ;;;;   P0: SWANK server lifecycle (start-swank, stop-swank, swank-running-p)
-;;;;   P1: Image save/restore (clambda-main, save-clambda-image structure)
+;;;;   P1: Image save/restore (clawmacs-main, save-clawmacs-image structure)
 ;;;;   P1: define-agent DSL (symbol names, tool conversion, max-turns, registry)
 
-(in-package #:clambda-core/tests/superpowers)
+(in-package #:clawmacs-core/tests/superpowers)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 1. Condition system — TOOL-EXECUTION-ERROR + RETRY-WITH-FIXED-INPUT
@@ -126,9 +126,9 @@
     ;; Copy only tool_a and tool_c
     (copy-tools-to-registry src dst '("tool_a" "tool_c"))
 
-    (true  (clambda/tools:find-tool dst "tool_a"))
-    (false (clambda/tools:find-tool dst "tool_b"))
-    (true  (clambda/tools:find-tool dst "tool_c"))))
+    (true  (clawmacs/tools:find-tool dst "tool_a"))
+    (false (clawmacs/tools:find-tool dst "tool_b"))
+    (true  (clawmacs/tools:find-tool dst "tool_c"))))
 
 (define-test "copy-tools-full-copy"
   :description "COPY-TOOLS-TO-REGISTRY with nil names copies all tools."
@@ -140,8 +140,8 @@
 
     (copy-tools-to-registry src dst nil)
 
-    (true (clambda/tools:find-tool dst "tool_x"))
-    (true (clambda/tools:find-tool dst "tool_y"))))
+    (true (clawmacs/tools:find-tool dst "tool_x"))
+    (true (clawmacs/tools:find-tool dst "tool_y"))))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 2. define-agent DSL — P1 high-level macro
@@ -245,11 +245,11 @@
                     (fail "instantiate-agent-spec raised: ~a" e)
                     nil))))
     (when agent
-      (is string= "inst-agent" (clambda/agent:agent-name agent))
+      (is string= "inst-agent" (clawmacs/agent:agent-name agent))
       ;; Should have a registry with the exec tool
-      (let ((reg (clambda/agent:agent-tool-registry agent)))
+      (let ((reg (clawmacs/agent:agent-tool-registry agent)))
         (when reg
-          (true (clambda/tools:find-tool reg "exec"))))))
+          (true (clawmacs/tools:find-tool reg "exec"))))))
 
   (unregister-agent "inst-agent"))
 
@@ -309,19 +309,19 @@
 ;;;; § 4. Image save/restore (P1)
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
-(define-test "clambda-main-is-callable"
-  :description "clambda-main is a function."
-  (true (fboundp 'clambda-main)))
+(define-test "clawmacs-main-is-callable"
+  :description "clawmacs-main is a function."
+  (true (fboundp 'clawmacs-main)))
 
-(define-test "save-clambda-image-is-callable"
-  :description "save-clambda-image is a function."
-  (true (fboundp 'save-clambda-image)))
+(define-test "save-clawmacs-image-is-callable"
+  :description "save-clawmacs-image is a function."
+  (true (fboundp 'save-clawmacs-image)))
 
-(define-test "save-clambda-image-uses-sbcl-save"
+(define-test "save-clawmacs-image-uses-sbcl-save"
   :description "sb-ext:save-lisp-and-die is available (we are on SBCL)."
-  ;; We cannot actually call save-clambda-image (it exits the process),
+  ;; We cannot actually call save-clawmacs-image (it exits the process),
   ;; but we can verify that SBCL's save function is present.
-  (true (fboundp 'save-clambda-image))
+  (true (fboundp 'save-clawmacs-image))
   (true (fboundp 'sb-ext:save-lisp-and-die)))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────

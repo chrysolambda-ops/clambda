@@ -140,9 +140,9 @@ registry:
 
 ```lisp
 ;; Approach 1: merge into a built-in registry
-(let ((registry (clambda:make-tool-registry)))
-  (clambda/builtins:register-builtins registry)
-  (clambda/config:merge-user-tools! registry)       ; add user tools
+(let ((registry (clawmacs:make-tool-registry)))
+  (clawmacs/builtins:register-builtins registry)
+  (clawmacs/config:merge-user-tools! registry)       ; add user tools
   (let* ((client  (make-lmstudio-client))
          (agent   (make-agent :name "my-agent"
                               :client client
@@ -151,8 +151,8 @@ registry:
     (run-agent session "Hello!")))
 
 ;; Approach 2: just user tools, no built-ins
-(let ((registry (clambda:make-tool-registry)))
-  (clambda/config:merge-user-tools! registry)
+(let ((registry (clawmacs:make-tool-registry)))
+  (clawmacs/config:merge-user-tools! registry)
   ;; ...
   )
 ```
@@ -165,13 +165,13 @@ For development, register tools directly without using `define-user-tool`:
 
 ```lisp
 ;; Low-level registration
-(clambda:register-tool! registry "my-tool"
+(clawmacs:register-tool! registry "my-tool"
   (lambda (args) (format nil "Result: ~A" (gethash "input" args)))
   :description "A tool I'm testing."
   :parameters  '((:name "input" :type "string" :description "Input")))
 
 ;; Or use define-tool (more powerful macro)
-(clambda:define-tool registry "my-tool"
+(clawmacs:define-tool registry "my-tool"
   "Description here."
   ((input "string" "Input parameter"))
   (format nil "Got: ~A" input))
@@ -181,7 +181,7 @@ For development, register tools directly without using `define-user-tool`:
 
 ## Tool Schema to JSON Mapping
 
-Clambda converts parameter specs to JSON Schema for the LLM API:
+Clawmacs converts parameter specs to JSON Schema for the LLM API:
 
 ```lisp
 ;; CL spec:
@@ -210,14 +210,14 @@ Monitor tool calls with hooks:
 ;; Log all tool calls
 (add-hook '*after-tool-call-hook*
   (lambda (tool-name result)
-    (clambda/logging:log-info "tool-call"
+    (clawmacs/logging:log-info "tool-call"
       (format nil "Tool ~A returned ~A chars" tool-name (length result)))))
 
 ;; Per-turn hook (fires before the LLM calls, can see what session is active)
 (add-hook '*before-agent-turn-hook*
   (lambda (session user-msg)
     (format t "[agent] Turn starting for session: ~A~%"
-            (clambda/session:session-key session))))
+            (clawmacs/session:session-key session))))
 ```
 
 ---
@@ -243,7 +243,7 @@ Monitor tool calls with hooks:
 - **Debug with `*on-tool-call*`:**
 
   ```lisp
-  (setf clambda/loop:*on-tool-call*
+  (setf clawmacs/loop:*on-tool-call*
     (lambda (name call)
       (format t "DEBUG tool call: ~A args=~A~%" name call)))
   ```

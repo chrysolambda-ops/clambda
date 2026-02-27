@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Compatibility launcher; same behavior as ./clambda after rename.
+exec "$(dirname "$0")/clambda" "$@"

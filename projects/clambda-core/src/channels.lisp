@@ -10,7 +10,7 @@
 ;;;;   CHANNEL-CLOSE   (channel) → nil
 ;;;;   CHANNEL-OPEN-P  (channel) → boolean
 
-(in-package #:clambda/channels)
+(in-package #:clawmacs/channels)
 
 ;;; ── Conditions ───────────────────────────────────────────────────────────────
 

@@ -61,7 +61,7 @@ Use a CLOS class with three slots: a list queue, a bt lock, and a bt condition v
 
 - In-memory message passing between threads.
 - Testing agent loops without network I/O.
-- The queue-channel of the clambda/channels protocol.
+- The queue-channel of the clawmacs/channels protocol.
 
 ## Alternatives
 

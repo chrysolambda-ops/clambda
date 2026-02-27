@@ -1,14 +1,14 @@
-;;;; t/packages.lisp — Test packages for clambda-core
+;;;; t/packages.lisp — Test packages for clawmacs-core
 ;;;; Updated in Layer 9: added superpowers tests (condition recovery, SWANK, image, define-agent)
 
-(defpackage #:clambda-core/tests
-  (:use #:cl #:clambda)
+(defpackage #:clawmacs-core/tests
+  (:use #:cl #:clawmacs)
   (:export #:run-smoke-test))
 
-(defpackage #:clambda-core/tests/telegram
+(defpackage #:clawmacs-core/tests/telegram
   (:use #:cl #:parachute)
   ;; Import public API symbols
-  (:import-from #:clambda/telegram
+  (:import-from #:clawmacs/telegram
                 #:telegram-channel
                 #:make-telegram-channel
                 #:telegram-channel-token
@@ -24,15 +24,15 @@
                 #:*telegram-stream-debounce-ms*
                 #:telegram-edit-message)
   ;; Internal helpers accessed via :: for white-box testing
-  ;; (clambda/telegram::%extract-message-fields ...)
-  ;; (clambda/telegram::%plist->ht ...)
-  ;; (clambda/telegram::%split-telegram-text ...)
-  ;; (clambda/telegram::%current-time-ms ...)
+  ;; (clawmacs/telegram::%extract-message-fields ...)
+  ;; (clawmacs/telegram::%plist->ht ...)
+  ;; (clawmacs/telegram::%split-telegram-text ...)
+  ;; (clawmacs/telegram::%current-time-ms ...)
   )
 
-(defpackage #:clambda-core/tests/browser
+(defpackage #:clawmacs-core/tests/browser
   (:use #:cl #:parachute)
-  (:import-from #:clambda/browser
+  (:import-from #:clawmacs/browser
                 #:*browser-headless*
                 #:*browser-playwright-path*
                 #:*browser-bridge-script*
@@ -48,10 +48,10 @@
                 #:register-browser-tools
                 #:make-browser-registry))
 
-(defpackage #:clambda-core/tests/irc
+(defpackage #:clawmacs-core/tests/irc
   (:use #:cl #:parachute)
   ;; Public API
-  (:import-from #:clambda/irc
+  (:import-from #:clawmacs/irc
                 #:parse-irc-line
                 #:irc-build-line
                 #:prefix-nick
@@ -67,15 +67,15 @@
                 #:irc-channel-policies
                 #:irc-dm-allowed-users)
   ;; Internal helpers for white-box testing
-  ;; clambda/irc::%strip-cr, clambda/irc::%extract-message-body, etc.
-  ;; clambda/irc::%effective-channel-allowed, clambda/irc::%effective-dm-allowed
+  ;; clawmacs/irc::%strip-cr, clawmacs/irc::%extract-message-body, etc.
+  ;; clawmacs/irc::%effective-channel-allowed, clawmacs/irc::%effective-dm-allowed
   )
 
 ;;; ── Layer 8a: Cron scheduler tests ──────────────────────────────────────────
 
-(defpackage #:clambda-core/tests/cron
+(defpackage #:clawmacs-core/tests/cron
   (:use #:cl #:parachute)
-  (:import-from #:clambda/cron
+  (:import-from #:clawmacs/cron
                 #:scheduled-task
                 #:make-scheduled-task
                 #:task-name #:task-kind #:task-interval #:task-fire-at
@@ -89,9 +89,9 @@
 
 ;;; ── Layer 8b: Remote Management API tests ────────────────────────────────────
 
-(defpackage #:clambda-core/tests/remote-api
+(defpackage #:clawmacs-core/tests/remote-api
   (:use #:cl #:parachute)
-  (:import-from #:clambda/http-server
+  (:import-from #:clawmacs/http-server
                 #:*api-token*
                 #:check-auth
                 #:*default-port*
@@ -102,17 +102,17 @@
                 #:list-http-sessions
                 #:*server-start-time*
                 #:uptime-seconds)
-  (:import-from #:clambda/cron
+  (:import-from #:clawmacs/cron
                 #:schedule-task #:cancel-task #:find-task
                 #:list-tasks #:clear-tasks #:task-info
                 #:*cron-sleep-interval*))
 
 ;;; ── Layer 9: Lisp Superpowers tests ──────────────────────────────────────────
 
-(defpackage #:clambda-core/tests/superpowers
+(defpackage #:clawmacs-core/tests/superpowers
   (:use #:cl #:parachute)
   ;; Condition system
-  (:import-from #:clambda/conditions
+  (:import-from #:clawmacs/conditions
                 #:tool-execution-error
                 #:tool-execution-error-tool-name
                 #:tool-execution-error-cause
@@ -123,7 +123,7 @@
                 #:retry-with-fixed-input
                 #:skip-tool-call)
   ;; Tools (for dispatch-tool-call testing)
-  (:import-from #:clambda/tools
+  (:import-from #:clawmacs/tools
                 #:make-tool-registry
                 #:register-tool!
                 #:dispatch-tool-call
@@ -132,7 +132,7 @@
                 #:format-tool-result
                 #:copy-tools-to-registry)
   ;; Registry + define-agent
-  (:import-from #:clambda/registry
+  (:import-from #:clawmacs/registry
                 #:define-agent
                 #:find-agent
                 #:register-agent
@@ -148,15 +148,15 @@
                 #:agent-spec-max-turns
                 #:instantiate-agent-spec)
   ;; SWANK
-  (:import-from #:clambda/swank
+  (:import-from #:clawmacs/swank
                 #:*swank-port*
                 #:swank-running-p
                 #:start-swank
                 #:stop-swank)
   ;; Image
-  (:import-from #:clambda/image
-                #:clambda-main
-                #:save-clambda-image)
+  (:import-from #:clawmacs/image
+                #:clawmacs-main
+                #:save-clawmacs-image)
   ;; Protocol (for making mock tool calls)
   (:import-from #:cl-llm/protocol
                 #:make-tool-call

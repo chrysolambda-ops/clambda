@@ -1,6 +1,6 @@
-;;;; src/colors.lisp — Color palette and text-style helpers for clambda-gui
+;;;; src/colors.lisp — Color palette and text-style helpers for clawmacs-gui
 
-(in-package #:clambda-gui)
+(in-package #:clawmacs-gui)
 
 ;;; ── Color palette ────────────────────────────────────────────────────────────
 

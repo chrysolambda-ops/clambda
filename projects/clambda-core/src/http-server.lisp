@@ -1,4 +1,4 @@
-;;;; src/http-server.lisp — Clambda Remote Management API (Layer 8b)
+;;;; src/http-server.lisp — Clawmacs Remote Management API (Layer 8b)
 ;;;;
 ;;;; A hardened REST API over the agent loop using Hunchentoot.
 ;;;;
@@ -24,18 +24,18 @@
 ;;;;   If *API-TOKEN* is non-NIL, every request must carry:
 ;;;;     Authorization: Bearer <token>
 ;;;;   Requests without the correct token get HTTP 401.
-;;;;   Set *API-TOKEN* in init.lisp via (setf clambda/http-server:*api-token* "secret")
+;;;;   Set *API-TOKEN* in init.lisp via (setf clawmacs/http-server:*api-token* "secret")
 ;;;;   or use the defoption *api-token* from config:
 ;;;;     (setf *api-token* "my-secret-token")
 
-(in-package #:clambda/http-server)
+(in-package #:clawmacs/http-server)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 1. Globals
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
 (defvar *default-port* 7474
-  "Default port for the Clambda HTTP API server.")
+  "Default port for the Clawmacs HTTP API server.")
 
 (defvar *server* nil
   "The running HUNCHENTOOT:EASY-ACCEPTOR instance, or NIL.")
@@ -50,7 +50,7 @@
   "Bearer token required for all API requests.
 NIL (default) disables authentication entirely.
 Set to a non-empty string to enable token auth:
-  (setf clambda/http-server:*api-token* \"my-secret\")
+  (setf clawmacs/http-server:*api-token* \"my-secret\")
 Or in init.lisp:
   (setf *api-token* \"my-secret\")")
 
@@ -69,7 +69,7 @@ Or in init.lisp:
 (defun http-session-create (session-id agent)
   "Create and register a new SESSION for SESSION-ID with AGENT.
 Returns the new session."
-  (let ((sess (clambda/session:make-session :id session-id :agent agent)))
+  (let ((sess (clawmacs/session:make-session :id session-id :agent agent)))
     (bt:with-lock-held (*sessions-lock*)
       (setf (gethash session-id *http-sessions*) sess))
     sess))
@@ -142,7 +142,7 @@ Usage inside any handler:
     (let* ((auth-header (hunchentoot:header-in* "authorization"))
            (expected    (concatenate 'string "Bearer " *api-token*)))
       (unless (and auth-header (string= auth-header expected))
-        (setf (hunchentoot:header-out "WWW-Authenticate") "Bearer realm=\"clambda\"")
+        (setf (hunchentoot:header-out "WWW-Authenticate") "Bearer realm=\"clawmacs\"")
         (json-error "Unauthorized — provide Authorization: Bearer <token>" 401)))))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -152,12 +152,12 @@ Usage inside any handler:
 (defun resolve-agent (agent-name)
   "Find an agent by name (string) in the registry, instantiate if needed.
 Returns an AGENT object or NIL."
-  (let ((entry (clambda/registry:find-agent agent-name)))
+  (let ((entry (clawmacs/registry:find-agent agent-name)))
     (when entry
       (typecase entry
-        (clambda/registry:agent-spec
-         (clambda/registry:instantiate-agent-spec entry))
-        (clambda/agent:agent
+        (clawmacs/registry:agent-spec
+         (clawmacs/registry:instantiate-agent-spec entry))
+        (clawmacs/agent:agent
          entry)
         (t nil)))))
 
@@ -243,24 +243,24 @@ Returns (values nil nil) if the agent is not found."
       (unless message
         (return-from handle-chat (json-error "Missing 'message' field")))
 
-      (clambda/logging:log-event "http_request"
+      (clawmacs/logging:log-event "http_request"
                                   "endpoint" "/chat"
                                   "session_id" session-id
                                   "message_length" (length message))
 
       (let ((response
              (handler-case
-                 (clambda/loop:run-agent session message
-                                         :options (clambda/loop:make-loop-options
+                 (clawmacs/loop:run-agent session message
+                                         :options (clawmacs/loop:make-loop-options
                                                    :max-turns 10))
                (error (c)
-                 (clambda/logging:log-error-event
+                 (clawmacs/logging:log-error-event
                   (when agent-name agent-name) "agent_error" (format nil "~a" c)
                   :context "/chat")
                  (return-from handle-chat
                    (json-error (format nil "Agent error: ~a" c) 500))))))
 
-        (clambda/logging:log-event "http_response"
+        (clawmacs/logging:log-event "http_response"
                                     "endpoint" "/chat"
                                     "session_id" session-id
                                     "response_length" (length (or response "")))
@@ -301,14 +301,14 @@ Returns (values nil nil) if the agent is not found."
       (setf (hunchentoot:header-out "Access-Control-Allow-Origin") "*")
 
       (let ((out-stream (hunchentoot:send-headers)))
-        (let ((clambda/loop:*on-stream-delta*
+        (let ((clawmacs/loop:*on-stream-delta*
                (lambda (delta)
                  (let ((safe-delta (cl-ppcre:regex-replace-all "\\n" delta "\\\\n")))
                    (format out-stream "data: ~a~%~%" safe-delta)
                    (finish-output out-stream)))))
           (handler-case
-              (clambda/loop:run-agent session message
-                                      :options (clambda/loop:make-loop-options
+              (clawmacs/loop:run-agent session message
+                                      :options (clawmacs/loop:make-loop-options
                                                 :max-turns 10
                                                 :stream t))
             (error (c)
@@ -324,7 +324,7 @@ Returns (values nil nil) if the agent is not found."
   "Handle GET /agents — list all registered agent specs (backward-compatible)."
   (let ((auth-fail (check-auth)))
     (when auth-fail (return-from handle-list-agents auth-fail)))
-  (let* ((specs    (clambda/registry:list-agents))
+  (let* ((specs    (clawmacs/registry:list-agents))
          (out-list (mapcar #'%agent-spec->ht specs))
          (result   (make-hash-table :test 'equal)))
     (setf (gethash "agents" result) (coerce out-list 'vector))
@@ -350,22 +350,22 @@ Returns (values nil nil) if the agent is not found."
   "Serialize an agent-spec or agent to a hash-table."
   (let ((ht (make-hash-table :test 'equal)))
     (etypecase spec
-      (clambda/registry:agent-spec
-       (setf (gethash "name"  ht) (clambda/registry:agent-spec-name spec)
-             (gethash "role"  ht) (or (clambda/registry:agent-spec-role spec) "")
-             (gethash "model" ht) (or (clambda/registry:agent-spec-model spec) "")))
-      (clambda/agent:agent
-       (setf (gethash "name"  ht) (clambda/agent:agent-name spec)
-             (gethash "role"  ht) (or (clambda/agent:agent-role spec) "")
-             (gethash "model" ht) (or (clambda/agent:agent-model spec) ""))))
+      (clawmacs/registry:agent-spec
+       (setf (gethash "name"  ht) (clawmacs/registry:agent-spec-name spec)
+             (gethash "role"  ht) (or (clawmacs/registry:agent-spec-role spec) "")
+             (gethash "model" ht) (or (clawmacs/registry:agent-spec-model spec) "")))
+      (clawmacs/agent:agent
+       (setf (gethash "name"  ht) (clawmacs/agent:agent-name spec)
+             (gethash "role"  ht) (or (clawmacs/agent:agent-role spec) "")
+             (gethash "model" ht) (or (clawmacs/agent:agent-model spec) ""))))
     ht))
 
 (defun %session->ht (sess)
   "Serialize a session to a hash-table."
   (let ((ht (make-hash-table :test 'equal)))
-    (setf (gethash "id"            ht) (clambda/session:session-id sess)
-          (gethash "message_count" ht) (length (clambda/session:session-messages sess))
-          (gethash "total_tokens"  ht) (clambda/session:session-total-tokens sess))
+    (setf (gethash "id"            ht) (clawmacs/session:session-id sess)
+          (gethash "message_count" ht) (length (clawmacs/session:session-messages sess))
+          (gethash "total_tokens"  ht) (clawmacs/session:session-total-tokens sess))
     ht))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -390,15 +390,15 @@ Returns (values nil nil) if the agent is not found."
   (json-response
    (make-ht "version"       "0.8.0"
             "uptime"        (uptime-seconds)
-            "log_file"      (or (and (boundp 'clambda/logging:*log-file*)
-                                     clambda/logging:*log-file*)
+            "log_file"      (or (and (boundp 'clawmacs/logging:*log-file*)
+                                     clawmacs/logging:*log-file*)
                                 "")
-            "log_enabled"   (if (and (boundp 'clambda/logging:*log-enabled*)
-                                     clambda/logging:*log-enabled*)
+            "log_enabled"   (if (and (boundp 'clawmacs/logging:*log-enabled*)
+                                     clawmacs/logging:*log-enabled*)
                                 t :false)
-            "agent_count"   (length (clambda/registry:list-agents))
+            "agent_count"   (length (clawmacs/registry:list-agents))
             "session_count" (hash-table-count *http-sessions*)
-            "task_count"    (length (clambda/cron:list-tasks)))))
+            "task_count"    (length (clawmacs/cron:list-tasks)))))
 
 ;;; GET /api/agents
 
@@ -406,7 +406,7 @@ Returns (values nil nil) if the agent is not found."
   "List all registered agents."
   (let ((auth-fail (check-auth)))
     (when auth-fail (return-from handle-api-list-agents auth-fail)))
-  (let* ((specs    (clambda/registry:list-agents))
+  (let* ((specs    (clawmacs/registry:list-agents))
          (out-list (mapcar #'%agent-spec->ht specs))
          (result   (make-hash-table :test 'equal)))
     (setf (gethash "agents" result) (coerce out-list 'vector))
@@ -427,7 +427,7 @@ Returns (values nil nil) if the agent is not found."
         (return-from handle-api-agent-start
           (json-error (format nil "Agent not found: ~a" agent-name) 404)))
       (json-response
-       (make-ht "session_id" (clambda/session:session-id session)
+       (make-ht "session_id" (clawmacs/session:session-id session)
                 "agent"      agent-name
                 "created"    (if created-p t :false))))))
 
@@ -453,27 +453,27 @@ Returns (values nil nil) if the agent is not found."
           (unless session
             (return-from handle-api-agent-message
               (json-error (format nil "Agent not found: ~a" agent-name) 404)))
-          (clambda/logging:log-event "http_request"
+          (clawmacs/logging:log-event "http_request"
                                       "endpoint" "/api/agents/:name/message"
                                       "agent"    agent-name
                                       "length"   (length message))
           (let ((response
                  (handler-case
-                     (clambda/loop:run-agent
+                     (clawmacs/loop:run-agent
                       session message
-                      :options (clambda/loop:make-loop-options
+                      :options (clawmacs/loop:make-loop-options
                                 :max-turns (if (integerp max-turns) max-turns 10)))
                    (error (c)
                      (return-from handle-api-agent-message
                        (json-error (format nil "Agent error: ~a" c) 500))))))
-            (clambda/logging:log-event "http_response"
+            (clawmacs/logging:log-event "http_response"
                                         "endpoint" "/api/agents/:name/message"
                                         "agent"    agent-name
                                         "length"   (length (or response "")))
             (json-response
              (make-ht "response"   (or response "")
                       "agent"      agent-name
-                      "session_id" (clambda/session:session-id session)))))))))
+                      "session_id" (clawmacs/session:session-id session)))))))))
 
 ;;; GET /api/agents/:name/history
 
@@ -492,7 +492,7 @@ Returns (values nil nil) if the agent is not found."
            (make-ht "agent"    agent-name
                     "messages" #()
                     "count"    0))))
-      (let* ((msgs     (clambda/session:session-messages session))
+      (let* ((msgs     (clawmacs/session:session-messages session))
              (out-list (mapcar #'message->ht msgs))
              (result   (make-hash-table :test 'equal)))
         (setf (gethash "agent"    result) agent-name
@@ -534,9 +534,9 @@ Returns (values nil nil) if the agent is not found."
   "List all registered channel configurations."
   (let ((auth-fail (check-auth)))
     (when auth-fail (return-from handle-api-list-channels auth-fail)))
-  (let* ((channels (when (and (find-package '#:clambda/config)
-                              (boundp 'clambda/config:*registered-channels*))
-                     (symbol-value (find-symbol "*REGISTERED-CHANNELS*" '#:clambda/config))))
+  (let* ((channels (when (and (find-package '#:clawmacs/config)
+                              (boundp 'clawmacs/config:*registered-channels*))
+                     (symbol-value (find-symbol "*REGISTERED-CHANNELS*" '#:clawmacs/config))))
          (out-list
           (mapcar (lambda (entry)
                     (let ((ht (make-hash-table :test 'equal)))
@@ -555,8 +555,8 @@ Returns (values nil nil) if the agent is not found."
   "List all cron/scheduled tasks."
   (let ((auth-fail (check-auth)))
     (when auth-fail (return-from handle-api-list-tasks auth-fail)))
-  (let* ((tasks    (clambda/cron:list-tasks))
-         (out-list (mapcar #'clambda/cron:task-info tasks))
+  (let* ((tasks    (clawmacs/cron:list-tasks))
+         (out-list (mapcar #'clawmacs/cron:task-info tasks))
          (result   (make-hash-table :test 'equal)))
     (setf (gethash "tasks" result) (coerce out-list 'vector)
           (gethash "count" result) (length tasks))
@@ -567,7 +567,7 @@ Returns (values nil nil) if the agent is not found."
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
 (defun make-dispatch-table ()
-  "Build the Hunchentoot dispatch table for the Clambda API."
+  "Build the Hunchentoot dispatch table for the Clawmacs API."
   (list
    ;; ── Management API: agents ──────────────────────────────────────────────────
    (hunchentoot:create-regex-dispatcher
@@ -595,7 +595,7 @@ Returns (values nil nil) if the agent is not found."
    (hunchentoot:create-prefix-dispatcher "/"
      (lambda ()
        (json-response
-        (make-ht "name"    "clambda-core API"
+        (make-ht "name"    "clawmacs-core API"
                  "version" "0.8.0"
                  "auth"    (if (and *api-token* (not (string= *api-token* "")))
                                "bearer" "none")
@@ -622,7 +622,7 @@ Returns (values nil nil) if the agent is not found."
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
 (defun start-server (&key (port *default-port*) (address "127.0.0.1") log-file api-token)
-  "Start the Clambda HTTP Remote Management API server on PORT (default: *DEFAULT-PORT*).
+  "Start the Clawmacs HTTP Remote Management API server on PORT (default: *DEFAULT-PORT*).
 
 PORT      — TCP port to listen on.
 ADDRESS   — bind address (default 127.0.0.1 — loopback only; use 0.0.0.0 for all interfaces).
@@ -637,11 +637,11 @@ Returns the acceptor."
   (when api-token
     (setf *api-token* api-token))
   ;; Configure log file
-  (when (or log-file (null clambda/logging:*log-file*))
-    (setf clambda/logging:*log-file*
+  (when (or log-file (null clawmacs/logging:*log-file*))
+    (setf clawmacs/logging:*log-file*
           (or log-file
               (uiop:native-namestring
-               (merge-pathnames "logs/clambda.jsonl" (uiop:getcwd))))))
+               (merge-pathnames "logs/clawmacs.jsonl" (uiop:getcwd))))))
   (let ((acceptor (make-instance 'hunchentoot:easy-acceptor
                                  :port port
                                  :address address
@@ -651,20 +651,20 @@ Returns the acceptor."
     (hunchentoot:start acceptor)
     (setf *server* acceptor
           *server-start-time* (get-universal-time))
-    (format t "~&[clambda/http-server] Started on ~a:~a~%" address port)
-    (format t "~&[clambda/http-server] Auth: ~a~%"
+    (format t "~&[clawmacs/http-server] Started on ~a:~a~%" address port)
+    (format t "~&[clawmacs/http-server] Auth: ~a~%"
             (if (and *api-token* (not (string= *api-token* "")))
                 "bearer token required"
                 "disabled (no auth)"))
-    (format t "~&[clambda/http-server] Logging to ~a~%" clambda/logging:*log-file*)
-    (clambda/logging:log-event "server_start" "port" port "address" address)
+    (format t "~&[clawmacs/http-server] Logging to ~a~%" clawmacs/logging:*log-file*)
+    (clawmacs/logging:log-event "server_start" "port" port "address" address)
     acceptor))
 
 (defun stop-server ()
-  "Stop the running Clambda HTTP API server."
+  "Stop the running Clawmacs HTTP API server."
   (when *server*
     (hunchentoot:stop *server*)
-    (format t "~&[clambda/http-server] Stopped.~%")
+    (format t "~&[clawmacs/http-server] Stopped.~%")
     (setf *server* nil))
   nil)
 

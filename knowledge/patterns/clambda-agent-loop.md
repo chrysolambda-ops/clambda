@@ -1,4 +1,4 @@
-# Pattern: clambda-core Agent Loop
+# Pattern: clawmacs-core Agent Loop
 
 ## What it is
 
@@ -66,9 +66,9 @@ the existing conversation.
 ## Hook pattern for observability
 
 ```lisp
-(setf clambda:*on-tool-call*
+(setf clawmacs:*on-tool-call*
       (lambda (name tc) (format t "Calling ~a~%" name)))
-(setf clambda:*on-llm-response*
+(setf clawmacs:*on-llm-response*
       (lambda (text) (format t "Final: ~a~%" text)))
 ```
 
@@ -93,6 +93,6 @@ recover gracefully.
 
 ## See also
 
-- `projects/clambda-core/src/loop.lisp` — agent-turn and run-agent
-- `projects/clambda-core/src/tools.lisp` — tool-registry and define-tool
-- `projects/clambda-core/src/builtins.lisp` — exec, read_file, write_file
+- `projects/clawmacs-core/src/loop.lisp` — agent-turn and run-agent
+- `projects/clawmacs-core/src/tools.lisp` — tool-registry and define-tool
+- `projects/clawmacs-core/src/builtins.lisp` — exec, read_file, write_file

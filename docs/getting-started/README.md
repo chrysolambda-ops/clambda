@@ -1,6 +1,6 @@
 # Getting Started
 
-Goal: get from zero to a working Clambda agent in under 10 minutes.
+Goal: get from zero to a working Clawmacs agent in under 10 minutes.
 
 ## Prerequisites
 
@@ -10,7 +10,7 @@ Goal: get from zero to a working Clambda agent in under 10 minutes.
 | Quicklisp | any | `ls ~/quicklisp/setup.lisp` |
 | LM Studio or Ollama | any | LM Studio on your local network |
 
-Clambda is a **local-first** platform. It works best with a local LLM server
+Clawmacs is a **local-first** platform. It works best with a local LLM server
 (LM Studio, Ollama) running on your machine or home network.
 
 Cloud LLMs (OpenRouter, Anthropic) can be added as a fallback — see the
@@ -48,12 +48,12 @@ sbcl --load quicklisp.lisp \
 
 This installs Quicklisp to `~/quicklisp/` and adds it to `~/.sbclrc`.
 
-## 2. Clone Clambda
+## 2. Clone Clawmacs
 
 ```bash
 cd ~/projects
 git clone https://github.com/chrysolambda-ops/clambda.git
-cd clambda
+cd clawmacs
 ```
 
 The repository contains four ASDF systems:
@@ -62,8 +62,8 @@ The repository contains four ASDF systems:
 |--------|---------|
 | `cl-llm` | LLM API client (OpenAI-compat, streaming) |
 | `cl-tui` | Terminal chat UI |
-| `clambda-core` | Agent platform core |
-| `clambda-gui` | McCLIM graphical frontend |
+| `clawmacs-core` | Agent platform core |
+| `clawmacs-gui` | McCLIM graphical frontend |
 
 ## 3. Register with ASDF
 
@@ -71,25 +71,25 @@ Tell ASDF where to find the systems:
 
 ```bash
 mkdir -p ~/.config/common-lisp/source-registry.conf.d/
-cat > ~/.config/common-lisp/source-registry.conf.d/clambda.conf << 'EOF'
-(:tree "/home/YOUR-USER/projects/clambda/projects/")
+cat > ~/.config/common-lisp/source-registry.conf.d/clawmacs.conf << 'EOF'
+(:tree "/home/YOUR-USER/projects/clawmacs/projects/")
 EOF
 ```
 
-Replace `/home/YOUR-USER/projects/clambda` with the actual path.
+Replace `/home/YOUR-USER/projects/clawmacs` with the actual path.
 
 ## 4. Create init.lisp
 
 ```bash
-mkdir -p ~/.clambda
-cp projects/clambda-core/example-init.lisp ~/.clambda/init.lisp
-$EDITOR ~/.clambda/init.lisp
+mkdir -p ~/.clawmacs
+cp projects/clawmacs-core/example-init.lisp ~/.clawmacs/init.lisp
+$EDITOR ~/.clawmacs/init.lisp
 ```
 
 At minimum, set your LLM base URL:
 
 ```lisp
-(in-package #:clambda-user)
+(in-package #:clawmacs-user)
 
 ;; Point to LM Studio or Ollama on your network
 ;; LM Studio:
@@ -103,24 +103,24 @@ At minimum, set your LLM base URL:
 
 The `example-init.lisp` file is thoroughly commented and shows every available option.
 
-> **Security:** `~/.clambda/init.lisp` may contain API keys and bot tokens.
-> Keep it out of version control. The clambda `.gitignore` excludes it by default.
+> **Security:** `~/.clawmacs/init.lisp` may contain API keys and bot tokens.
+> Keep it out of version control. The clawmacs `.gitignore` excludes it by default.
 
 ## 5. Run the REPL
 
 ```bash
-sbcl --eval '(ql:quickload :clambda-core)' \
-     --eval '(clambda/config:load-user-config)' \
-     --eval '(in-package :clambda-user)'
+sbcl --eval '(ql:quickload :clawmacs-core)' \
+     --eval '(clawmacs/config:load-user-config)' \
+     --eval '(in-package :clawmacs-user)'
 ```
 
 Or interactively:
 
 ```lisp
-CL-USER> (ql:quickload :clambda-core)
-CL-USER> (clambda/config:load-user-config)
+CL-USER> (ql:quickload :clawmacs-core)
+CL-USER> (clawmacs/config:load-user-config)
 ;; → your init.lisp runs, hooks fire
-CL-USER> (in-package :clambda-user)
+CL-USER> (in-package :clawmacs-user)
 CLAMBDA-USER> (describe-options)  ; see all config options
 CLAMBDA-USER> (list-tasks)        ; see scheduled tasks
 ```

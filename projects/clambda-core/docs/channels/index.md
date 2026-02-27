@@ -1,6 +1,6 @@
 # Channels Overview
 
-Channels are how Clambda connects to the outside world. Each channel receives
+Channels are how Clawmacs connects to the outside world. Each channel receives
 messages, routes them to the agent loop, and sends responses back.
 
 ## Available Channels
@@ -48,22 +48,22 @@ in `*after-init-hook*`:
 ```lisp
 (add-hook '*after-init-hook*
   (lambda ()
-    (clambda/telegram:start-telegram)
-    (clambda/irc:start-irc)
-    (clambda/browser:browser-launch)))
+    (clawmacs/telegram:start-telegram)
+    (clawmacs/irc:start-irc)
+    (clawmacs/browser:browser-launch)))
 ```
 
 Or use `start-all-channels` (starts all registered Telegram channels):
 
 ```lisp
-(add-hook '*after-init-hook* #'clambda/telegram:start-all-channels)
+(add-hook '*after-init-hook* #'clawmacs/telegram:start-all-channels)
 ```
 
 ## Inspect Registered Channels
 
 ```lisp
 ;; In the REPL:
-clambda/config:*registered-channels*
+clawmacs/config:*registered-channels*
 ;; => ((:telegram :token "..." :allowed-users (123456))
 ;;     (:irc :server "irc.libera.chat" ...))
 

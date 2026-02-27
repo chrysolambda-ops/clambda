@@ -1,6 +1,6 @@
-;;;; src/main.lisp — Entry points for clambda-gui
+;;;; src/main.lisp — Entry points for clawmacs-gui
 
-(in-package #:clambda-gui)
+(in-package #:clawmacs-gui)
 
 ;;; ── Default LM Studio client ─────────────────────────────────────────────────
 
@@ -18,7 +18,7 @@
 
 (defun make-default-agent (&key name role model client)
   "Create an agent with sensible defaults for the GUI."
-  (make-agent :name   (or name "Clambda")
+  (make-agent :name   (or name "Clawmacs")
               :role   (or role "assistant")
               :model  (or model *default-model*)
               :client (or client (make-default-client))))
@@ -26,7 +26,7 @@
 ;;; ── Session setup ─────────────────────────────────────────────────────────────
 
 (defun make-gui-session (&key agent name role model)
-  "Create a fresh clambda SESSION ready for the GUI.
+  "Create a fresh clawmacs SESSION ready for the GUI.
 
 AGENT — an existing AGENT, or NIL to auto-create one.
 NAME  — agent name override (if auto-creating).
@@ -40,11 +40,11 @@ MODEL — model override (if auto-creating)."
 (defun make-gui-frame (session &key (width 1100) (height 750))
   "Create a new CLAMBDA-GUI-FRAME for SESSION."
   (clim:make-application-frame
-   'clambda-gui-frame
+   'clawmacs-gui-frame
    :session session
    :width   width
    :height  height
-   :pretty-name "Clambda — LLM Chat"))
+   :pretty-name "Clawmacs — LLM Chat"))
 
 ;;; ── Welcome banner ────────────────────────────────────────────────────────────
 
@@ -57,7 +57,7 @@ RUN-FRAME-TOP-LEVEL realises the panes."
     (append-chat-message
      frame :system
      (format nil
-             "Welcome to Clambda GUI~@[ — agent: ~a~]~@[ (model: ~a)~]~%~
+             "Welcome to Clawmacs GUI~@[ — agent: ~a~]~@[ (model: ~a)~]~%~
               Type your message in the input pane below.~%~
               Commands: Send / Clear History / Switch Model / Set System / Quit"
              (when agent (agent-name agent))
@@ -67,11 +67,11 @@ RUN-FRAME-TOP-LEVEL realises the panes."
 
 (defun run-gui (&key session agent name role model
                      (width 1100) (height 750))
-  "Start the clambda-gui application.
+  "Start the clawmacs-gui application.
 
-SESSION — an existing clambda session (takes priority over other options).
+SESSION — an existing clawmacs session (takes priority over other options).
 AGENT   — use an existing agent (takes priority over NAME/ROLE/MODEL).
-NAME    — agent name (default: \"Clambda\").
+NAME    — agent name (default: \"Clawmacs\").
 ROLE    — agent role (default: \"assistant\").
 MODEL   — model name (default: *default-model*).
 WIDTH, HEIGHT — initial window size.
@@ -93,11 +93,11 @@ Blocks until the user closes the window."
 ;;; ── Non-blocking launch ───────────────────────────────────────────────────────
 
 (defun launch-gui (&rest run-gui-args)
-  "Launch the clambda-gui in a background thread.
+  "Launch the clawmacs-gui in a background thread.
 Returns the thread object.
 
 Accepts all the same keyword arguments as RUN-GUI."
   (bt:make-thread
    (lambda ()
      (apply #'run-gui run-gui-args))
-   :name "clambda-gui-main"))
+   :name "clawmacs-gui-main"))

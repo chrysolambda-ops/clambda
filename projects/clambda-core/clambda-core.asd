@@ -1,4 +1,4 @@
-;;;; clambda-core.asd — ASDF system definition for clambda-core
+;;;; clawmacs-core.asd — ASDF system definition for clawmacs-core
 ;;;;
 ;;;; The core OpenClaw-inspired agent platform in Common Lisp.
 ;;;; Provides: agent definition, session management, tool protocol,
@@ -14,7 +14,7 @@
 ;;;;   P0: condition-based live error recovery + SWANK/SLIME server
 ;;;;   P1: image save/restore + enhanced define-agent DSL
 
-(defsystem "clambda-core"
+(defsystem "clawmacs-core"
   :description "Core agent platform architecture in Common Lisp"
   :version "0.9.0"
   :author "Gensym <gensym@cl-team>"
@@ -61,11 +61,11 @@
                (:file "src/swank")
                ;; Layer 9 (P1): Image save/restore (Genera-style)
                (:file "src/image"))
-  :in-order-to ((test-op (test-op "clambda-core/tests"))))
+  :in-order-to ((test-op (test-op "clawmacs-core/tests"))))
 
-(defsystem "clambda-core/tests"
-  :description "Tests for clambda-core"
-  :depends-on ("clambda-core" "parachute")
+(defsystem "clawmacs-core/tests"
+  :description "Tests for clawmacs-core"
+  :depends-on ("clawmacs-core" "parachute")
   :serial t
   :components ((:file "t/packages")
                (:file "t/smoke-test")

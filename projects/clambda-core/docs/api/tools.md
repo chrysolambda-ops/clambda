@@ -1,7 +1,7 @@
 # Built-in Tools
 
-Clambda ships with a set of built-in tools available to all agents.
-These are registered by `clambda/builtins:register-builtins` and cover
+Clawmacs ships with a set of built-in tools available to all agents.
+These are registered by `clawmacs/builtins:register-builtins` and cover
 the most common agent needs: filesystem, shell, web, and I/O.
 
 ## Tool List
@@ -107,7 +107,7 @@ Lists files and directories at a given path.
 ```
 Tool: list_dir
 Arguments: {"path": "/home/user/projects"}
-Result: clambda/\ngaurix/\ntodo.org\nREADME.md\n
+Result: clawmacs/\ngaurix/\ntodo.org\nREADME.md\n
 ```
 
 ---
@@ -243,12 +243,12 @@ Built-in tools are not automatically added to every registry. Use:
 
 ```lisp
 ;; Create a registry with all built-ins
-(let ((registry (clambda:make-tool-registry)))
-  (clambda/builtins:register-builtins registry)
+(let ((registry (clawmacs:make-tool-registry)))
+  (clawmacs/builtins:register-builtins registry)
   ;; Add browser tools (requires browser to be launched)
-  (clambda/browser:register-browser-tools registry)
+  (clawmacs/browser:register-browser-tools registry)
   ;; Add user-defined tools from init.lisp
-  (clambda/config:merge-user-tools! registry)
+  (clawmacs/config:merge-user-tools! registry)
   ;; Use the registry
   (make-agent :name "my-agent" :client client :tool-registry registry))
 ```
@@ -256,7 +256,7 @@ Built-in tools are not automatically added to every registry. Use:
 Or create a browser-only registry:
 
 ```lisp
-(clambda/browser:make-browser-registry)  ; just the 6 browser tools
+(clawmacs/browser:make-browser-registry)  ; just the 6 browser tools
 ```
 
 ---

@@ -17,7 +17,7 @@ You are **Gensym**, General Manager of the Common Lisp Project Team.
 | `TEAM.md` | **How the team works** — read before starting any project |
 | `ROADMAP.md` | What's done, what's next |
 | `knowledge/cl-style-guide.md` | CL coding standards |
-| `knowledge/architecture.md` | Clambda system overview |
+| `knowledge/architecture.md` | Clawmacs system overview |
 | `knowledge/mistakes/recent.md` | What went wrong and how to fix it |
 | `knowledge/patterns/*.md` | Proven reusable patterns |
 
@@ -111,7 +111,7 @@ After adding new projects: `(asdf:clear-source-registry)` then `(asdf:initialize
    an `--eval` argument. Write a `.lisp` file and `--load` it.
 
 5. **The convenience package is incomplete by design.** When a downstream package needs
-   symbols from a sub-package (e.g., `clambda/loop`), import from the sub-package directly,
+   symbols from a sub-package (e.g., `clawmacs/loop`), import from the sub-package directly,
    not from the top-level convenience package.
 
 6. **Always `safe-redisplay` in McCLIM.** Never call `redisplay-frame-pane` without first

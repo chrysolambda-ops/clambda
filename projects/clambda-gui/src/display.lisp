@@ -1,6 +1,6 @@
-;;;; src/display.lisp — Display functions for clambda-gui panes
+;;;; src/display.lisp — Display functions for clawmacs-gui panes
 
-(in-package #:clambda-gui)
+(in-package #:clawmacs-gui)
 
 ;;; ── Utilities ─────────────────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 # Telegram Channel
 
-Clambda's Telegram channel uses the Bot API with long polling (no webhook server needed).
+Clawmacs's Telegram channel uses the Bot API with long polling (no webhook server needed).
 The bot receives messages, routes them to the agent loop, and replies — with optional
 streaming delivery.
 
@@ -22,7 +22,7 @@ This is used for the allowlist — without it, anyone can message your bot.
 ### Step 3: Configure init.lisp
 
 ```lisp
-(in-package #:clambda-user)
+(in-package #:clawmacs-user)
 
 (register-channel :telegram
   :token         "YOUR_BOT_TOKEN_HERE"
@@ -33,14 +33,14 @@ This is used for the allowlist — without it, anyone can message your bot.
 ### Step 4: Start
 
 ```lisp
-(add-hook '*after-init-hook* #'clambda/telegram:start-telegram)
+(add-hook '*after-init-hook* #'clawmacs/telegram:start-telegram)
 ```
 
-Then load Clambda:
+Then load Clawmacs:
 
 ```bash
-sbcl --eval '(ql:quickload :clambda-core)' \
-     --eval '(clambda/config:load-user-config)' \
+sbcl --eval '(ql:quickload :clawmacs-core)' \
+     --eval '(clawmacs/config:load-user-config)' \
      --noinform
 ```
 
@@ -71,29 +71,29 @@ Set these before `register-channel` or in init.lisp:
 
 ```lisp
 ;; Model used by Telegram agent sessions
-(setf clambda/telegram:*telegram-llm-base-url* "http://192.168.1.189:1234/v1")
-(setf clambda/telegram:*telegram-llm-api-key*  "lmstudio")
+(setf clawmacs/telegram:*telegram-llm-base-url* "http://192.168.1.189:1234/v1")
+(setf clawmacs/telegram:*telegram-llm-api-key*  "lmstudio")
 
 ;; System prompt for Telegram sessions
-(setf clambda/telegram:*telegram-system-prompt*
+(setf clawmacs/telegram:*telegram-system-prompt*
       "You are a helpful assistant.")
 
 ;; Polling timeout in seconds (shorter = more responsive shutdown)
-(setf clambda/telegram:*telegram-poll-timeout* 5)
+(setf clawmacs/telegram:*telegram-poll-timeout* 5)
 
 ;; Streaming options (Layer 9+)
-(setf clambda/telegram:*telegram-streaming*       t)
-(setf clambda/telegram:*telegram-stream-debounce-ms* 500)
+(setf clawmacs/telegram:*telegram-streaming*       t)
+(setf clawmacs/telegram:*telegram-stream-debounce-ms* 500)
 ```
 
 ---
 
 ## Streaming Partial Responses
 
-When `:streaming t` is set (the default), Clambda simulates OpenClaw's
+When `:streaming t` is set (the default), Clawmacs simulates OpenClaw's
 `streaming: "partial"` behaviour:
 
-1. Clambda sends an initial `"..."` placeholder message
+1. Clawmacs sends an initial `"..."` placeholder message
 2. As the LLM generates tokens, the placeholder is updated via `editMessageText`
    (debounced every 500ms to avoid Telegram rate limits)
 3. After the agent loop completes, a final edit shows the complete response
@@ -117,14 +117,14 @@ To run multiple Telegram bots (e.g. one per agent), start multiple channels:
 > Currently, `*telegram-channel*` is a singleton. Full multi-account support is
 > planned.
 
-For now, the workaround is to run separate Clambda processes, each with its own
+For now, the workaround is to run separate Clawmacs processes, each with its own
 `init.lisp` and bot token.
 
 ---
 
 ## Allowlist and Security
 
-Clambda's Telegram implementation **silently ignores** messages from users not in
+Clawmacs's Telegram implementation **silently ignores** messages from users not in
 the allowlist. No error is shown to the disallowed user.
 
 ```lisp
@@ -147,16 +147,16 @@ User IDs are integers. Do not use usernames (they can change).
 
 ```lisp
 ;; Start the polling thread
-(clambda/telegram:start-telegram)
+(clawmacs/telegram:start-telegram)
 
 ;; Stop the polling thread (gracefully, up to *telegram-poll-timeout* seconds)
-(clambda/telegram:stop-telegram)
+(clawmacs/telegram:stop-telegram)
 
 ;; Check if polling is active
-(clambda/telegram:telegram-running-p)
+(clawmacs/telegram:telegram-running-p)
 
 ;; Send a message directly (bypasses agent loop)
-(clambda/telegram:send-telegram-message chat-id "Hello!")
+(clawmacs/telegram:send-telegram-message chat-id "Hello!")
 ```
 
 ---
@@ -187,15 +187,15 @@ The polling loop catches and logs all errors without crashing:
   so users see progress.
 
 **Messages stop arriving:**
-- The polling thread may have crashed. Call `(clambda/telegram:start-telegram)` again.
+- The polling thread may have crashed. Call `(clawmacs/telegram:start-telegram)` again.
 - Add a cron watchdog:
 
 ```lisp
 (schedule-task "telegram-watchdog" :every 60
   (lambda ()
-    (unless (clambda/telegram:telegram-running-p)
+    (unless (clawmacs/telegram:telegram-running-p)
       (format t "[watchdog] Restarting Telegram...~%")
-      (clambda/telegram:start-telegram)))
+      (clawmacs/telegram:start-telegram)))
   :description "Restart Telegram if it crashes")
 ```
 

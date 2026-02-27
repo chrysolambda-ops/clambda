@@ -1,17 +1,17 @@
-;;;; t/test-config.lisp — Tests for clambda/config (Layer 6a)
+;;;; t/test-config.lisp — Tests for clawmacs/config (Layer 6a)
 ;;;;
 ;;;; All tests are unit/integration tests that do NOT require a running LLM.
 ;;;; Tests: defoption, hook system, register-channel, define-user-tool,
 ;;;; load-user-config (with temp files), and package structure.
 
-(in-package #:clambda-core/tests)
+(in-package #:clawmacs-core/tests)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; Helpers
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
 (defmacro with-temp-init-file ((forms-list) &body body)
-  "Write FORMS-LIST to a unique temp init.lisp, bind *clambda-home* to its dir,
+  "Write FORMS-LIST to a unique temp init.lisp, bind *clawmacs-home* to its dir,
 reset *user-config-loaded*, execute BODY, then clean up the temp file.
 
 FORMS-LIST is a list of forms (not evaluated) that are written to the file."
@@ -19,11 +19,11 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
         (path-sym (gensym "PATH")))
     `(let* ((,dir-sym  (uiop:ensure-directory-pathname
                         (merge-pathnames
-                         (format nil "clambda-test-~A/" (get-universal-time))
+                         (format nil "clawmacs-test-~A/" (get-universal-time))
                          (uiop:temporary-directory))))
             (,path-sym (merge-pathnames "init.lisp" ,dir-sym))
-            (clambda/config:*clambda-home* ,dir-sym)
-            (clambda/config::*user-config-loaded* nil))
+            (clawmacs/config:*clawmacs-home* ,dir-sym)
+            (clawmacs/config::*user-config-loaded* nil))
        (ensure-directories-exist ,path-sym)
        (with-open-file (s ,path-sym :direction :output
                                     :if-exists :supersede
@@ -43,20 +43,20 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "Built-in options have correct default values."
   (format t "~%=== test-defoption-defaults ===~%")
 
-  (assert (boundp 'clambda/config:*default-model*))
-  (assert (stringp clambda/config:*default-model*))
-  (format t "  PASS: *default-model* = ~S~%" clambda/config:*default-model*)
+  (assert (boundp 'clawmacs/config:*default-model*))
+  (assert (stringp clawmacs/config:*default-model*))
+  (format t "  PASS: *default-model* = ~S~%" clawmacs/config:*default-model*)
 
-  (assert (boundp 'clambda/config:*default-max-turns*))
-  (assert (integerp clambda/config:*default-max-turns*))
-  (format t "  PASS: *default-max-turns* = ~A~%" clambda/config:*default-max-turns*)
+  (assert (boundp 'clawmacs/config:*default-max-turns*))
+  (assert (integerp clawmacs/config:*default-max-turns*))
+  (format t "  PASS: *default-max-turns* = ~A~%" clawmacs/config:*default-max-turns*)
 
-  (assert (boundp 'clambda/config:*default-stream*))
-  (format t "  PASS: *default-stream* = ~A~%" clambda/config:*default-stream*)
+  (assert (boundp 'clawmacs/config:*default-stream*))
+  (format t "  PASS: *default-stream* = ~A~%" clawmacs/config:*default-stream*)
 
-  (assert (boundp 'clambda/config:*log-level*))
-  (assert (keywordp clambda/config:*log-level*))
-  (format t "  PASS: *log-level* = ~A~%" clambda/config:*log-level*)
+  (assert (boundp 'clawmacs/config:*log-level*))
+  (assert (keywordp clawmacs/config:*log-level*))
+  (format t "  PASS: *log-level* = ~A~%" clawmacs/config:*log-level*)
 
   t)
 
@@ -64,12 +64,12 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "defoption registers options in *option-registry*."
   (format t "~%=== test-defoption-registry ===~%")
 
-  (let ((registry clambda/config:*option-registry*))
+  (let ((registry clawmacs/config:*option-registry*))
     (assert (listp registry))
     (assert (> (length registry) 0))
 
     ;; Check *default-model* is there
-    (let ((entry (assoc 'clambda/config:*default-model* registry)))
+    (let ((entry (assoc 'clawmacs/config:*default-model* registry)))
       (assert entry () "*default-model* not in option registry")
       (let ((plist (cdr entry)))
         (assert (getf plist :default))
@@ -84,14 +84,14 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "defoption variables are setf-able."
   (format t "~%=== test-defoption-setf ===~%")
 
-  (let ((original clambda/config:*default-model*))
+  (let ((original clawmacs/config:*default-model*))
     (unwind-protect
          (progn
-           (setf clambda/config:*default-model* "test/my-model")
-           (assert (string= clambda/config:*default-model* "test/my-model"))
+           (setf clawmacs/config:*default-model* "test/my-model")
+           (assert (string= clawmacs/config:*default-model* "test/my-model"))
            (format t "  PASS: setf *default-model* to ~S~%"
-                   clambda/config:*default-model*))
-      (setf clambda/config:*default-model* original)))
+                   clawmacs/config:*default-model*))
+      (setf clawmacs/config:*default-model* original)))
   t)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -103,33 +103,33 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   (format t "~%=== test-hooks-add-remove ===~%")
 
   ;; Use a fresh binding so we don't pollute global state
-  (let ((clambda/config:*after-init-hook* '()))
+  (let ((clawmacs/config:*after-init-hook* '()))
     (let ((fn1 (lambda () 'a))
           (fn2 (lambda () 'b)))
 
       ;; Add fn1
-      (clambda/config:add-hook '*after-init-hook* fn1)
-      (assert (= 1 (length clambda/config:*after-init-hook*)))
+      (clawmacs/config:add-hook '*after-init-hook* fn1)
+      (assert (= 1 (length clawmacs/config:*after-init-hook*)))
       (format t "  PASS: add-hook adds~%")
 
       ;; Duplicate add — ignored
-      (clambda/config:add-hook '*after-init-hook* fn1)
-      (assert (= 1 (length clambda/config:*after-init-hook*)))
+      (clawmacs/config:add-hook '*after-init-hook* fn1)
+      (assert (= 1 (length clawmacs/config:*after-init-hook*)))
       (format t "  PASS: add-hook deduplicates~%")
 
       ;; Add fn2
-      (clambda/config:add-hook '*after-init-hook* fn2)
-      (assert (= 2 (length clambda/config:*after-init-hook*)))
+      (clawmacs/config:add-hook '*after-init-hook* fn2)
+      (assert (= 2 (length clawmacs/config:*after-init-hook*)))
       (format t "  PASS: add-hook adds second fn~%")
 
       ;; Remove fn1
-      (clambda/config:remove-hook '*after-init-hook* fn1)
-      (assert (= 1 (length clambda/config:*after-init-hook*)))
+      (clawmacs/config:remove-hook '*after-init-hook* fn1)
+      (assert (= 1 (length clawmacs/config:*after-init-hook*)))
       (format t "  PASS: remove-hook removes fn1~%")
 
       ;; Remove non-existent — no error
-      (clambda/config:remove-hook '*after-init-hook* fn1)
-      (assert (= 1 (length clambda/config:*after-init-hook*)))
+      (clawmacs/config:remove-hook '*after-init-hook* fn1)
+      (assert (= 1 (length clawmacs/config:*after-init-hook*)))
       (format t "  PASS: remove-hook handles non-member~%")))
   t)
 
@@ -137,14 +137,14 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "run-hook calls all functions in insertion order."
   (format t "~%=== test-hooks-run-order ===~%")
 
-  (let ((clambda/config:*after-init-hook* '())
+  (let ((clawmacs/config:*after-init-hook* '())
         (log '()))
 
-    (clambda/config:add-hook '*after-init-hook* (lambda () (push 1 log)))
-    (clambda/config:add-hook '*after-init-hook* (lambda () (push 2 log)))
-    (clambda/config:add-hook '*after-init-hook* (lambda () (push 3 log)))
+    (clawmacs/config:add-hook '*after-init-hook* (lambda () (push 1 log)))
+    (clawmacs/config:add-hook '*after-init-hook* (lambda () (push 2 log)))
+    (clawmacs/config:add-hook '*after-init-hook* (lambda () (push 3 log)))
 
-    (clambda/config:run-hook '*after-init-hook*)
+    (clawmacs/config:run-hook '*after-init-hook*)
 
     ;; push reverses; the hooks ran 1,2,3 → log is (3 2 1)
     (assert (equal log '(3 2 1))
@@ -156,14 +156,14 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "run-hook-with-args passes all args to each function."
   (format t "~%=== test-hooks-run-with-args ===~%")
 
-  (let ((clambda/config:*channel-message-hook* '())
+  (let ((clawmacs/config:*channel-message-hook* '())
         (received-args '()))
 
-    (clambda/config:add-hook '*channel-message-hook*
+    (clawmacs/config:add-hook '*channel-message-hook*
                              (lambda (ch msg)
                                (push (list ch msg) received-args)))
 
-    (clambda/config:run-hook-with-args '*channel-message-hook* :telegram "hello")
+    (clawmacs/config:run-hook-with-args '*channel-message-hook* :telegram "hello")
 
     (assert (= 1 (length received-args)))
     (assert (equal (first received-args) '(:telegram "hello")))
@@ -174,16 +174,16 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "An error in one hook function does not prevent subsequent hooks from running."
   (format t "~%=== test-hooks-error-isolation ===~%")
 
-  (let ((clambda/config:*after-init-hook* '())
+  (let ((clawmacs/config:*after-init-hook* '())
         (second-ran nil))
 
-    (clambda/config:add-hook '*after-init-hook*
+    (clawmacs/config:add-hook '*after-init-hook*
                              (lambda () (error "intentional error")))
-    (clambda/config:add-hook '*after-init-hook*
+    (clawmacs/config:add-hook '*after-init-hook*
                              (lambda () (setf second-ran t)))
 
     ;; run-hook must not propagate errors
-    (clambda/config:run-hook '*after-init-hook*)
+    (clawmacs/config:run-hook '*after-init-hook*)
 
     (assert second-ran () "Second hook did not run after first errored")
     (format t "  PASS: error in hook fn isolated; second fn ran~%"))
@@ -193,10 +193,10 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "Standard hook variables are bound and initially empty lists."
   (format t "~%=== test-standard-hook-variables ===~%")
 
-  (dolist (var '(clambda/config:*after-init-hook*
-                 clambda/config:*before-agent-turn-hook*
-                 clambda/config:*after-tool-call-hook*
-                 clambda/config:*channel-message-hook*))
+  (dolist (var '(clawmacs/config:*after-init-hook*
+                 clawmacs/config:*before-agent-turn-hook*
+                 clawmacs/config:*after-tool-call-hook*
+                 clawmacs/config:*channel-message-hook*))
     (assert (boundp var) () "~A not bound" var)
     (format t "  PASS: ~A is bound~%" var))
   t)
@@ -209,13 +209,13 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "register-channel stores config in *registered-channels*."
   (format t "~%=== test-register-channel-basic ===~%")
 
-  (let ((clambda/config:*registered-channels* '()))
+  (let ((clawmacs/config:*registered-channels* '()))
 
-    (clambda/config:register-channel :test-ch
+    (clawmacs/config:register-channel :test-ch
                                      :token "TKN"
                                      :allowed-users '(1001 1002))
 
-    (let ((entry (assoc :test-ch clambda/config:*registered-channels*)))
+    (let ((entry (assoc :test-ch clawmacs/config:*registered-channels*)))
       (assert entry () ":test-ch not registered")
       (let ((plist (cdr entry)))
         (assert (string= (getf plist :token) "TKN"))
@@ -229,12 +229,12 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "Registering the same channel keyword twice replaces the old entry."
   (format t "~%=== test-register-channel-overwrites ===~%")
 
-  (let ((clambda/config:*registered-channels* '()))
-    (clambda/config:register-channel :dup-ch :v "first")
-    (clambda/config:register-channel :dup-ch :v "second")
+  (let ((clawmacs/config:*registered-channels* '()))
+    (clawmacs/config:register-channel :dup-ch :v "first")
+    (clawmacs/config:register-channel :dup-ch :v "second")
 
     (let ((entries (remove-if-not (lambda (e) (eq (car e) :dup-ch))
-                                  clambda/config:*registered-channels*)))
+                                  clawmacs/config:*registered-channels*)))
       (assert (= 1 (length entries)) () "Expected 1 entry, got ~A" (length entries))
       (assert (string= (getf (cdr (first entries)) :v) "second"))
       (format t "  PASS: duplicate register overwrites, entry has :v \"second\"~%")))
@@ -245,15 +245,15 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   (format t "~%=== test-register-channel-custom-method ===~%")
 
   (let ((intercepted nil)
-        (clambda/config:*registered-channels* '()))
+        (clawmacs/config:*registered-channels* '()))
 
     ;; Add a method for :test-plugin-unique (unique keyword to avoid cross-test pollution)
-    (defmethod clambda/config:register-channel ((type (eql :test-plugin-unique))
+    (defmethod clawmacs/config:register-channel ((type (eql :test-plugin-unique))
                                                 &rest args &key &allow-other-keys)
       (setf intercepted (list type args))
       (call-next-method))
 
-    (clambda/config:register-channel :test-plugin-unique :setting 42)
+    (clawmacs/config:register-channel :test-plugin-unique :setting 42)
 
     (assert intercepted () "Custom method was not called")
     (assert (eq (first intercepted) :test-plugin-unique))
@@ -262,12 +262,12 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
 
     ;; Clean up: remove the method using SBCL MOP (ignore errors if cleanup fails)
     (ignore-errors
-     (let ((method (find-method #'clambda/config:register-channel
+     (let ((method (find-method #'clawmacs/config:register-channel
                                 '()
                                 (list (sb-mop:intern-eql-specializer :test-plugin-unique))
                                 nil)))
        (when method
-         (remove-method #'clambda/config:register-channel method)))))
+         (remove-method #'clawmacs/config:register-channel method)))))
   t)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -278,10 +278,10 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "register-user-tool! registers a tool in a fresh *user-tool-registry*."
   (format t "~%=== test-register-user-tool ===~%")
 
-  (let ((clambda/config:*user-tool-registry* (make-tool-registry)))
+  (let ((clawmacs/config:*user-tool-registry* (make-tool-registry)))
 
     ;; Register
-    (clambda/config:register-user-tool!
+    (clawmacs/config:register-user-tool!
      "greet-user"
      "Greet someone"
      '((:name "name" :type "string" :description "Name to greet"))
@@ -289,7 +289,7 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
        (format nil "Hello, ~A!" (gethash "name" args))))
 
     ;; Verify registered
-    (let ((entry (clambda/tools:find-tool clambda/config:*user-tool-registry*
+    (let ((entry (clawmacs/tools:find-tool clawmacs/config:*user-tool-registry*
                                           "greet-user")))
       (assert entry () "greet-user not in *user-tool-registry*")
       (format t "  PASS: tool 'greet-user' registered~%")
@@ -297,11 +297,11 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
       ;; Call the handler directly
       (let* ((args (make-hash-table :test #'equal)))
         (setf (gethash "name" args) "Lisp")
-        (let ((result (funcall (clambda/tools::tool-entry-handler entry) args)))
+        (let ((result (funcall (clawmacs/tools::tool-entry-handler entry) args)))
           ;; Handler returns a string (or tool-result wrapping it)
           (let ((str (if (stringp result)
                          result
-                         (clambda/tools:tool-result-value result))))
+                         (clawmacs/tools:tool-result-value result))))
             (assert (string= str "Hello, Lisp!"))
             (format t "  PASS: tool output = ~S~%" str)))))
     t))
@@ -310,12 +310,12 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "register-user-tool! with nil parameters works."
   (format t "~%=== test-register-user-tool-no-params ===~%")
 
-  (let ((clambda/config:*user-tool-registry* (make-tool-registry)))
-    (clambda/config:register-user-tool!
+  (let ((clawmacs/config:*user-tool-registry* (make-tool-registry)))
+    (clawmacs/config:register-user-tool!
      "ping" "Returns pong" nil
      (lambda (args) (declare (ignore args)) "pong"))
 
-    (assert (clambda/tools:find-tool clambda/config:*user-tool-registry* "ping"))
+    (assert (clawmacs/tools:find-tool clawmacs/config:*user-tool-registry* "ping"))
     (format t "  PASS: no-param tool registered~%"))
   t)
 
@@ -323,25 +323,25 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "define-user-tool macro produces the same result as register-user-tool!."
   (format t "~%=== test-define-user-tool-macro ===~%")
 
-  (let ((clambda/config:*user-tool-registry* (make-tool-registry)))
+  (let ((clawmacs/config:*user-tool-registry* (make-tool-registry)))
     ;; Use the macro
-    (clambda/config:define-user-tool shout-tool
+    (clawmacs/config:define-user-tool shout-tool
       :description "Shouts the input"
       :parameters '((:name "text" :type "string" :description "Text to shout"))
       :function (lambda (args)
                   (string-upcase (gethash "text" args))))
 
-    (let ((entry (clambda/tools:find-tool clambda/config:*user-tool-registry*
+    (let ((entry (clawmacs/tools:find-tool clawmacs/config:*user-tool-registry*
                                           "shout-tool")))
       (assert entry () "shout-tool not registered via macro")
       (format t "  PASS: define-user-tool macro registered 'shout-tool'~%")
 
       (let* ((args (make-hash-table :test #'equal)))
         (setf (gethash "text" args) "hello world")
-        (let ((result (funcall (clambda/tools::tool-entry-handler entry) args)))
+        (let ((result (funcall (clawmacs/tools::tool-entry-handler entry) args)))
           (let ((str (if (stringp result)
                          result
-                         (clambda/tools:tool-result-value result))))
+                         (clawmacs/tools:tool-result-value result))))
             (assert (string= str "HELLO WORLD"))
             (format t "  PASS: shout-tool output = ~S~%" str)))))
     t))
@@ -350,20 +350,20 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "merge-user-tools! copies all user tools into a target registry."
   (format t "~%=== test-merge-user-tools ===~%")
 
-  (let ((clambda/config:*user-tool-registry* (make-tool-registry))
+  (let ((clawmacs/config:*user-tool-registry* (make-tool-registry))
         (target (make-tool-registry)))
 
-    (clambda/config:register-user-tool!
+    (clawmacs/config:register-user-tool!
      "tool-alpha" "Alpha" nil (lambda (a) (declare (ignore a)) "alpha"))
-    (clambda/config:register-user-tool!
+    (clawmacs/config:register-user-tool!
      "tool-beta" "Beta" nil (lambda (a) (declare (ignore a)) "beta"))
 
-    (clambda/config:merge-user-tools! target)
+    (clawmacs/config:merge-user-tools! target)
 
-    (assert (clambda/tools:find-tool target "tool-alpha"))
-    (assert (clambda/tools:find-tool target "tool-beta"))
+    (assert (clawmacs/tools:find-tool target "tool-alpha"))
+    (assert (clawmacs/tools:find-tool target "tool-beta"))
     (format t "  PASS: merge-user-tools! copied ~A tools~%"
-            (length (clambda/tools:list-tools target))))
+            (length (clawmacs/tools:list-tools target))))
   t)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -374,13 +374,13 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "load-user-config returns NIL when no init.lisp exists."
   (format t "~%=== test-load-config-not-found ===~%")
 
-  (let ((clambda/config:*clambda-home*
-         (uiop:ensure-directory-pathname "/tmp/clambda-definitely-not-here-xyz/"))
-        (clambda/config::*user-config-loaded* nil))
+  (let ((clawmacs/config:*clawmacs-home*
+         (uiop:ensure-directory-pathname "/tmp/clawmacs-definitely-not-here-xyz/"))
+        (clawmacs/config::*user-config-loaded* nil))
 
-    (let ((result (clambda/config:load-user-config)))
+    (let ((result (clawmacs/config:load-user-config)))
       (assert (null result) () "Expected NIL, got ~A" result)
-      (assert (null (clambda/config:user-config-loaded-p)))
+      (assert (null (clawmacs/config:user-config-loaded-p)))
       (format t "  PASS: returns NIL when no init.lisp~%")))
   t)
 
@@ -388,21 +388,21 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "load-user-config loads a valid init.lisp and sets *user-config-loaded*."
   (format t "~%=== test-load-config-success ===~%")
 
-  (let ((original-model clambda/config:*default-model*))
+  (let ((original-model clawmacs/config:*default-model*))
     (unwind-protect
          (with-temp-init-file
-             (((in-package #:clambda-user)
+             (((in-package #:clawmacs-user)
                (setf *default-model* "init-test/my-model")))
 
-           (let ((result (clambda/config:load-user-config)))
+           (let ((result (clawmacs/config:load-user-config)))
              (assert result () "Expected T from load-user-config")
-             (assert (clambda/config:user-config-loaded-p))
+             (assert (clawmacs/config:user-config-loaded-p))
              (format t "  PASS: load-user-config returned T~%")
 
-             (assert (string= clambda/config:*default-model* "init-test/my-model"))
+             (assert (string= clawmacs/config:*default-model* "init-test/my-model"))
              (format t "  PASS: *default-model* = ~S (set by init.lisp)~%"
-                     clambda/config:*default-model*)))
-      (setf clambda/config:*default-model* original-model)))
+                     clawmacs/config:*default-model*)))
+      (setf clawmacs/config:*default-model* original-model)))
   t)
 
 (defun test-load-config-runs-after-init-hook ()
@@ -410,15 +410,15 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   (format t "~%=== test-load-config-runs-after-init-hook ===~%")
 
   ;; We pre-install a hook, then load an init.lisp (any valid one)
-  (let ((clambda/config:*after-init-hook* '())
+  (let ((clawmacs/config:*after-init-hook* '())
         (hook-fired nil))
 
-    (clambda/config:add-hook '*after-init-hook* (lambda () (setf hook-fired t)))
+    (clawmacs/config:add-hook '*after-init-hook* (lambda () (setf hook-fired t)))
 
     (with-temp-init-file
-        (((in-package #:clambda-user)))  ; minimal valid init
+        (((in-package #:clawmacs-user)))  ; minimal valid init
 
-      (clambda/config:load-user-config)
+      (clawmacs/config:load-user-config)
 
       (assert hook-fired () "*after-init-hook* did not fire")
       (format t "  PASS: *after-init-hook* fired after init.lisp load~%")))
@@ -431,9 +431,9 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   (with-temp-init-file
       (((error "deliberate init.lisp error for testing")))
 
-    (let ((result (clambda/config:load-user-config)))
+    (let ((result (clawmacs/config:load-user-config)))
       (assert (null result) () "Expected NIL on init.lisp error, got ~A" result)
-      (assert (null (clambda/config:user-config-loaded-p)))
+      (assert (null (clawmacs/config:user-config-loaded-p)))
       (format t "  PASS: init.lisp error caught gracefully, returned NIL~%")))
   t)
 
@@ -441,16 +441,16 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "init.lisp can call register-channel; result appears in *registered-channels*."
   (format t "~%=== test-load-config-channel-registration ===~%")
 
-  (let ((clambda/config:*registered-channels* '()))
+  (let ((clawmacs/config:*registered-channels* '()))
     (with-temp-init-file
-        (((in-package #:clambda-user)
+        (((in-package #:clawmacs-user)
           (register-channel :my-test-bot
                             :token "SECRET"
                             :allowed-users (list 999))))
 
-      (clambda/config:load-user-config)
+      (clawmacs/config:load-user-config)
 
-      (let ((entry (assoc :my-test-bot clambda/config:*registered-channels*)))
+      (let ((entry (assoc :my-test-bot clawmacs/config:*registered-channels*)))
         (assert entry () ":my-test-bot not in *registered-channels* after init load")
         (assert (string= (getf (cdr entry) :token) "SECRET"))
         (format t "  PASS: init.lisp registered :my-test-bot channel~%")
@@ -461,18 +461,18 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   "init.lisp can define user tools via define-user-tool."
   (format t "~%=== test-load-config-user-tool ===~%")
 
-  (let ((clambda/config:*user-tool-registry* (make-tool-registry)))
+  (let ((clawmacs/config:*user-tool-registry* (make-tool-registry)))
     (with-temp-init-file
-        (((in-package #:clambda-user)
+        (((in-package #:clawmacs-user)
           (define-user-tool reverse-string-tool
             :description "Reverses a string"
             :parameters (list (list :name "s" :type "string" :description "String to reverse"))
             :function (lambda (args)
                         (reverse (gethash "s" args))))))
 
-      (clambda/config:load-user-config)
+      (clawmacs/config:load-user-config)
 
-      (let ((entry (clambda/tools:find-tool clambda/config:*user-tool-registry*
+      (let ((entry (clawmacs/tools:find-tool clawmacs/config:*user-tool-registry*
                                             "reverse-string-tool")))
         (assert entry () "reverse-string-tool not found after init load")
         (format t "  PASS: init.lisp registered 'reverse-string-tool'~%")
@@ -480,10 +480,10 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
         ;; Run it
         (let* ((args (make-hash-table :test #'equal)))
           (setf (gethash "s" args) "hello")
-          (let ((result (funcall (clambda/tools::tool-entry-handler entry) args)))
+          (let ((result (funcall (clawmacs/tools::tool-entry-handler entry) args)))
             (let ((str (if (stringp result)
                            result
-                           (clambda/tools:tool-result-value result))))
+                           (clawmacs/tools:tool-result-value result))))
               (assert (string= str "olleh"))
               (format t "  PASS: tool output = ~S~%" str))))))
     t))
@@ -492,13 +492,13 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
 ;;;; § 6. Package structure
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
-(defun test-clambda-user-package ()
-  "clambda-user package exists and exports expected symbols."
-  (format t "~%=== test-clambda-user-package ===~%")
+(defun test-clawmacs-user-package ()
+  "clawmacs-user package exists and exports expected symbols."
+  (format t "~%=== test-clawmacs-user-package ===~%")
 
-  (let ((pkg (find-package '#:clambda-user)))
-    (assert pkg () "clambda-user package not found")
-    (format t "  PASS: clambda-user package exists~%")
+  (let ((pkg (find-package '#:clawmacs-user)))
+    (assert pkg () "clawmacs-user package not found")
+    (format t "  PASS: clawmacs-user package exists~%")
 
     (dolist (sym-str '("DEFOPTION"
                        "ADD-HOOK" "REMOVE-HOOK" "RUN-HOOK" "RUN-HOOK-WITH-ARGS"
@@ -520,13 +520,13 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
       (multiple-value-bind (sym status)
           (find-symbol sym-str pkg)
         (assert (and sym status)
-                () "Symbol ~A not accessible in clambda-user" sym-str)
-        (format t "  PASS: clambda-user:~A (~A)~%" sym-str status))))
+                () "Symbol ~A not accessible in clawmacs-user" sym-str)
+        (format t "  PASS: clawmacs-user:~A (~A)~%" sym-str status))))
   t)
 
-(defun test-clambda-package-exports ()
-  "Top-level clambda package re-exports all config symbols."
-  (format t "~%=== test-clambda-package-exports ===~%")
+(defun test-clawmacs-package-exports ()
+  "Top-level clawmacs package re-exports all config symbols."
+  (format t "~%=== test-clawmacs-package-exports ===~%")
 
   (dolist (sym-str '("LOAD-USER-CONFIG"
                      "USER-CONFIG-LOADED-P"
@@ -554,11 +554,11 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
                      "*CLAMBDA-HOME*"
                      "CLAMBDA-HOME"))
     (multiple-value-bind (sym status)
-        (find-symbol sym-str (find-package '#:clambda))
+        (find-symbol sym-str (find-package '#:clawmacs))
       (assert (and sym (eq status :external))
-              () "~A not :external in clambda package (got ~A ~A)"
+              () "~A not :external in clawmacs package (got ~A ~A)"
               sym-str sym status)
-      (format t "  PASS: clambda:~A~%" sym-str)))
+      (format t "  PASS: clawmacs:~A~%" sym-str)))
   t)
 
 (defun test-describe-options-runs ()
@@ -566,7 +566,7 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
   (format t "~%=== test-describe-options-runs ===~%")
 
   (let ((output (with-output-to-string (*standard-output*)
-                  (clambda/config:describe-options))))
+                  (clawmacs/config:describe-options))))
     (assert (> (length output) 10) () "describe-options produced no output")
     ;; Should mention at least one known option
     (assert (search "DEFAULT-MODEL" (string-upcase output))
@@ -629,8 +629,8 @@ FORMS-LIST is a list of forms (not evaluated) that are written to the file."
       (run1 "load-user-tool"          #'test-load-config-user-tool)
 
       ;; package structure
-      (run1 "clambda-user-package"    #'test-clambda-user-package)
-      (run1 "clambda-pkg-exports"     #'test-clambda-package-exports)
+      (run1 "clawmacs-user-package"    #'test-clawmacs-user-package)
+      (run1 "clawmacs-pkg-exports"     #'test-clawmacs-package-exports)
       (run1 "describe-options"        #'test-describe-options-runs))
 
     ;; Summary

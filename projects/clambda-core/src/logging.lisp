@@ -1,14 +1,14 @@
-;;;; src/logging.lisp — Structured JSON logging for clambda-core
+;;;; src/logging.lisp — Structured JSON logging for clawmacs-core
 ;;;;
 ;;;; Writes newline-delimited JSON log entries to a configurable file.
 ;;;; Each entry has at minimum: timestamp, event-type, and event-specific fields.
 ;;;;
 ;;;; Usage:
-;;;;   (setf clambda/logging:*log-file* "/tmp/clambda.log")
-;;;;   (clambda/logging:log-llm-request "my-agent" "gpt-4" 3)
-;;;;   (clambda/logging:with-logging ("/path/to/log") body...)
+;;;;   (setf clawmacs/logging:*log-file* "/tmp/clawmacs.log")
+;;;;   (clawmacs/logging:log-llm-request "my-agent" "gpt-4" 3)
+;;;;   (clawmacs/logging:with-logging ("/path/to/log") body...)
 
-(in-package #:clambda/logging)
+(in-package #:clawmacs/logging)
 
 ;;; ── Configuration ────────────────────────────────────────────────────────────
 
@@ -43,7 +43,7 @@ Silently ignores errors (logging must not break agent operation)."
         ;; Logging failures are non-fatal; print to stderr at most
         (ignore-errors
           (format *error-output*
-                  "~&[clambda/logging] write error: ~a~%" e))))))
+                  "~&[clawmacs/logging] write error: ~a~%" e))))))
 
 (defun make-base-entry (event-type)
   "Return a fresh hash-table with timestamp and event_type pre-populated."

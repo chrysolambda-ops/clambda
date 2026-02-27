@@ -1,6 +1,6 @@
 ;;;; src/builtins.lisp — Built-in tools: exec, read-file, write-file, web-fetch
 
-(in-package #:clambda/builtins)
+(in-package #:clawmacs/builtins)
 
 ;;; ── web-fetch helpers ────────────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ Returns (values text-string content-type-string status-code)."
   (multiple-value-bind (body status headers)
       (dexador:get url
                    :headers '(("User-Agent"
-                               . "Mozilla/5.0 (compatible; clambda-agent/0.1)"))
+                               . "Mozilla/5.0 (compatible; clawmacs-agent/0.1)"))
                    :force-string t)
     (let* ((content-type (or (gethash "content-type" headers) "text/html"))
            (html-p        (search "html" content-type :test #'char-equal))
@@ -96,12 +96,12 @@ with 'TTS not available' if no engine is found (graceful no-op)."
               (let ((preview (if (> (length text) 60)
                                  (concatenate 'string (subseq text 0 60) "...")
                                  text)))
-                (clambda/tools:tool-result-ok
+                (clawmacs/tools:tool-result-ok
                  (format nil "Spoke via ~a: ~s" cmd preview))))
           (error (e)
-            (clambda/tools:tool-result-error
+            (clawmacs/tools:tool-result-error
              (format nil "TTS error using ~a: ~a" cmd e))))
-        (clambda/tools:tool-result-ok
+        (clawmacs/tools:tool-result-ok
          "TTS not available: no espeak-ng/espeak/piper/say found on PATH. Text not spoken."))))
 
 ;;; ── exec helper ──────────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ WORKDIR — optional default working directory for exec.
 Returns REGISTRY."
 
   ;; ── exec ──────────────────────────────────────────────────────────────────
-  (clambda/tools:register-tool!
+  (clawmacs/tools:register-tool!
    registry
    "exec"
    (lambda (args)
@@ -134,7 +134,7 @@ Returns REGISTRY."
            (cwd     (or (gethash "workdir" args) workdir)))
        (cond
          ((or (null command) (string= command ""))
-          (clambda/tools:tool-result-error "No command provided"))
+          (clawmacs/tools:tool-result-error "No command provided"))
          (t
           (handler-case
               (multiple-value-bind (stdout stderr exit-code)
@@ -144,10 +144,10 @@ Returns REGISTRY."
                                  (if (and stderr (not (string= stderr "")))
                                      (format nil "~%[stderr]~%~a" stderr)
                                      ""))))
-                  (clambda/tools:tool-result-ok
+                  (clawmacs/tools:tool-result-ok
                    (format nil "exit-code: ~a~%~a" exit-code combined))))
             (error (e)
-              (clambda/tools:tool-result-error
+              (clawmacs/tools:tool-result-error
                (format nil "exec failed: ~a" e))))))))
    :description "Execute a shell command and return its output."
    :parameters '(:|type| "object"
@@ -157,19 +157,19 @@ Returns REGISTRY."
                  :|required| #("command")))
 
   ;; ── read-file ──────────────────────────────────────────────────────────────
-  (clambda/tools:register-tool!
+  (clawmacs/tools:register-tool!
    registry
    "read_file"
    (lambda (args)
      (let ((path (gethash "path" args)))
        (cond
          ((or (null path) (string= path ""))
-          (clambda/tools:tool-result-error "No path provided"))
+          (clawmacs/tools:tool-result-error "No path provided"))
          (t
           (handler-case
-              (clambda/tools:tool-result-ok (uiop:read-file-string path))
+              (clawmacs/tools:tool-result-ok (uiop:read-file-string path))
             (error (e)
-              (clambda/tools:tool-result-error
+              (clawmacs/tools:tool-result-error
                (format nil "read-file failed: ~a" e))))))))
    :description "Read the contents of a file and return it as text."
    :parameters '(:|type| "object"
@@ -178,7 +178,7 @@ Returns REGISTRY."
                  :|required| #("path")))
 
   ;; ── write-file ─────────────────────────────────────────────────────────────
-  (clambda/tools:register-tool!
+  (clawmacs/tools:register-tool!
    registry
    "write_file"
    (lambda (args)
@@ -186,7 +186,7 @@ Returns REGISTRY."
            (content (gethash "content" args)))
        (cond
          ((or (null path) (null content))
-          (clambda/tools:tool-result-error "path and content are required"))
+          (clawmacs/tools:tool-result-error "path and content are required"))
          (t
           (handler-case
               (progn
@@ -196,10 +196,10 @@ Returns REGISTRY."
                                      :if-exists :supersede
                                      :if-does-not-exist :create)
                   (write-string content out))
-                (clambda/tools:tool-result-ok
+                (clawmacs/tools:tool-result-ok
                  (format nil "Written ~a bytes to ~a" (length content) path)))
             (error (e)
-              (clambda/tools:tool-result-error
+              (clawmacs/tools:tool-result-error
                (format nil "write-file failed: ~a" e))))))))
    :description "Write text content to a file, creating it if needed."
    :parameters '(:|type| "object"
@@ -209,7 +209,7 @@ Returns REGISTRY."
                  :|required| #("path" "content")))
 
   ;; ── list-directory ────────────────────────────────────────────────────────
-  (clambda/tools:register-tool!
+  (clawmacs/tools:register-tool!
    registry
    "list_directory"
    (lambda (args)
@@ -218,7 +218,7 @@ Returns REGISTRY."
            (let* ((truepath (uiop:ensure-directory-pathname path))
                   (entries (uiop:directory-files truepath))
                   (subdirs (uiop:subdirectories truepath)))
-             (clambda/tools:tool-result-ok
+             (clawmacs/tools:tool-result-ok
               (with-output-to-string (s)
                 (dolist (d subdirs)
                   (format s "[dir]  ~a~%"
@@ -226,7 +226,7 @@ Returns REGISTRY."
                 (dolist (f entries)
                   (format s "[file] ~a~%" (file-namestring f))))))
          (error (e)
-           (clambda/tools:tool-result-error
+           (clawmacs/tools:tool-result-error
             (format nil "list-directory failed: ~a" e))))))
    :description "List the contents of a directory."
    :parameters '(:|type| "object"
@@ -235,7 +235,7 @@ Returns REGISTRY."
                  :|required| #()))
 
   ;; ── web-fetch ─────────────────────────────────────────────────────────────
-  (clambda/tools:register-tool!
+  (clawmacs/tools:register-tool!
    registry
    "web_fetch"
    (lambda (args)
@@ -244,7 +244,7 @@ Returns REGISTRY."
                            *web-fetch-default-max-chars*)))
        (cond
          ((or (null url) (string= url ""))
-          (clambda/tools:tool-result-error "No URL provided"))
+          (clawmacs/tools:tool-result-error "No URL provided"))
          (t
           (handler-case
               (multiple-value-bind (text content-type status)
@@ -253,14 +253,14 @@ Returns REGISTRY."
                                                 *web-fetch-default-max-chars*))
                 (declare (ignore content-type))
                 (if (and status (>= status 400))
-                    (clambda/tools:tool-result-error
+                    (clawmacs/tools:tool-result-error
                      (format nil "HTTP ~a fetching ~a" status url))
-                    (clambda/tools:tool-result-ok text)))
+                    (clawmacs/tools:tool-result-ok text)))
             (dexador:http-request-failed (e)
-              (clambda/tools:tool-result-error
+              (clawmacs/tools:tool-result-error
                (format nil "HTTP error fetching ~a: ~a" url e)))
             (error (e)
-              (clambda/tools:tool-result-error
+              (clawmacs/tools:tool-result-error
                (format nil "web-fetch failed for ~a: ~a" url e))))))))
    :description "Fetch a URL and return its text content. HTML is stripped to plain text."
    :parameters '(:|type| "object"
@@ -272,14 +272,14 @@ Returns REGISTRY."
                  :|required| #("url")))
 
   ;; ── tts ───────────────────────────────────────────────────────────────────
-  (clambda/tools:register-tool!
+  (clawmacs/tools:register-tool!
    registry
    "tts"
    (lambda (args)
      (let ((text (gethash "text" args)))
        (cond
          ((or (null text) (string= text ""))
-          (clambda/tools:tool-result-error "No text provided"))
+          (clawmacs/tools:tool-result-error "No text provided"))
          (t
           (tts-speak text)))))
    :description
@@ -296,4 +296,4 @@ Returns a confirmation or 'TTS not available' if no TTS engine is installed."
 (defun make-builtin-registry (&key workdir)
   "Create a new TOOL-REGISTRY pre-loaded with built-in tools.
 WORKDIR — optional default working directory for exec."
-  (register-builtin-tools (clambda/tools:make-tool-registry) :workdir workdir))
+  (register-builtin-tools (clawmacs/tools:make-tool-registry) :workdir workdir))

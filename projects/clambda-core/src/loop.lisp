@@ -1,6 +1,6 @@
 ;;;; src/loop.lisp — The core agent loop
 
-(in-package #:clambda/loop)
+(in-package #:clawmacs/loop)
 
 ;;; ── Dynamic hooks ────────────────────────────────────────────────────────────
 
@@ -50,8 +50,8 @@ Returns a hash-table of corrected arguments, or NIL if the LLM can't help.
 The LLM is asked to return pure JSON. If parsing fails, returns NIL."
   (handler-case
       (let* ((agent   (session-agent session))
-             (client  (clambda/agent:agent-client agent))
-             (model   (clambda/agent:agent-model agent))
+             (client  (clawmacs/agent:agent-client agent))
+             (model   (clawmacs/agent:agent-model agent))
              (tname   (tool-execution-error-tool-name condition))
              (cause   (tool-execution-error-cause condition))
              (input   (tool-execution-error-input condition))
@@ -89,12 +89,12 @@ The LLM is asked to return pure JSON. If parsing fails, returns NIL."
                      (subseq clean start (1+ end)))
                   (error ()
                     (format *error-output*
-                            "~&[clambda/loop] LLM fix parse error — raw: ~s~%"
+                            "~&[clawmacs/loop] LLM fix parse error — raw: ~s~%"
                             clean)
                     nil)))))))
     (error (e)
       (format *error-output*
-              "~&[clambda/loop] LLM auto-repair request failed: ~a~%" e)
+              "~&[clawmacs/loop] LLM auto-repair request failed: ~a~%" e)
       nil)))
 
 ;;; ── Helpers ──────────────────────────────────────────────────────────────────
@@ -102,8 +102,8 @@ The LLM is asked to return pure JSON. If parsing fails, returns NIL."
 (defun build-messages (session)
   "Build the full message list for an LLM call: system prompt + history."
   (let* ((agent (session-agent session))
-         (sys-prompt (clambda/agent:agent-effective-system-prompt agent))
-         (history (clambda/session:session-messages session)))
+         (sys-prompt (clawmacs/agent:agent-effective-system-prompt agent))
+         (history (clawmacs/session:session-messages session)))
     (cons (cl-llm/protocol:system-message sys-prompt) history)))
 
 (defun handle-tool-calls (session registry tool-calls verbose &optional opts)
@@ -148,22 +148,22 @@ A human connected via SLIME can also intercept and choose restarts manually."
                            (invoke-restart 'retry-with-fixed-input fixed-args))
                          ;; If no fix available, fall through to error result
                          )))
-                    (clambda/conditions:tool-not-found
+                    (clawmacs/conditions:tool-not-found
                      (lambda (c)
                        (declare (ignore c))
-                       (invoke-restart 'clambda/conditions:skip-tool-call))))
-                 (clambda/tools:dispatch-tool-call registry tc)))
-              (result-str (clambda/tools:format-tool-result result)))
+                       (invoke-restart 'clawmacs/conditions:skip-tool-call))))
+                 (clawmacs/tools:dispatch-tool-call registry tc)))
+              (result-str (clawmacs/tools:format-tool-result result)))
 
          ;; Log tool call
-         (clambda/logging:log-tool-call
-          (clambda/agent:agent-name (clambda/session:session-agent session))
+         (clawmacs/logging:log-tool-call
+          (clawmacs/agent:agent-name (clawmacs/session:session-agent session))
           name
           (let ((args (cl-llm/protocol:tool-call-function-arguments tc)))
             (if args (format nil "~a" args) "")))
          ;; Log tool result — success if result-str doesn't start with "ERROR:"
-         (clambda/logging:log-tool-result
-          (clambda/agent:agent-name (clambda/session:session-agent session))
+         (clawmacs/logging:log-tool-result
+          (clawmacs/agent:agent-name (clawmacs/session:session-agent session))
           name
           (not (and (>= (length result-str) 6)
                     (string= (subseq result-str 0 6) "ERROR:")))
@@ -175,7 +175,7 @@ A human connected via SLIME can also intercept and choose restarts manually."
            (funcall *on-tool-result* name result-str))
 
          ;; Add tool result message to session
-         (clambda/session:session-add-message
+         (clawmacs/session:session-add-message
           session
           (cl-llm/protocol:tool-message result-str tid))
 
@@ -218,22 +218,22 @@ The SESSION is updated in place with assistant + tool messages.
 OPTIONS — a LOOP-OPTIONS struct (default: standard options)."
   (let* ((opts     (or options (make-loop-options)))
          (agent    (session-agent session))
-         (client   (clambda/agent:agent-client agent))
-         (model    (clambda/agent:agent-model agent))
-         (registry (clambda/agent:agent-tool-registry agent))
+         (client   (clawmacs/agent:agent-client agent))
+         (model    (clawmacs/agent:agent-model agent))
+         (registry (clawmacs/agent:agent-tool-registry agent))
          (tools    (when registry
-                     (clambda/tools:tool-definitions-for-llm registry)))
+                     (clawmacs/tools:tool-definitions-for-llm registry)))
          (messages (build-messages session))
          (verbose  (loop-options-verbose opts)))
 
     (when verbose
       (format t "~%[agent] ~a: calling LLM (~a messages)~%"
-              (clambda/agent:agent-name agent)
+              (clawmacs/agent:agent-name agent)
               (length messages)))
 
     ;; Log the LLM request
-    (clambda/logging:log-llm-request
-     (clambda/agent:agent-name agent)
+    (clawmacs/logging:log-llm-request
+     (clawmacs/agent:agent-name agent)
      (or model "unknown")
      (length messages)
      :tools-count (length tools))
@@ -264,7 +264,7 @@ OPTIONS — a LOOP-OPTIONS struct (default: standard options)."
         (let ((text (getf response :text)))
           (when text
             (when *on-llm-response* (funcall *on-llm-response* text))
-            (clambda/session:session-add-message
+            (clawmacs/session:session-add-message
              session (cl-llm/protocol:assistant-message text)))
           (return-from agent-turn (values text nil nil))))
 
@@ -272,17 +272,17 @@ OPTIONS — a LOOP-OPTIONS struct (default: standard options)."
       (let ((usage (cl-llm/protocol:response-usage response)))
         (when usage
           (let ((total (cl-llm/protocol:usage-total-tokens usage)))
-            (incf (clambda/session:session-total-tokens session) total)
+            (incf (clawmacs/session:session-total-tokens session) total)
             ;; Check token budget
             (let ((max-tokens (loop-options-max-tokens opts)))
               (when (and max-tokens
-                         (> (clambda/session:session-total-tokens session)
+                         (> (clawmacs/session:session-total-tokens session)
                             max-tokens))
                 (restart-case
-                    (error 'clambda/conditions:budget-exceeded
+                    (error 'clawmacs/conditions:budget-exceeded
                            :kind    :tokens
                            :limit   max-tokens
-                           :current (clambda/session:session-total-tokens session))
+                           :current (clawmacs/session:session-total-tokens session))
                   (abort-agent-loop ()
                     :report "Abort the agent loop due to token budget exceeded."
                     (return-from agent-turn (values nil nil nil)))))))))
@@ -300,7 +300,7 @@ OPTIONS — a LOOP-OPTIONS struct (default: standard options)."
         (let ((asst-msg (cl-llm/protocol:choice-message
                          (first (cl-llm/protocol:response-choices response)))))
           (when asst-msg
-            (clambda/session:session-add-message session asst-msg)))
+            (clawmacs/session:session-add-message session asst-msg)))
 
         ;; Dispatch tool calls if any
         (when (and registry tool-calls (not (endp tool-calls)))
@@ -331,7 +331,7 @@ OPTIONS — a LOOP-OPTIONS struct."
          (verbose   (loop-options-verbose opts)))
 
     ;; Add the user message to history
-    (clambda/session:session-add-message
+    (clawmacs/session:session-add-message
      session (cl-llm/protocol:user-message user-message))
 
     (when verbose
@@ -357,7 +357,7 @@ OPTIONS — a LOOP-OPTIONS struct."
           :finally
              ;; Max turns exceeded
              (restart-case
-                 (error 'clambda/conditions:agent-loop-error
+                 (error 'clawmacs/conditions:agent-loop-error
                         :message (format nil "Agent loop exceeded max-turns (~a)" max-turns))
                (abort-agent-loop ()
                  :report "Abort the agent loop and return empty string."

@@ -1,6 +1,6 @@
-;;;; src/commands.lisp — Command table definitions for clambda-gui
+;;;; src/commands.lisp — Command table definitions for clawmacs-gui
 
-(in-package #:clambda-gui)
+(in-package #:clawmacs-gui)
 
 ;;; ── Helper: run LLM call in background thread ────────────────────────────────
 
@@ -32,7 +32,7 @@ Adds the completed assistant response to the chat log when done."
                  (let ((err-text (format nil "Error: ~a" e)))
                    (push-chat-message frame :system err-text)
                    (set-status frame (format nil "Error: ~a" e))))))
-           :name "clambda-gui-llm-worker"))))
+           :name "clawmacs-gui-llm-worker"))))
 
 (defun %llm-worker (frame session user-text)
   "Do the actual LLM call + display updates (runs in background thread)."
@@ -145,7 +145,7 @@ Adds the completed assistant response to the chat log when done."
 
 ;;; COM-SEND — send a message to the LLM
 (clim:define-command (com-send :name "Send" :menu t
-                               :command-table clambda-gui-commands)
+                               :command-table clawmacs-gui-commands)
     ((message 'string :prompt "Message"))
   (let ((frame clim:*application-frame*)
         (text  (string-trim " " message)))
@@ -154,7 +154,7 @@ Adds the completed assistant response to the chat log when done."
 
 ;;; COM-CLEAR — clear chat history
 (clim:define-command (com-clear :name "Clear History" :menu t
-                                :command-table clambda-gui-commands)
+                                :command-table clawmacs-gui-commands)
     ()
   (let ((frame clim:*application-frame*))
     (when (frame-session frame)
@@ -167,7 +167,7 @@ Adds the completed assistant response to the chat log when done."
 
 ;;; COM-SWITCH-MODEL — change the active model
 (clim:define-command (com-switch-model :name "Switch Model" :menu t
-                                       :command-table clambda-gui-commands)
+                                       :command-table clawmacs-gui-commands)
     ((model-name 'string :prompt "Model name"))
   (let* ((frame clim:*application-frame*)
          (session (frame-session frame))
@@ -188,7 +188,7 @@ Adds the completed assistant response to the chat log when done."
 
 ;;; COM-SET-SYSTEM — set or view system prompt
 (clim:define-command (com-set-system :name "Set System Prompt" :menu t
-                                     :command-table clambda-gui-commands)
+                                     :command-table clawmacs-gui-commands)
     ((prompt 'string :prompt "System prompt (empty to show current)"))
   (let* ((frame   clim:*application-frame*)
          (session (frame-session frame))
@@ -217,7 +217,7 @@ Adds the completed assistant response to the chat log when done."
 
 ;;; COM-QUIT — exit
 (clim:define-command (com-quit :name "Quit" :menu t
-                               :command-table clambda-gui-commands
+                               :command-table clawmacs-gui-commands
                                :keystroke (#\q :control))
     ()
   (clim:frame-exit clim:*application-frame*))

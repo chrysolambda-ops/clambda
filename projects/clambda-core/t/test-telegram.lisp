@@ -1,21 +1,21 @@
-;;;; t/test-telegram.lisp — Unit tests for clambda/telegram
+;;;; t/test-telegram.lisp — Unit tests for clawmacs/telegram
 ;;;;
 ;;;; Tests that do NOT hit the Telegram API or the LLM.
 ;;;; All tests use locally constructed data structures and pure functions.
 ;;;;
 ;;;; To run:
-;;;;   (asdf:test-system :clambda-core)
+;;;;   (asdf:test-system :clawmacs-core)
 ;;;;
 ;;;; For a live integration test (real bot token required):
 ;;;;   1. Set your token:
-;;;;        (clambda/config:register-channel :telegram :token "TOKEN")
+;;;;        (clawmacs/config:register-channel :telegram :token "TOKEN")
 ;;;;   2. Start polling:
-;;;;        (clambda/telegram:start-telegram)
+;;;;        (clawmacs/telegram:start-telegram)
 ;;;;   3. Send a message to your bot in Telegram. Watch the REPL for output.
 ;;;;   4. Stop:
-;;;;        (clambda/telegram:stop-telegram)
+;;;;        (clawmacs/telegram:stop-telegram)
 
-(in-package #:clambda-core/tests/telegram)
+(in-package #:clawmacs-core/tests/telegram)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 1. URL Construction
@@ -74,16 +74,16 @@
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
 (define-test "%plist->ht: keyword keys become lowercase strings"
-  (let ((ht (clambda/telegram::%plist->ht '(:chat_id 123 :text "hello"))))
+  (let ((ht (clawmacs/telegram::%plist->ht '(:chat_id 123 :text "hello"))))
     (is eql 123    (gethash "chat_id" ht))
     (is string= "hello" (gethash "text" ht))))
 
 (define-test "%plist->ht: empty plist → empty hash-table"
-  (let ((ht (clambda/telegram::%plist->ht '())))
+  (let ((ht (clawmacs/telegram::%plist->ht '())))
     (is = 0 (hash-table-count ht))))
 
 (define-test "%plist->ht: mixed case keyword → lowercased"
-  (let ((ht (clambda/telegram::%plist->ht '(:ParseMode "Markdown"))))
+  (let ((ht (clawmacs/telegram::%plist->ht '(:ParseMode "Markdown"))))
     (true (gethash "parsemode" ht))))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ Mirrors the structure of a real Telegram API update object."
                                :user-id 42
                                :first-name "Alice")))
     (multiple-value-bind (text chat-id user-id name)
-        (clambda/telegram::%extract-message-fields update)
+        (clawmacs/telegram::%extract-message-fields update)
       (is string= "Hello bot!" text)
       (is eql 9001 chat-id)
       (is eql 42   user-id)
@@ -126,7 +126,7 @@ Mirrors the structure of a real Telegram API update object."
   (let ((update (make-hash-table :test 'equal)))
     (setf (gethash "update_id" update) 99)
     (multiple-value-bind (text chat-id user-id name)
-        (clambda/telegram::%extract-message-fields update)
+        (clawmacs/telegram::%extract-message-fields update)
       (false text)
       (false chat-id)
       (false user-id)
@@ -145,7 +145,7 @@ Mirrors the structure of a real Telegram API update object."
     (setf (gethash "from" msg)      from)
     (setf (gethash "message" update) msg)
     (multiple-value-bind (text chat-id user-id _name)
-        (clambda/telegram::%extract-message-fields update)
+        (clawmacs/telegram::%extract-message-fields update)
       (declare (ignore _name))
       (false text)           ; text is nil → process-update ignores this
       (is eql 100 chat-id)
@@ -203,47 +203,47 @@ Mirrors the structure of a real Telegram API update object."
     ;; and NOT create a session entry
     (process-update chan update)
     ;; Sessions table should still be empty
-    (is = 0 (hash-table-count (clambda/telegram::telegram-channel-sessions chan)))))
+    (is = 0 (hash-table-count (clawmacs/telegram::telegram-channel-sessions chan)))))
 
 (define-test "process-update: non-text update does not create a session"
   (let* ((chan   (make-telegram-channel :token "T"))
          (update (%make-update 99)))  ; no message key at all
     (process-update chan update)
-    (is = 0 (hash-table-count (clambda/telegram::telegram-channel-sessions chan)))))
+    (is = 0 (hash-table-count (clawmacs/telegram::telegram-channel-sessions chan)))))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 7. Streaming configuration
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
 (define-test "*telegram-streaming*: default is T"
-  (true clambda/telegram:*telegram-streaming*))
+  (true clawmacs/telegram:*telegram-streaming*))
 
 (define-test "*telegram-stream-debounce-ms*: default is 500"
-  (is = 500 clambda/telegram:*telegram-stream-debounce-ms*))
+  (is = 500 clawmacs/telegram:*telegram-stream-debounce-ms*))
 
 (define-test "streaming vars can be rebound dynamically"
-  (let ((clambda/telegram:*telegram-streaming* nil))
-    (false clambda/telegram:*telegram-streaming*))
+  (let ((clawmacs/telegram:*telegram-streaming* nil))
+    (false clawmacs/telegram:*telegram-streaming*))
   ;; After let exits, original value is restored
-  (true clambda/telegram:*telegram-streaming*))
+  (true clawmacs/telegram:*telegram-streaming*))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 8. %split-telegram-text helper
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
 (define-test "%split-telegram-text: short text is single chunk"
-  (let ((chunks (clambda/telegram::%split-telegram-text "Hello!" 4096)))
+  (let ((chunks (clawmacs/telegram::%split-telegram-text "Hello!" 4096)))
     (is = 1 (length chunks))
     (is string= "Hello!" (first chunks))))
 
 (define-test "%split-telegram-text: text exactly at limit is single chunk"
   (let* ((text (make-string 4096 :initial-element #\a))
-         (chunks (clambda/telegram::%split-telegram-text text 4096)))
+         (chunks (clawmacs/telegram::%split-telegram-text text 4096)))
     (is = 1 (length chunks))))
 
 (define-test "%split-telegram-text: text over limit is split"
   (let* ((text (make-string 5000 :initial-element #\x))
-         (chunks (clambda/telegram::%split-telegram-text text 4096)))
+         (chunks (clawmacs/telegram::%split-telegram-text text 4096)))
     (is = 2 (length chunks))
     ;; First chunk ≤ 4096
     (true (<= (length (first chunks)) 4096))
@@ -256,7 +256,7 @@ Mirrors the structure of a real Telegram API update object."
                              (make-string 4000 :initial-element #\x)
                              (string #\Newline)
                              (make-string 200 :initial-element #\y)))
-         (chunks (clambda/telegram::%split-telegram-text text 4096)))
+         (chunks (clawmacs/telegram::%split-telegram-text text 4096)))
     ;; Should split after the newline, not at hard 4096
     (is = 2 (length chunks))
     (true (<= (length (first chunks)) 4096))))
@@ -266,11 +266,11 @@ Mirrors the structure of a real Telegram API update object."
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
 (define-test "%current-time-ms: returns a non-negative integer"
-  (let ((t1 (clambda/telegram::%current-time-ms)))
+  (let ((t1 (clawmacs/telegram::%current-time-ms)))
     (true (integerp t1))
     (true (>= t1 0))))
 
 (define-test "%current-time-ms: monotonically non-decreasing"
-  (let* ((t1 (clambda/telegram::%current-time-ms))
-         (t2 (clambda/telegram::%current-time-ms)))
+  (let* ((t1 (clawmacs/telegram::%current-time-ms))
+         (t2 (clawmacs/telegram::%current-time-ms)))
     (true (>= t2 t1))))

@@ -1,16 +1,16 @@
-;;;; src/packages.lisp — Package definitions for clambda-gui
+;;;; src/packages.lisp — Package definitions for clawmacs-gui
 
 ;;; ── GUI package ──────────────────────────────────────────────────────────────
 ;;;
 ;;; We use CLIM-LISP (which shadows CL with CLIM-compatible versions of
-;;; stream/io generics) plus CLIM itself.  All clambda-core and cl-llm
+;;; stream/io generics) plus CLIM itself.  All clawmacs-core and cl-llm
 ;;; symbols are imported explicitly to avoid conflicts.
 
-(defpackage #:clambda-gui
+(defpackage #:clawmacs-gui
   (:use #:clim-lisp #:clim)
 
-  ;; clambda-core — agent / session / loop machinery
-  (:import-from #:clambda
+  ;; clawmacs-core — agent / session / loop machinery
+  (:import-from #:clawmacs
                 ;; Agent
                 #:agent #:make-agent
                 #:agent-name #:agent-role #:agent-model
@@ -35,7 +35,7 @@
 
   (:export
    ;; Frame class (for introspection)
-   #:clambda-gui-frame
+   #:clawmacs-gui-frame
 
    ;; Accessors
    #:frame-session

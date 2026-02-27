@@ -170,6 +170,6 @@ as a rolling accumulator.
 
 1. **Pre-launch redisplay** — panes are NIL before `run-frame-top-level`
 2. **`get-output-stream-string` clears** — use adjustable arrays for streaming
-3. **`*on-stream-delta*`** — not re-exported by `clambda` top package; import from `clambda/loop`
+3. **`*on-stream-delta*`** — not re-exported by `clawmacs` top package; import from `clawmacs/loop`
 4. **Command table** — define inline in frame with `:inherit-from (clim:global-command-table)`, or create standalone first
 5. **Thread safety** — McCLIM redisplay from worker threads is generally OK but use `safe-redisplay` as a guard

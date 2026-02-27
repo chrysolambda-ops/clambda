@@ -1,23 +1,23 @@
-;;;; example-init.lisp — Sample ~/.clambda/init.lisp for Clambda
+;;;; example-init.lisp — Sample ~/.clawmacs/init.lisp for Clawmacs
 ;;;;
-;;;; Copy this to ~/.clambda/init.lisp and customise.
-;;;; This file is loaded automatically at startup by (clambda/config:load-user-config).
-;;;; It runs in the CLAMBDA-USER package — all public Clambda symbols are
+;;;; Copy this to ~/.clawmacs/init.lisp and customise.
+;;;; This file is loaded automatically at startup by (clawmacs/config:load-user-config).
+;;;; It runs in the CLAMBDA-USER package — all public Clawmacs symbols are
 ;;;; available without qualification. Full Common Lisp is available.
 ;;;;
 ;;;; Quick start:
-;;;;   mkdir -p ~/.clambda
-;;;;   cp example-init.lisp ~/.clambda/init.lisp
-;;;;   $EDITOR ~/.clambda/init.lisp
+;;;;   mkdir -p ~/.clawmacs
+;;;;   cp example-init.lisp ~/.clawmacs/init.lisp
+;;;;   $EDITOR ~/.clawmacs/init.lisp
 
-(in-package #:clambda-user)
+(in-package #:clawmacs-user)
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 1. Options — override defaults
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;;
 ;;;; All options defined with defoption are settable here.
-;;;; Run (clambda:describe-options) in the REPL to see all options.
+;;;; Run (clawmacs:describe-options) in the REPL to see all options.
 
 ;; Change the default model
 (setf *default-model* "google/gemma-3-4b")
@@ -32,7 +32,7 @@
 (setf *log-level* :info)
 
 ;; Print a greeting at startup
-(setf *startup-message* "Clambda ready. λ")
+(setf *startup-message* "Clawmacs ready. λ")
 
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -74,9 +74,9 @@
 ;;   :server   "irc.libera.chat"
 ;;   :port     6697
 ;;   :tls      t
-;;   :nick     "clambda-bot"
-;;   :realname "Clambda AI"
-;;   :channels '("#clambda" "#lisp"))
+;;   :nick     "clawmacs-bot"
+;;   :realname "Clawmacs AI"
+;;   :channels '("#clawmacs" "#lisp"))
 
 ;; Local REPL channel (always available, no config needed)
 ;; (register-channel :repl)
@@ -88,7 +88,7 @@
 ;;;;
 ;;;; Define tools that will be available to agents.
 ;;;; Tools are registered into *user-tool-registry* via define-user-tool.
-;;;; Use (clambda/config:merge-user-tools! registry) when building an agent.
+;;;; Use (clawmacs/config:merge-user-tools! registry) when building an agent.
 
 ;;; A simple tool: get current time
 (defun %get-current-time-handler (args)
@@ -129,7 +129,7 @@
 ;;;; § 5. Hooks
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;;
-;;;; Register hook functions to extend Clambda's behaviour.
+;;;; Register hook functions to extend Clawmacs's behaviour.
 ;;;; Hooks run in insertion order. Errors are caught per-function.
 
 ;;; Log every tool call to standard output
@@ -154,8 +154,8 @@
   (format t "  max-turns:  ~A~%" *default-max-turns*)
   (format t "  log-level:  ~A~%" *log-level*)
   (format t "  user tools: ~A~%"
-          (clambda/tools:list-tools *user-tool-registry*))
-  (let ((channels clambda/config:*registered-channels*))
+          (clawmacs/tools:list-tools *user-tool-registry*))
+  (let ((channels clawmacs/config:*registered-channels*))
     (when channels
       (format t "  channels:   ~{~A~^, ~}~%"
               (mapcar #'car channels)))))
@@ -205,8 +205,8 @@
 ;;     (t nil) ; use defaults
 ;;     ))
 
-;; Load additional config files from ~/.clambda/
-;; (let ((private (merge-pathnames "private.lisp" *clambda-home*)))
+;; Load additional config files from ~/.clawmacs/
+;; (let ((private (merge-pathnames "private.lisp" *clawmacs-home*)))
 ;;   (when (probe-file private)
 ;;     (load private)))
 
@@ -214,7 +214,7 @@
 ;;;; § 8. Cron / Scheduled Tasks (Layer 8a)
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;;
-;;;; Schedule periodic or one-shot tasks using clambda's built-in scheduler.
+;;;; Schedule periodic or one-shot tasks using clawmacs's built-in scheduler.
 ;;;; Tasks run in background threads. Errors are caught and stored in last-error.
 ;;;;
 ;;;; (schedule-task NAME :every SECONDS FUNCTION &key description)
@@ -232,7 +232,7 @@
 ;; Example: One-shot startup notification (fires 5 seconds after startup)
 ;; (schedule-once "startup-ping" :after 5
 ;;   (lambda ()
-;;     (format t "~&[cron] Clambda is up and running!~%"))
+;;     (format t "~&[cron] Clawmacs is up and running!~%"))
 ;;   :description "One-time startup notification")
 
 ;; Example: Hourly summary with an agent
@@ -257,7 +257,7 @@
 ;;;; § 9. Remote Management API (Layer 8b)
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;;
-;;;; Clambda includes a REST API server for remote management.
+;;;; Clawmacs includes a REST API server for remote management.
 ;;;; Set a bearer token to require authentication.
 ;;;;
 ;;;; Start the API server from init.lisp or manually:

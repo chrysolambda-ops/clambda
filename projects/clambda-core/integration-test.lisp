@@ -1,4 +1,4 @@
-;;;; integration-test.lisp — Full stack integration test for clambda-core
+;;;; integration-test.lisp — Full stack integration test for clawmacs-core
 ;;;;
 ;;;; Tests the FULL stack working together:
 ;;;;   1. Register an agent with tools (exec, read_file, write_file, web_fetch)
@@ -16,20 +16,20 @@
 ;;;;   sbcl --load ~/quicklisp/setup.lisp \
 ;;;;        --eval '(asdf:clear-source-registry)' \
 ;;;;        --eval '(asdf:initialize-source-registry)' \
-;;;;        --load projects/clambda-core/integration-test.lisp
+;;;;        --load projects/clawmacs-core/integration-test.lisp
 
 (load "~/quicklisp/setup.lisp")
 (asdf:clear-source-registry)
 (asdf:initialize-source-registry)
-(ql:quickload :clambda-core :silent t)
+(ql:quickload :clawmacs-core :silent t)
 
 ;;; ── Configuration ────────────────────────────────────────────────────────────
 
 (defparameter *lm-studio-url*    "http://192.168.1.189:1234/v1")
 (defparameter *lm-studio-apikey* "not-needed")
 (defparameter *lm-studio-model*  "google/gemma-3-4b")
-(defparameter *test-workspace*   "/tmp/clambda-integration-test/")
-(defparameter *test-log-file*    "/tmp/clambda-integration-test/clambda-test.jsonl")
+(defparameter *test-workspace*   "/tmp/clawmacs-integration-test/")
+(defparameter *test-log-file*    "/tmp/clawmacs-integration-test/clawmacs-test.jsonl")
 (defparameter *http-port*        17474)  ; non-standard port to avoid conflicts
 
 ;;; ── Test utilities ───────────────────────────────────────────────────────────
@@ -70,7 +70,7 @@
                        :direction :output :if-exists :supersede
                        :if-does-not-exist :create)
     (write-string "# Test Workspace
-This is a test workspace for the clambda-core integration test.
+This is a test workspace for the clawmacs-core integration test.
 It contains test files for reading and writing." out))
   ;; Create logs directory
   (ensure-directories-exist (format nil "~alogs/" *test-workspace*))
@@ -95,8 +95,8 @@ It contains test files for reading and writing." out))
                     :base-url *lm-studio-url*
                     :api-key  *lm-studio-apikey*
                     :model    *lm-studio-model*))
-         (registry (clambda:make-builtin-registry :workdir *test-workspace*))
-         (agent    (clambda:make-agent
+         (registry (clawmacs:make-builtin-registry :workdir *test-workspace*))
+         (agent    (clawmacs:make-agent
                     :name          "integration-test-agent"
                     :client        client
                     :tool-registry registry
@@ -106,14 +106,14 @@ It contains test files for reading and writing." out))
 ;;; ── Test 2: Memory loading ───────────────────────────────────────────────────
 
 (defun test-memory-loading ()
-  (let ((mem (clambda:load-workspace-memory *test-workspace*)))
+  (let ((mem (clawmacs:load-workspace-memory *test-workspace*)))
     (assert-true mem "Memory object should be non-nil")
-    (assert-true (clambda:workspace-memory-entries mem)
+    (assert-true (clawmacs:workspace-memory-entries mem)
                  "Should have at least one memory entry (TEST.md)")
-    (let ((ctx (clambda:memory-context-string mem)))
+    (let ((ctx (clawmacs:memory-context-string mem)))
       (assert-true (stringp ctx) "Memory context should be a string")
       (assert-true (> (length ctx) 0) "Memory context should be non-empty")
-      (format t "  Memory entries: ~a~%" (length (clambda:workspace-memory-entries mem)))
+      (format t "  Memory entries: ~a~%" (length (clawmacs:workspace-memory-entries mem)))
       (format t "  Context length: ~a chars~%" (length ctx)))))
 
 ;;; ── Test 3: Agent loop with real LLM ────────────────────────────────────────
@@ -121,26 +121,26 @@ It contains test files for reading and writing." out))
 (defun test-agent-loop-live (agent)
   "Run a real agent loop against LM Studio. Tool calls expected."
   ;; Set up logging
-  (setf clambda:*log-file* *test-log-file*)
-  (setf clambda:*log-enabled* t)
+  (setf clawmacs:*log-file* *test-log-file*)
+  (setf clawmacs:*log-enabled* t)
   ;; Track tool calls
   (let ((tool-calls-seen nil)
         (llm-responses-seen nil))
-    (setf clambda:*on-tool-call*
+    (setf clawmacs:*on-tool-call*
           (lambda (name tc)
             (declare (ignore tc))
             (push name tool-calls-seen)
             (format t "  [tool-call] ~a~%" name)))
-    (setf clambda:*on-llm-response*
+    (setf clawmacs:*on-llm-response*
           (lambda (text)
             (push text llm-responses-seen)
             (format t "  [llm-response] ~a chars~%" (length text))))
 
-    (let* ((session (clambda:make-session :agent agent))
-           (result  (clambda:run-agent
+    (let* ((session (clawmacs:make-session :agent agent))
+           (result  (clawmacs:run-agent
                      session
                      "List the files in /tmp using the exec tool. Just one ls command."
-                     :options (clambda:make-loop-options
+                     :options (clawmacs:make-loop-options
                                :max-turns 5
                                :max-tokens 5000
                                :verbose nil))))
@@ -151,7 +151,7 @@ It contains test files for reading and writing." out))
       (format t "  Result length: ~a chars~%" (length result))
       (format t "  Tool calls: ~a~%" tool-calls-seen)
       (format t "  Token usage: ~a~%"
-              (clambda:session-total-tokens session))
+              (clawmacs:session-total-tokens session))
 
       ;; Verify log file was written
       (assert-true (probe-file *test-log-file*)
@@ -170,20 +170,20 @@ It contains test files for reading and writing." out))
   "Save and reload a session, verify message history is restored."
   (let ((session-path (format nil "~asessions/test-session.json" *test-workspace*)))
     ;; Save
-    (clambda:save-session session session-path)
+    (clawmacs:save-session session session-path)
     (assert-true (probe-file session-path) "Session file should exist after save")
 
     ;; Reload
-    (let ((loaded-session (clambda:load-session agent session-path)))
+    (let ((loaded-session (clawmacs:load-session agent session-path)))
       (assert-true loaded-session "Loaded session should be non-nil")
-      (assert-true (> (clambda:session-message-count loaded-session) 0)
+      (assert-true (> (clawmacs:session-message-count loaded-session) 0)
                    "Loaded session should have messages")
       (format t "  Saved messages: ~a~%"
-              (clambda:session-message-count session))
+              (clawmacs:session-message-count session))
       (format t "  Loaded messages: ~a~%"
-              (clambda:session-message-count loaded-session))
-      (assert-true (= (clambda:session-message-count session)
-                      (clambda:session-message-count loaded-session))
+              (clawmacs:session-message-count loaded-session))
+      (assert-true (= (clawmacs:session-message-count session)
+                      (clawmacs:session-message-count loaded-session))
                    "Message count should match after reload")
       loaded-session)))
 
@@ -191,15 +191,15 @@ It contains test files for reading and writing." out))
 
 (defun test-subagent-spawning (agent)
   "Spawn a sub-agent, wait for it to complete."
-  (let* ((handle (clambda:spawn-subagent
+  (let* ((handle (clawmacs:spawn-subagent
                   agent
                   "Reply with exactly three words: 'Sub agent done'"
-                  :options (clambda:make-loop-options :max-turns 3)))
+                  :options (clawmacs:make-loop-options :max-turns 3)))
          ;; Wait up to 60 seconds
          (start-time (get-universal-time)))
     (format t "  Sub-agent spawned, waiting...~%")
     (multiple-value-bind (result status)
-        (clambda:subagent-wait handle :timeout 60)
+        (clawmacs:subagent-wait handle :timeout 60)
       (declare (ignore result))
       (format t "  Sub-agent status: ~a (~a seconds)~%"
               status (- (get-universal-time) start-time))
@@ -207,24 +207,24 @@ It contains test files for reading and writing." out))
                    "Sub-agent should complete (done or failed, not :running)")
       (when (eq status :done)
         (format t "  Sub-agent result: ~a~%"
-                (subseq (or (clambda:subagent-handle-result handle) "")
-                        0 (min 80 (length (or (clambda:subagent-handle-result handle) "")))))))))
+                (subseq (or (clawmacs:subagent-handle-result handle) "")
+                        0 (min 80 (length (or (clawmacs:subagent-handle-result handle) "")))))))))
 
 ;;; ── Test 6: HTTP server end-to-end ──────────────────────────────────────────
 
 (defun test-http-server (agent)
   "Start the HTTP server, register agent, send a /chat request via dexador."
   ;; Register the agent in the global registry
-  (clambda:register-agent
+  (clawmacs:register-agent
    "test-agent"
-   (clambda:make-agent-spec
+   (clawmacs:make-agent-spec
     :name "test-agent"
     :system-prompt "You are a test agent. Say hello."
-    :client (clambda/agent:agent-client agent)
+    :client (clawmacs/agent:agent-client agent)
     :model *lm-studio-model*))
 
   ;; Start server
-  (let ((server (clambda:start-server :port *http-port*
+  (let ((server (clawmacs:start-server :port *http-port*
                                        :log-file *test-log-file*)))
     (declare (ignore server))
     (format t "  HTTP server started on port ~a~%" *http-port*)
@@ -271,13 +271,13 @@ It contains test files for reading and writing." out))
                (format t "  /agents OK: lists test-agent~%"))))
 
       ;; Always stop server
-      (clambda:stop-server))))
+      (clawmacs:stop-server))))
 
 ;;; ── Main runner ──────────────────────────────────────────────────────────────
 
 (defun run-integration-tests ()
   (format t "~%╔══════════════════════════════════════════════════════════╗~%")
-  (format t "║     clambda-core Full Integration Test Suite            ║~%")
+  (format t "║     clawmacs-core Full Integration Test Suite            ║~%")
   (format t "╚══════════════════════════════════════════════════════════╝~%")
   (format t "~%LM Studio: ~a~%" *lm-studio-url*)
   (format t "Model: ~a~%" *lm-studio-model*)
@@ -296,10 +296,10 @@ It contains test files for reading and writing." out))
 
       ;; Test 1: Builtin tool registry
       (deftest "1. Builtin tool registry"
-        (let ((r (clambda:make-builtin-registry)))
+        (let ((r (clawmacs:make-builtin-registry)))
           (assert-true r "Registry should be non-nil")
           ;; list-tools returns a list of name strings
-          (let ((tools (clambda:list-tools r)))
+          (let ((tools (clawmacs:list-tools r)))
             (assert-true (>= (length tools) 5)
                          (format nil "Should have >= 5 tools, got ~a" (length tools)))
             (format t "  Tools: ~{~a~^, ~}~%" tools))))
@@ -310,36 +310,36 @@ It contains test files for reading and writing." out))
 
       ;; Test 3: Session basics
       (deftest "3. Session creation and token tracking"
-        (let ((s (clambda:make-session :agent agent)))
+        (let ((s (clawmacs:make-session :agent agent)))
           (assert-true s "Session should be created")
-          (assert-true (= 0 (clambda:session-total-tokens s))
+          (assert-true (= 0 (clawmacs:session-total-tokens s))
                        "Initial token count should be 0")
-          (setf (clambda:session-total-tokens s) 500)
-          (assert-true (= 500 (clambda:session-total-tokens s))
+          (setf (clawmacs:session-total-tokens s) 500)
+          (assert-true (= 500 (clawmacs:session-total-tokens s))
                        "Token count should update")))
 
       ;; Test 4: Loop options
       (deftest "4. Loop options with max-tokens"
-        (let ((opts (clambda:make-loop-options
+        (let ((opts (clawmacs:make-loop-options
                      :max-turns 10 :max-tokens 5000 :stream nil)))
-          (assert-true (= 10 (clambda:loop-options-max-turns opts))
+          (assert-true (= 10 (clawmacs:loop-options-max-turns opts))
                        "max-turns should be 10")
-          (assert-true (= 5000 (clambda:loop-options-max-tokens opts))
+          (assert-true (= 5000 (clawmacs:loop-options-max-tokens opts))
                        "max-tokens should be 5000")))
 
       ;; Test 5: TTS no-op
       ;; find-tool returns a TOOL-ENTRY struct; use dispatch-tool-call via a mock tool-call
       (deftest "5. TTS tool (graceful no-op)"
-        (let* ((reg (clambda:make-builtin-registry))
-               (tts-entry (clambda:find-tool reg "tts")))
+        (let* ((reg (clawmacs:make-builtin-registry))
+               (tts-entry (clawmacs:find-tool reg "tts")))
           (assert-true tts-entry "TTS tool should be registered")
           ;; Invoke the handler directly via the internal slot
           (let* ((args (let ((ht (make-hash-table :test 'equal)))
                          (setf (gethash "text" ht) "Hello integration test")
                          ht))
-                 (handler (slot-value tts-entry 'clambda/tools::handler))
+                 (handler (slot-value tts-entry 'clawmacs/tools::handler))
                  (result-obj (funcall handler args))
-                 (result (clambda:format-tool-result result-obj)))
+                 (result (clawmacs:format-tool-result result-obj)))
             (format t "  TTS result: ~a~%" result)
             (assert-true (stringp result) "TTS should return a string"))))
 
@@ -357,27 +357,27 @@ It contains test files for reading and writing." out))
       (deftest "7. budget-exceeded condition"
         (let ((caught nil))
           (handler-case
-              (error 'clambda:budget-exceeded :kind :tokens :limit 100 :current 200)
-            (clambda:budget-exceeded (c)
+              (error 'clawmacs:budget-exceeded :kind :tokens :limit 100 :current 200)
+            (clawmacs:budget-exceeded (c)
               (setf caught c)
-              (assert-true (eq :tokens (clambda:budget-exceeded-kind c))
+              (assert-true (eq :tokens (clawmacs:budget-exceeded-kind c))
                            "kind should be :tokens")
-              (assert-true (= 100 (clambda:budget-exceeded-limit c))
+              (assert-true (= 100 (clawmacs:budget-exceeded-limit c))
                            "limit should be 100")
-              (assert-true (= 200 (clambda:budget-exceeded-current c))
+              (assert-true (= 200 (clawmacs:budget-exceeded-current c))
                            "current should be 200")))
           (assert-true caught "budget-exceeded should have been caught")))
 
       ;; Test 8: Logging system
       (deftest "8. Structured logging"
-        (let ((log-path "/tmp/clambda-test-logging.jsonl"))
+        (let ((log-path "/tmp/clawmacs-test-logging.jsonl"))
           (ignore-errors (delete-file log-path))
-          (clambda:with-logging (log-path)
-            (clambda:log-event "integration_test" "phase" "logging" "ok" t)
-            (clambda:log-llm-request "test-agent" "gemma-3-4b" 5 :tools-count 3)
-            (clambda:log-tool-call "test-agent" "exec" "ls /tmp")
-            (clambda:log-tool-result "test-agent" "exec" t 100)
-            (clambda:log-error-event nil "test_error" "test message" :context "testing"))
+          (clawmacs:with-logging (log-path)
+            (clawmacs:log-event "integration_test" "phase" "logging" "ok" t)
+            (clawmacs:log-llm-request "test-agent" "gemma-3-4b" 5 :tools-count 3)
+            (clawmacs:log-tool-call "test-agent" "exec" "ls /tmp")
+            (clawmacs:log-tool-result "test-agent" "exec" t 100)
+            (clawmacs:log-error-event nil "test_error" "test message" :context "testing"))
           (let ((contents (uiop:read-file-string log-path)))
             (assert-true (> (length contents) 0) "Log file should have content")
             (assert-string-contains contents "integration_test")

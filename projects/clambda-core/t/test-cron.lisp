@@ -1,4 +1,4 @@
-;;;; t/test-cron.lisp — Tests for clambda/cron (Layer 8a)
+;;;; t/test-cron.lisp — Tests for clawmacs/cron (Layer 8a)
 ;;;;
 ;;;; Test coverage:
 ;;;;   1. Struct construction + accessor smoke tests
@@ -13,7 +13,7 @@
 ;;;;  10. Duplicate name replaces existing task
 ;;;;  11. describe-tasks runs without error
 
-(in-package #:clambda-core/tests/cron)
+(in-package #:clawmacs-core/tests/cron)
 
 ;;; ─────────────────────────────────────────────────────────────────────────────
 ;;; Helpers
@@ -23,7 +23,7 @@
   "Run BODY with a clean task registry, restored afterwards.
 We rebind *task-registry* to an empty table so tests are isolated.
 The global *task-lock* is shared — safe for sequential tests."
-  `(let ((clambda/cron:*task-registry* (make-hash-table :test 'equal)))
+  `(let ((clawmacs/cron:*task-registry* (make-hash-table :test 'equal)))
      ,@body))
 
 ;;; ─────────────────────────────────────────────────────────────────────────────
@@ -178,7 +178,7 @@ The global *task-lock* is shared — safe for sequential tests."
   ;; Pre-cancel in case of leftover from a previous test run.
   (cancel-task "fast-periodic-live")
   (let* ((counter 0)
-         (clambda/cron:*cron-sleep-interval* 0.05))
+         (clawmacs/cron:*cron-sleep-interval* 0.05))
     (schedule-task "fast-periodic-live"
                    :every 0.2
                    :function (lambda () (incf counter)))
@@ -199,7 +199,7 @@ The global *task-lock* is shared — safe for sequential tests."
   ;; We pre-cancel any existing task with this name and clean up after.
   (cancel-task "fast-once-live")
   (let* ((fired-p nil)
-         (clambda/cron:*cron-sleep-interval* 0.05))
+         (clawmacs/cron:*cron-sleep-interval* 0.05))
     (schedule-once "fast-once-live"
                    :after 0.2
                    :function (lambda () (setf fired-p t)))
@@ -221,7 +221,7 @@ The global *task-lock* is shared — safe for sequential tests."
 (define-test "error-in-task: error is caught and stored in last-error"
   ;; Uses global registry so background thread operates on the same state.
   (cancel-task "error-task-live")
-  (let* ((clambda/cron:*cron-sleep-interval* 0.05)
+  (let* ((clawmacs/cron:*cron-sleep-interval* 0.05)
          (task (schedule-once "error-task-live"
                               :after 0.2
                               :function (lambda () (error "deliberate test error")))))
