@@ -11,7 +11,7 @@ It is a ground-up rewrite of OpenClaw in the language it was always meant to be 
 |---|---|---|
 | Language | TypeScript/Node.js | Common Lisp (SBCL) |
 | Config format | JSON | init.lisp (real Lisp) |
-| License | Proprietary | GPL-3.0 |
+| License | MIT (open source) | AGPL-3.0-or-later |
 | LLM backend | Cloud-first | Local-first (LM Studio, Ollama) |
 | Extension model | Plugins (npm) | init.lisp + ASDF packages |
 | Runtime | Node.js | SBCL (native compiled) |
@@ -37,21 +37,21 @@ Clambda is designed for users who:
 
 ## Quick Navigation
 
-- [Getting Started](getting-started/README.md) — install and run your first agent
-- [Installation](getting-started/installation.md) — detailed install steps
-- [Configuration Guide](configuration/init-lisp.md) — init.lisp reference
-- [Architecture](architecture/index.md) — how the layers fit together
-- [Channels — Telegram](channels/telegram.md) — Telegram bot setup
-- [Channels — IRC](channels/irc.md) — IRC connection setup
-- [HTTP API Reference](api/index.md) — REST management endpoints
-- [Built-in Tools](api/tools.md) — exec, read_file, web_fetch, tts, browser...
-- [Custom Tools](tools/custom-tools.md) — define your own tools in init.lisp
-- [Deployment](deployment/index.md) — running Clambda as a service
+- [Getting Started](getting-started/README.html) — install and run your first agent
+- [Installation](getting-started/installation.html) — detailed install steps
+- [Configuration Guide](configuration/init-lisp.html) — init.lisp reference
+- [Architecture](architecture/index.html) — how the layers fit together
+- [Channels — Telegram](channels/telegram.html) — Telegram bot setup
+- [Channels — IRC](channels/irc.html) — IRC connection setup
+- [HTTP API Reference](api/index.html) — REST management endpoints
+- [Built-in Tools](api/tools.html) — exec, read_file, web_fetch, tts, browser...
+- [Custom Tools](tools/custom-tools.html) — define your own tools in init.lisp
+- [Deployment](deployment/index.html) — running Clambda as a service
 
 ## Project Status
 
 Clambda is **actively developed**. All core features are implemented and tested.
-See the [ROADMAP](../ROADMAP.md) for what's complete and what's coming.
+See the [ROADMAP](../ROADMAP.html) for what's complete and what's coming.
 
 Current version: **0.8.0** (Layer 8 — Cron + Remote API)
 

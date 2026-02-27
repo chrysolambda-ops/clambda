@@ -9,6 +9,7 @@
 ## Index
 
 | # | Date | Category | Summary |
+| 26 | 2026-02-27 | idiom/parens | Sub-agent generated one extra `)` in a deep nesting (11 instead of 10 after a streaming fallback branch); SBCL flagged "unmatched close parenthesis" at exact col — fix: count nesting levels manually |
 | 22 | 2026-02-26 | asdf/packaging | `schema-plist->ht` missing from `clambda/tools` exports — broke `clambda/browser` package definition |
 | 23 | 2026-02-26 | idiom/playwright | `page.accessibility.snapshot()` removed in Playwright >=1.47; use `page.locator('body').ariaSnapshot()` |
 | 24 | 2026-02-26 | idiom/pathname | `merge-pathnames` on result of `asdf:system-relative-pathname` doubled the path segment — don't wrap, use directly |
@@ -325,3 +326,14 @@ design struct slot names and public API names independently; use `:conc-name` to
   ```
 **Lesson:** Parachute's `skip-on` is a compile-time DSL for feature flags (`and/or/not` of keywords or forms that the DSL recognizes), not a general boolean expression evaluator. For runtime conditions, use `when`/`unless` inside the test body.
 **Tags:** #parachute #testing #skip-on #idiom
+
+---
+
+## Category: idiom/parens
+
+### #26 — 2026-02-27
+**What:** Sub-agent wrote 11 closing parens after the final body form of a deeply nested function (`%run-agent-streaming` fallback path embedded inside `process-update`). SBCL reported "unmatched close parenthesis" at the exact column.
+**Why:** Manual paren-counting error in a 10-level deep nesting: `(or ...) → sendMessage → let* → if → let → (t cond-clause) → cond → when → multiple-value-bind → defun`. The sub-agent miscounted and added one extra `)`.
+**Fix:** Remove the extra `)`. Reliable counting: work from the innermost form outward, incrementing by 1 for each closing `(form ...)`.
+**Lesson:** When generating code with ≥8 levels of nesting, count closing parens explicitly level-by-level. SBCL's column-precise error message pinpoints the exact extra paren. For sub-agents: test compile immediately after generating deep nesting — don't batch all files before testing.
+**Tags:** #idiom #parens #sbcl #nesting

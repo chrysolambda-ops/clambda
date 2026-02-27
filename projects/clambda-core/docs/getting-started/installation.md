@@ -212,5 +212,5 @@ sbcl --eval '(ql:quickload :clambda-core)' \
 
 ## Next Steps
 
-- [Quick Start](README.md) — run your first agent
-- [Configuration](../configuration/init-lisp.md) — write your `init.lisp`
+- [Quick Start](README.html) — run your first agent
+- [Configuration](../configuration/init-lisp.html) — write your `init.lisp`

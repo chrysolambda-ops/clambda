@@ -244,5 +244,5 @@ to multiple simultaneous users.
 
 ## See Also
 
-- [Configuration Guide](../configuration/init-lisp.md)
-- [Architecture — IRC threading](../architecture/index.md)
+- [Configuration Guide](../configuration/init-lisp.html)
+- [Architecture — IRC threading](../architecture/index.html)

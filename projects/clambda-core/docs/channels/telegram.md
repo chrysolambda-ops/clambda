@@ -203,5 +203,5 @@ The polling loop catches and logs all errors without crashing:
 
 ## See Also
 
-- [Configuration Guide](../configuration/init-lisp.md) — full init.lisp reference
-- [HTTP API](../api/index.md) — send messages programmatically
+- [Configuration Guide](../configuration/init-lisp.html) — full init.lisp reference
+- [HTTP API](../api/index.html) — send messages programmatically

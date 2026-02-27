@@ -120,7 +120,7 @@ Channels are how Clambda receives and sends messages. Register them with
   :streaming     t)                         ; stream tokens as they arrive
 ```
 
-See [Telegram setup](../channels/telegram.md) for getting your bot token and user ID.
+See [Telegram setup](../channels/telegram.html) for getting your bot token and user ID.
 
 ### IRC
 
@@ -139,7 +139,7 @@ See [Telegram setup](../channels/telegram.md) for getting your bot token and use
                        ("#priv"    :allowed-users ("alice"))))
 ```
 
-See [IRC setup](../channels/irc.md) for complete IRC configuration.
+See [IRC setup](../channels/irc.html) for complete IRC configuration.
 
 ### Browser
 
@@ -238,7 +238,7 @@ them when creating an agent manually:
   (make-agent :name "my-agent" :client client :tool-registry registry))
 ```
 
-See [Custom Tools](../tools/custom-tools.md) for the full tool API.
+See [Custom Tools](../tools/custom-tools.html) for the full tool API.
 
 ---
 
@@ -355,7 +355,7 @@ Management endpoints:
 | GET | `/api/channels` | ✓ | Registered channels |
 | GET | `/api/tasks` | ✓ | Cron task list |
 
-See [HTTP API Reference](../api/index.md) for full details.
+See [HTTP API Reference](../api/index.html) for full details.
 
 ---
 

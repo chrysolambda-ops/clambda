@@ -14,7 +14,7 @@ Clambda is a **local-first** platform. It works best with a local LLM server
 (LM Studio, Ollama) running on your machine or home network.
 
 Cloud LLMs (OpenRouter, Anthropic) can be added as a fallback — see the
-[configuration guide](../configuration/init-lisp.md).
+[configuration guide](../configuration/init-lisp.html).
 
 ## 1. Install SBCL and Quicklisp
 
@@ -147,11 +147,11 @@ sbcl --eval '(ql:quickload :cl-tui)' \
 
 ## 7. Enable Telegram (optional)
 
-See [Telegram setup](../channels/telegram.md) for creating a bot and configuring the token.
+See [Telegram setup](../channels/telegram.html) for creating a bot and configuring the token.
 
 ## Next Steps
 
-- [Configuration Guide](../configuration/init-lisp.md) — full init.lisp reference
-- [Architecture Overview](../architecture/index.md) — understand the system
-- [Built-in Tools](../api/tools.md) — what tools agents have by default
-- [Custom Tools](../tools/custom-tools.md) — add your own tools
+- [Configuration Guide](../configuration/init-lisp.html) — full init.lisp reference
+- [Architecture Overview](../architecture/index.html) — understand the system
+- [Built-in Tools](../api/tools.html) — what tools agents have by default
+- [Custom Tools](../tools/custom-tools.html) — add your own tools

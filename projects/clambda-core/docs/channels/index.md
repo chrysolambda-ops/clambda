@@ -7,8 +7,8 @@ messages, routes them to the agent loop, and sends responses back.
 
 | Channel | Status | Description |
 |---------|--------|-------------|
-| [Telegram](telegram.md) | ✅ Production | Bot API long polling, streaming responses |
-| [IRC](irc.md) | ✅ Production | Raw IRC with TLS, NickServ, flood protection |
+| [Telegram](telegram.html) | ✅ Production | Bot API long polling, streaming responses |
+| [IRC](irc.html) | ✅ Production | Raw IRC with TLS, NickServ, flood protection |
 | Browser | ✅ Production | Playwright headless browser (not a messaging channel) |
 | REPL | ✅ Built-in | Interactive REPL for development |
 | Discord | 🔧 Planned | Gateway WebSocket — on the roadmap |
@@ -86,6 +86,6 @@ LLM settings (`*telegram-llm-base-url*`, etc.). More granular routing
 
 ## See Also
 
-- [Telegram](telegram.md) — complete Telegram setup and configuration
-- [IRC](irc.md) — complete IRC setup and configuration
-- [Configuration Guide](../configuration/init-lisp.md) — full init.lisp reference
+- [Telegram](telegram.html) — complete Telegram setup and configuration
+- [IRC](irc.html) — complete IRC setup and configuration
+- [Configuration Guide](../configuration/init-lisp.html) — full init.lisp reference

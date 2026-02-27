@@ -277,5 +277,5 @@ Tools use a JSON Schema-like parameter spec:
    :required nil))       ; explicitly optional
 ```
 
-See [Custom Tools](../tools/custom-tools.md) for full documentation on defining
+See [Custom Tools](../tools/custom-tools.html) for full documentation on defining
 and registering your own tools.
