@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <base href="/clambda/">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Installation — Clambda</title>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --bg-card: #161616;
+      --bg-code: #1a1a1a;
+      --border: #2a2a2a;
+      --accent: #f0c040;     /* lambda yellow */
+      --accent2: #8b5cf6;    /* lisp purple */
+      --text: #e0e0e0;
+      --text-dim: #909090;
+      --link: #f0c040;
+      --link-hover: #ffe080;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    nav {
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    nav .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+      text-decoration: none;
+    }
+    nav .logo .lambda {
+      font-size: 2rem;
+      color: var(--accent);
+      font-weight: 700;
+      font-family: monospace;
+    }
+    nav .logo .name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    nav .logo .version {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+    nav h3 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin: 20px 0 8px 0;
+      padding: 0 8px;
+    }
+    nav ul {
+      list-style: none;
+    }
+    nav li a {
+      display: block;
+      padding: 5px 8px;
+      border-radius: 5px;
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all 0.15s;
+    }
+    nav li a:hover, nav li a.active {
+      background: rgba(240,192,64,0.1);
+      color: var(--accent);
+    }
+
+    /* Main content */
+    main {
+      padding: 48px;
+      max-width: 900px;
+    }
+    @media (max-width: 768px) {
+      body { grid-template-columns: 1fr; }
+      nav { display: none; }
+      main { padding: 24px; }
+    }
+
+    /* Typography */
+    h1 { font-size: 2rem; color: var(--text); margin-bottom: 16px; font-weight: 700; }
+    h2 { font-size: 1.4rem; color: var(--text); margin: 40px 0 12px; font-weight: 600;
+         border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    h3 { font-size: 1.1rem; color: var(--text); margin: 28px 0 8px; }
+    h4 { font-size: 1rem; color: var(--text-dim); margin: 20px 0 8px; }
+    p  { margin-bottom: 16px; }
+    ul, ol { margin-bottom: 16px; padding-left: 24px; }
+    li { margin-bottom: 4px; }
+    blockquote {
+      border-left: 3px solid var(--accent);
+      margin: 20px 0;
+      padding: 8px 16px;
+      background: rgba(240,192,64,0.05);
+      color: var(--text-dim);
+      border-radius: 0 6px 6px 0;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { color: var(--link-hover); text-decoration: underline; }
+    strong { color: var(--text); }
+    em { color: var(--text-dim); }
+    hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--bg-code);
+      color: var(--accent);
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border);
+    }
+    td {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* Code */
+    code {
+      font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+      font-size: 0.88em;
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+      font-size: 0.88rem;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--text-dim); }
+
+    /* Header bar on mobile */
+    .mobile-header {
+      display: none;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      align-items: center;
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="logo">
+      <span class="lambda">λ</span>
+      <span>
+        <div class="name">Clambda</div>
+        <div class="version">v0.8.0</div>
+      </span>
+    </a>
+
+    <h3>Getting Started</h3>
+    <ul>
+      <li><a href="index.html">Overview</a></li>
+      <li><a href="getting-started/README.html">Quick Start</a></li>
+      <li><a href="getting-started/installation.html">Installation</a></li>
+    </ul>
+
+    <h3>Configuration</h3>
+    <ul>
+      <li><a href="configuration/init-lisp.html">init.lisp Guide</a></li>
+    </ul>
+
+    <h3>Architecture</h3>
+    <ul>
+      <li><a href="architecture/index.html">Overview</a></li>
+    </ul>
+
+    <h3>Channels</h3>
+    <ul>
+      <li><a href="channels/index.html">Overview</a></li>
+      <li><a href="channels/telegram.html">Telegram</a></li>
+      <li><a href="channels/irc.html">IRC</a></li>
+    </ul>
+
+    <h3>API &amp; Tools</h3>
+    <ul>
+      <li><a href="api/index.html">HTTP API</a></li>
+      <li><a href="api/tools.html">Built-in Tools</a></li>
+      <li><a href="tools/custom-tools.html">Custom Tools</a></li>
+    </ul>
+
+    <h3>Deployment</h3>
+    <ul>
+      <li><a href="deployment/index.html">Deployment Guide</a></li>
+    </ul>
+
+    <h3>Project</h3>
+    <ul>
+      <li><a href="https://github.com/chrysolambda-ops/clambda" target="_blank">GitHub →</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <h1 id="installation">Installation</h1>
+    <p>Detailed installation instructions for all supported platforms.</p>
+    <h2 id="system-requirements">System Requirements</h2>
+    <ul>
+    <li><strong>SBCL 2.3.0+</strong> — Steel Bank Common Lisp, the reference runtime</li>
+    <li><strong>Quicklisp</strong> — the de-facto CL package manager</li>
+    <li><strong>ASDF 3.3+</strong> — build system (bundled with SBCL)</li>
+    <li><strong>libssl</strong> — for IRC TLS support (<code>cl+ssl</code> dependency)</li>
+    <li><strong>Node.js 18+</strong> — only for browser automation (optional)</li>
+    </ul>
+    <h3 id="optional-llm-backends">Optional LLM backends</h3>
+    <p>Clambda uses any OpenAI-compatible API:</p>
+    <table>
+    <colgroup>
+    <col style="width: 33%" />
+    <col style="width: 40%" />
+    <col style="width: 25%" />
+    </colgroup>
+    <thead>
+    <tr class="header">
+    <th>Backend</th>
+    <th>URL format</th>
+    <th>Notes</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr class="odd">
+    <td>LM Studio</td>
+    <td><code>http://HOST:1234/v1</code></td>
+    <td>Recommended for local use</td>
+    </tr>
+    <tr class="even">
+    <td>Ollama</td>
+    <td><code>http://HOST:11434/v1</code></td>
+    <td>Use <code>/v1</code> OpenAI-compat endpoint</td>
+    </tr>
+    <tr class="odd">
+    <td>OpenRouter</td>
+    <td><code>https://openrouter.ai/api/v1</code></td>
+    <td>Cloud gateway, many models</td>
+    </tr>
+    <tr class="even">
+    <td>LM Studio remote</td>
+    <td><code>http://192.168.1.x:1234/v1</code></td>
+    <td>Home server, RTX 4090 etc.</td>
+    </tr>
+    </tbody>
+    </table>
+    <hr />
+    <h2 id="install-sbcl">Install SBCL</h2>
+    <h3 id="guix-linux-recommended">Guix (Linux — recommended)</h3>
+    <div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">guix</span> install sbcl</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">sbcl</span> <span class="at">--version</span>   <span class="co"># SBCL 2.x.x</span></span></code></pre></div>
+    <h3 id="debian-ubuntu">Debian / Ubuntu</h3>
+    <div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt update <span class="kw">&amp;&amp;</span> <span class="fu">sudo</span> apt install sbcl</span></code></pre></div>
+    <blockquote>
+    <p>The Debian/Ubuntu SBCL may be older. If <code>sbcl --version</code> shows &lt; 2.3, install from source or use Guix.</p>
+    </blockquote>
+    <h3 id="fedora-rhel">Fedora / RHEL</h3>
+    <div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> dnf install sbcl</span></code></pre></div>
+    <h3 id="arch-linux">Arch Linux</h3>
+    <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> pacman <span class="at">-S</span> sbcl</span></code></pre></div>
+    <h3 id="macos-homebrew">macOS (Homebrew)</h3>
+    <div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> install sbcl</span></code></pre></div>
+    <h3 id="macos-macports">macOS (MacPorts)</h3>
+    <div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> port install sbcl</span></code></pre></div>
+    <h3 id="from-source-any-platform">From source (any platform)</h3>
+    <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Download from https://www.sbcl.org/platform-table.html</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># e.g. for x86-64 Linux:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-O</span> https://downloads.sourceforge.net/project/sbcl/sbcl/2.5.8/sbcl-2.5.8-x86-64-linux-binary.tar.bz2</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> xf sbcl-2.5.8-x86-64-linux-binary.tar.bz2</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> sbcl-2.5.8-x86-64-linux/</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ./install.sh</span></code></pre></div>
+    <hr />
+    <h2 id="install-quicklisp">Install Quicklisp</h2>
+    <p>Quicklisp is a package manager for CL that downloads and caches library dependencies.</p>
+    <div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Download the installer</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-O</span> https://beta.quicklisp.org/quicklisp.lisp</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Install to ~/quicklisp/ and add to ~/.sbclrc</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="ex">sbcl</span> <span class="at">--load</span> quicklisp.lisp <span class="dt">\</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">--eval</span> <span class="st">&#39;(quicklisp-quickstart:install)&#39;</span> <span class="dt">\</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">--eval</span> <span class="st">&#39;(ql:add-to-init-file)&#39;</span> <span class="dt">\</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">--quit</span></span></code></pre></div>
+    <p>Verify:</p>
+    <div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sbcl</span> <span class="at">--eval</span> <span class="st">&#39;(ql:system-apropos &quot;dexador&quot;)&#39;</span> <span class="at">--quit</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Should print something like: #&lt;SYSTEM dexador ...&gt;</span></span></code></pre></div>
+    <hr />
+    <h2 id="install-clambda">Install Clambda</h2>
+    <h3 id="from-github-recommended">From GitHub (recommended)</h3>
+    <div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/projects          <span class="co"># or wherever you keep code</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/chrysolambda-ops/clambda.git</span></code></pre></div>
+    <p>This gives you four projects under <code>clambda/projects/</code>:</p>
+    <pre><code>projects/
+  cl-llm/          # LLM API client
+  cl-tui/          # terminal chat UI  
+  clambda-core/    # agent platform (main system)
+  clambda-gui/     # McCLIM GUI (optional)</code></pre>
+    <h3 id="register-with-asdf">Register with ASDF</h3>
+    <p>ASDF needs to know where to find the Clambda systems. Create a source registry config:</p>
+    <div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/.config/common-lisp/source-registry.conf.d/</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> ~/.config/common-lisp/source-registry.conf.d/clambda.conf <span class="op">&lt;&lt; &#39;EOF&#39;</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="st">(:tree &quot;/home/YOU/projects/clambda/projects/&quot;)</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span></code></pre></div>
+    <p>Replace <code>/home/YOU/projects/clambda</code> with your actual path. The <code>:tree</code> directive makes ASDF recursively scan that directory for <code>.asd</code> files.</p>
+    <hr />
+    <h2 id="install-dependencies">Install Dependencies</h2>
+    <p>Quicklisp will download most dependencies automatically. To pre-load all of them:</p>
+    <div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sbcl</span> <span class="at">--eval</span> <span class="st">&#39;(ql:quickload :clambda-core)&#39;</span> <span class="at">--quit</span></span></code></pre></div>
+    <p>This will download and compile: <code>dexador</code>, <code>jzon</code>, <code>alexandria</code>, <code>cl-ppcre</code>, <code>usocket</code>, <code>cl+ssl</code>, <code>bordeaux-threads</code>, <code>hunchentoot</code>, <code>parachute</code>.</p>
+    <p>Expect the first load to take 2–5 minutes. Subsequent loads use compiled FASLs.</p>
+    <h3 id="guix-nixos-ld_library_path">Guix / NixOS: LD_LIBRARY_PATH</h3>
+    <p>On Guix and NixOS, you may need to set <code>LD_LIBRARY_PATH</code> for <code>dexador</code> (which uses libssl via <code>cl+ssl</code>):</p>
+    <div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Find the libssl path:</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">guix</span> package <span class="at">--search-paths</span> <span class="dv">2</span><span class="op">&gt;</span>/dev/null <span class="kw">|</span> <span class="fu">grep</span> LD_LIBRARY</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Or:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> ~/.guix-profile/lib/libssl<span class="pp">*</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Add to your shell profile (~/.bashrc or ~/.profile):</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">LD_LIBRARY_PATH</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.guix-profile/lib:</span><span class="va">$LD_LIBRARY_PATH</span><span class="st">&quot;</span></span></code></pre></div>
+    <hr />
+    <h2 id="browser-automation-optional">Browser Automation (optional)</h2>
+    <p>Browser tools require Node.js and Playwright. From the clambda-core directory:</p>
+    <div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> projects/clambda-core/browser/</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> install                           <span class="co"># install playwright npm package</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">npx</span> playwright install chromium       <span class="co"># ~200MB Chromium download</span></span></code></pre></div>
+    <p>Then in <code>init.lisp</code>:</p>
+    <div class="sourceCode" id="cb16"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(register-channel :browser :headless <span class="kw">t</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>(add-hook <span class="dt">&#39;*after-init-hook*</span> <span class="op">#&#39;</span>clambda/browser:browser-launch)</span></code></pre></div>
+    <hr />
+    <h2 id="verify-installation">Verify Installation</h2>
+    <p>Run the test suite:</p>
+    <div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sbcl</span> <span class="at">--eval</span> <span class="st">&#39;(ql:quickload :clambda-core)&#39;</span> <span class="dt">\</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">--eval</span> <span class="st">&#39;(asdf:test-system :clambda-core)&#39;</span> <span class="dt">\</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">--quit</span> <span class="dv">2</span><span class="op">&gt;&amp;</span><span class="dv">1</span> <span class="kw">|</span> <span class="fu">tail</span> <span class="at">-20</span></span></code></pre></div>
+    <p>Expected: <code>235 tests, 0 failures</code>.</p>
+    <p>Or a quick smoke test:</p>
+    <div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sbcl</span> <span class="at">--eval</span> <span class="st">&#39;(ql:quickload :clambda-core)&#39;</span> <span class="dt">\</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">--eval</span> <span class="st">&#39;(format t &quot;Clambda ~A loaded OK~%&quot; (asdf:system-version (asdf:find-system :clambda-core)))&#39;</span> <span class="dt">\</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">--quit</span></span></code></pre></div>
+    <hr />
+    <h2 id="next-steps">Next Steps</h2>
+    <ul>
+    <li><a href="README.md">Quick Start</a> — run your first agent</li>
+    <li><a href="../configuration/init-lisp.md">Configuration</a> — write your <code>init.lisp</code></li>
+    </ul>
+
+    <footer>
+      <p>
+        Clambda — Free Software (GPL-3.0).
+        Built with λ and love.
+        <a href="https://github.com/chrysolambda-ops/clambda">Source on GitHub</a>.
+      </p>
+    </footer>
+  </main>
+
+</body>
+</html>

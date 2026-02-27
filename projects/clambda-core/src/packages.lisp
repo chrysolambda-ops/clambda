@@ -431,6 +431,9 @@
   (:import-from #:clambda/config
                 #:register-channel
                 #:*registered-channels*)
+  ;; Import *on-stream-delta* for the streaming callback binding.
+  (:import-from #:clambda/loop
+                #:*on-stream-delta*)
   (:export
    ;; Channel struct
    #:telegram-channel
@@ -448,11 +451,15 @@
    #:*telegram-llm-api-key*
    #:*telegram-system-prompt*
    #:*telegram-poll-timeout*
+   ;; Streaming options (Layer 9a)
+   #:*telegram-streaming*
+   #:*telegram-stream-debounce-ms*
    ;; Bot API helpers
    #:telegram-api-url
    #:telegram-get-me
    #:telegram-get-updates
    #:telegram-send-message
+   #:telegram-edit-message
    ;; Logic helpers (exposed for unit testing without HTTP)
    #:allowed-user-p
    #:find-or-create-session
@@ -503,6 +510,9 @@
    #:irc-nickserv-password
    #:irc-allowed-users
    #:irc-trigger-prefix
+   ;; Per-channel allowlist accessors (Layer 9b)
+   #:irc-channel-policies
+   #:irc-dm-allowed-users
    ;; Runtime accessors
    #:irc-socket
    #:irc-stream
@@ -673,8 +683,10 @@
                 #:*telegram-channel*
                 #:*telegram-llm-base-url* #:*telegram-llm-api-key*
                 #:*telegram-system-prompt* #:*telegram-poll-timeout*
+                #:*telegram-streaming* #:*telegram-stream-debounce-ms*
                 #:telegram-api-url #:telegram-get-me
                 #:telegram-get-updates #:telegram-send-message
+                #:telegram-edit-message
                 #:allowed-user-p
                 #:start-telegram #:stop-telegram #:telegram-running-p
                 #:start-all-channels)
@@ -686,6 +698,7 @@
                 #:irc-nickserv-password #:irc-allowed-users
                 #:irc-trigger-prefix #:irc-running-p
                 #:irc-connected-p
+                #:irc-channel-policies #:irc-dm-allowed-users
                 #:start-irc #:stop-irc
                 #:irc-send-privmsg #:irc-join #:irc-part
                 #:parse-irc-line #:irc-build-line #:prefix-nick
@@ -807,8 +820,10 @@
    #:*telegram-channel*
    #:*telegram-llm-base-url* #:*telegram-llm-api-key*
    #:*telegram-system-prompt* #:*telegram-poll-timeout*
+   #:*telegram-streaming* #:*telegram-stream-debounce-ms*
    #:telegram-api-url #:telegram-get-me
    #:telegram-get-updates #:telegram-send-message
+   #:telegram-edit-message
    #:allowed-user-p
    #:start-telegram #:stop-telegram #:telegram-running-p
    #:start-all-channels
@@ -820,6 +835,7 @@
    #:irc-nickserv-password #:irc-allowed-users
    #:irc-trigger-prefix #:irc-running-p
    #:irc-connected-p
+   #:irc-channel-policies #:irc-dm-allowed-users
    #:start-irc #:stop-irc
    #:irc-send-privmsg #:irc-join #:irc-part
    #:parse-irc-line #:irc-build-line #:prefix-nick
@@ -875,10 +891,12 @@
                 #:telegram-running-p #:start-all-channels
                 #:*telegram-channel*
                 #:*telegram-llm-base-url* #:*telegram-llm-api-key*
-                #:*telegram-system-prompt*)
+                #:*telegram-system-prompt*
+                #:*telegram-streaming* #:*telegram-stream-debounce-ms*)
   (:import-from #:clambda/irc
                 #:*irc-connection*
                 #:irc-connected-p
+                #:irc-channel-policies #:irc-dm-allowed-users
                 #:start-irc #:stop-irc
                 #:irc-send-privmsg #:irc-join #:irc-part
                 #:*irc-send-interval* #:*irc-default-system-prompt*)
@@ -928,9 +946,11 @@
    #:*telegram-channel*
    #:*telegram-llm-base-url* #:*telegram-llm-api-key*
    #:*telegram-system-prompt*
+   #:*telegram-streaming* #:*telegram-stream-debounce-ms*
    ;; IRC channel lifecycle (most useful from init.lisp)
    #:*irc-connection*
    #:irc-connected-p
+   #:irc-channel-policies #:irc-dm-allowed-users
    #:start-irc #:stop-irc
    #:irc-send-privmsg #:irc-join #:irc-part
    #:*irc-send-interval* #:*irc-default-system-prompt*

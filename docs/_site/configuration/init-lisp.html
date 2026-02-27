@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <base href="/clambda/">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuration Guide — init.lisp — Clambda</title>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --bg-card: #161616;
+      --bg-code: #1a1a1a;
+      --border: #2a2a2a;
+      --accent: #f0c040;     /* lambda yellow */
+      --accent2: #8b5cf6;    /* lisp purple */
+      --text: #e0e0e0;
+      --text-dim: #909090;
+      --link: #f0c040;
+      --link-hover: #ffe080;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    nav {
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    nav .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+      text-decoration: none;
+    }
+    nav .logo .lambda {
+      font-size: 2rem;
+      color: var(--accent);
+      font-weight: 700;
+      font-family: monospace;
+    }
+    nav .logo .name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    nav .logo .version {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+    nav h3 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin: 20px 0 8px 0;
+      padding: 0 8px;
+    }
+    nav ul {
+      list-style: none;
+    }
+    nav li a {
+      display: block;
+      padding: 5px 8px;
+      border-radius: 5px;
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all 0.15s;
+    }
+    nav li a:hover, nav li a.active {
+      background: rgba(240,192,64,0.1);
+      color: var(--accent);
+    }
+
+    /* Main content */
+    main {
+      padding: 48px;
+      max-width: 900px;
+    }
+    @media (max-width: 768px) {
+      body { grid-template-columns: 1fr; }
+      nav { display: none; }
+      main { padding: 24px; }
+    }
+
+    /* Typography */
+    h1 { font-size: 2rem; color: var(--text); margin-bottom: 16px; font-weight: 700; }
+    h2 { font-size: 1.4rem; color: var(--text); margin: 40px 0 12px; font-weight: 600;
+         border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    h3 { font-size: 1.1rem; color: var(--text); margin: 28px 0 8px; }
+    h4 { font-size: 1rem; color: var(--text-dim); margin: 20px 0 8px; }
+    p  { margin-bottom: 16px; }
+    ul, ol { margin-bottom: 16px; padding-left: 24px; }
+    li { margin-bottom: 4px; }
+    blockquote {
+      border-left: 3px solid var(--accent);
+      margin: 20px 0;
+      padding: 8px 16px;
+      background: rgba(240,192,64,0.05);
+      color: var(--text-dim);
+      border-radius: 0 6px 6px 0;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { color: var(--link-hover); text-decoration: underline; }
+    strong { color: var(--text); }
+    em { color: var(--text-dim); }
+    hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--bg-code);
+      color: var(--accent);
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border);
+    }
+    td {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* Code */
+    code {
+      font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+      font-size: 0.88em;
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+      font-size: 0.88rem;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--text-dim); }
+
+    /* Header bar on mobile */
+    .mobile-header {
+      display: none;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      align-items: center;
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="logo">
+      <span class="lambda">λ</span>
+      <span>
+        <div class="name">Clambda</div>
+        <div class="version">v0.8.0</div>
+      </span>
+    </a>
+
+    <h3>Getting Started</h3>
+    <ul>
+      <li><a href="index.html">Overview</a></li>
+      <li><a href="getting-started/README.html">Quick Start</a></li>
+      <li><a href="getting-started/installation.html">Installation</a></li>
+    </ul>
+
+    <h3>Configuration</h3>
+    <ul>
+      <li><a href="configuration/init-lisp.html">init.lisp Guide</a></li>
+    </ul>
+
+    <h3>Architecture</h3>
+    <ul>
+      <li><a href="architecture/index.html">Overview</a></li>
+    </ul>
+
+    <h3>Channels</h3>
+    <ul>
+      <li><a href="channels/index.html">Overview</a></li>
+      <li><a href="channels/telegram.html">Telegram</a></li>
+      <li><a href="channels/irc.html">IRC</a></li>
+    </ul>
+
+    <h3>API &amp; Tools</h3>
+    <ul>
+      <li><a href="api/index.html">HTTP API</a></li>
+      <li><a href="api/tools.html">Built-in Tools</a></li>
+      <li><a href="tools/custom-tools.html">Custom Tools</a></li>
+    </ul>
+
+    <h3>Deployment</h3>
+    <ul>
+      <li><a href="deployment/index.html">Deployment Guide</a></li>
+    </ul>
+
+    <h3>Project</h3>
+    <ul>
+      <li><a href="https://github.com/chrysolambda-ops/clambda" target="_blank">GitHub →</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <h1 id="configuration-guide-init.lisp">Configuration Guide — init.lisp</h1>
+    <p>Clambda is configured in <strong>Common Lisp</strong>, not JSON or YAML. Your configuration file is <code>~/.clambda/init.lisp</code> — a regular Lisp source file loaded at startup.</p>
+    <p>This is the Emacs model: configuration <em>is</em> code. You have the full power of Common Lisp available: conditionals, loops, file I/O, string manipulation, anything.</p>
+    <h2 id="how-it-works">How it works</h2>
+    <ol type="1">
+    <li>You start Clambda (SBCL + quickload)</li>
+    <li><code>(clambda/config:load-user-config)</code> finds <code>~/.clambda/init.lisp</code></li>
+    <li>The file is loaded with <code>*package*</code> bound to <code>clambda-user</code></li>
+    <li>All public Clambda symbols are available without package qualification</li>
+    <li>After the file loads, <code>*after-init-hook*</code> fires (starts channels, etc.)</li>
+    </ol>
+    <h2 id="file-location">File location</h2>
+    <pre><code>~/.clambda/init.lisp          # default
+$CLAMBDA_HOME/init.lisp       # override with env var</code></pre>
+    <p>Create the directory if needed:</p>
+    <div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/.clambda</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> /path/to/clambda/projects/clambda-core/example-init.lisp ~/.clambda/init.lisp</span></code></pre></div>
+    <p><strong>Security:</strong> <code>init.lisp</code> may contain API keys and bot tokens. Do <strong>not</strong> commit it to version control. The Clambda <code>.gitignore</code> excludes it by default.</p>
+    <hr />
+    <h2 id="options">§ 1. Options</h2>
+    <p>Options are variables declared with <code>defoption</code>. Set them with <code>setf</code>:</p>
+    <div class="sourceCode" id="cb3"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">in-package</span> #:clambda-user)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">;; LLM model (used when no per-agent model is set)</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>(<span class="kw">setf</span> *default-model* <span class="st">&quot;google/gemma-3-4b&quot;</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">;; Maximum tool-calling turns per agent loop (prevents infinite loops)</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>(<span class="kw">setf</span> *default-max-turns* <span class="dv">30</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">;; Enable streaming responses</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>(<span class="kw">setf</span> *default-stream* <span class="kw">t</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">;; Log verbosity: :debug :info :warn :error</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>(<span class="kw">setf</span> *log-level* :info)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">;; Message printed to stdout on startup</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>(<span class="kw">setf</span> *startup-message* <span class="st">&quot;Clambda ready. λ&quot;</span>)</span></code></pre></div>
+    <p>See all options at the REPL:</p>
+    <div class="sourceCode" id="cb4"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>CLAMBDA-USER&gt; (describe-options)</span></code></pre></div>
+    <h3 id="defining-custom-options">Defining custom options</h3>
+    <div class="sourceCode" id="cb5"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>(defoption *my-workspace* <span class="st">&quot;~/projects/&quot;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="bu">:type</span> <span class="kw">string</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  :doc <span class="st">&quot;Workspace directory for the coding agent.&quot;</span>)</span></code></pre></div>
+    <p><code>defoption</code> is like Emacs’ <code>defcustom</code>: it defines a variable, registers it in the option registry, and makes it visible to <code>describe-options</code>.</p>
+    <hr />
+    <h2 id="llm-clients">§ 2. LLM Clients</h2>
+    <p>Clambda uses <code>cl-llm</code> to talk to any OpenAI-compatible API.</p>
+    <div class="sourceCode" id="cb6"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">;; LM Studio (local, free)</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>(<span class="kw">defun</span><span class="fu"> make-local-client </span>(&amp;optional (model *default-model*))</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  (cl-llm:make-client</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    :base-url <span class="st">&quot;http://192.168.1.189:1234/v1&quot;</span>  <span class="co">; your LM Studio host</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    :api-key  <span class="st">&quot;lmstudio&quot;</span>                       <span class="co">; any non-empty string</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    :model    model))</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">;; OpenRouter (cloud, paid)</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>(<span class="kw">defun</span><span class="fu"> make-cloud-client </span>(&amp;optional (model <span class="st">&quot;anthropic/claude-3.5-sonnet&quot;</span>))</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  (cl-llm:make-client</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    :base-url <span class="st">&quot;https://openrouter.ai/api/v1&quot;</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    :api-key  (uiop:getenv <span class="st">&quot;OPENROUTER_API_KEY&quot;</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    :model    model))</span></code></pre></div>
+    <p>For Ollama, use the <code>/v1</code> OpenAI-compatibility endpoint:</p>
+    <div class="sourceCode" id="cb7"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>(cl-llm:make-client</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  :base-url <span class="st">&quot;http://localhost:11434/v1&quot;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  :api-key  <span class="st">&quot;ollama&quot;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  :model    <span class="st">&quot;llama3.1:8b&quot;</span>)</span></code></pre></div>
+    <hr />
+    <h2 id="channel-registration">§ 3. Channel Registration</h2>
+    <p>Channels are how Clambda receives and sends messages. Register them with <code>register-channel</code>:</p>
+    <h3 id="telegram">Telegram</h3>
+    <div class="sourceCode" id="cb8"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(register-channel :telegram</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  :token         <span class="st">&quot;YOUR_BOT_TOKEN_HERE&quot;</span>      <span class="co">; from @BotFather</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  :allowed-users &#39;(<span class="dv">123456789</span>)               <span class="co">; Telegram user IDs (integers)</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  :streaming     <span class="kw">t</span>)                         <span class="co">; stream tokens as they arrive</span></span></code></pre></div>
+    <p>See <a href="../channels/telegram.md">Telegram setup</a> for getting your bot token and user ID.</p>
+    <h3 id="irc">IRC</h3>
+    <div class="sourceCode" id="cb9"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>(register-channel :irc</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  :server            <span class="st">&quot;irc.libera.chat&quot;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  :port              <span class="dv">6697</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  :tls               <span class="kw">t</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  :nick              <span class="st">&quot;my-clambda-bot&quot;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  :realname          <span class="st">&quot;Clambda AI&quot;</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  :channels          &#39;(<span class="st">&quot;#clambda&quot;</span> <span class="st">&quot;#lisp&quot;</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  :nickserv-password <span class="st">&quot;YOUR_NICKSERV_PASSWORD&quot;</span>  <span class="co">; omit if not registered</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  :allowed-users     <span class="kw">nil</span>                        <span class="co">; nil = all users; list nicks to restrict</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  :dm-allowed-users  &#39;(<span class="st">&quot;alice&quot;</span> <span class="st">&quot;bob&quot;</span>)           <span class="co">; DM-specific allowlist</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  :channel-policies  &#39;((<span class="st">&quot;#clambda&quot;</span> :allowed-users <span class="kw">nil</span>)   <span class="co">; all welcome</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>                       (<span class="st">&quot;#priv&quot;</span>    :allowed-users (<span class="st">&quot;alice&quot;</span>))))</span></code></pre></div>
+    <p>See <a href="../channels/irc.md">IRC setup</a> for complete IRC configuration.</p>
+    <h3 id="browser">Browser</h3>
+    <div class="sourceCode" id="cb10"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>(register-channel :browser :headless <span class="kw">t</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>(add-hook <span class="dt">&#39;*after-init-hook*</span> <span class="op">#&#39;</span>clambda/browser:browser-launch)</span></code></pre></div>
+    <h3 id="http-management-api">HTTP Management API</h3>
+    <p>The HTTP API is started via <code>start-server</code>, not <code>register-channel</code>:</p>
+    <div class="sourceCode" id="cb11"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">setf</span> *api-token* <span class="st">&quot;YOUR_SECRET_TOKEN&quot;</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>(add-hook <span class="dt">&#39;*after-init-hook*</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>          (<span class="kw">lambda</span> () (start-server :port <span class="dv">7474</span> :address <span class="st">&quot;127.0.0.1&quot;</span>)))</span></code></pre></div>
+    <hr />
+    <h2 id="agent-definitions">§ 4. Agent Definitions</h2>
+    <p>Pre-define named agents with <code>define-agent</code>:</p>
+    <div class="sourceCode" id="cb12"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>(define-agent :coder</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  :model <span class="st">&quot;google/gemma-3-4b&quot;</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  :system-prompt</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;You are an expert Common Lisp programmer.</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="st">Use exec, read_file, and write_file to work with code.</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="st">Always explain your reasoning.&quot;</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>(define-agent :researcher</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  :model <span class="st">&quot;deepseek/deepseek-r1:8b&quot;</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  :system-prompt</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;You are a research assistant. Fetch and summarise web content.</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="st">Be concise and always cite your sources.&quot;</span>)</span></code></pre></div>
+    <p>Retrieve a defined agent:</p>
+    <div class="sourceCode" id="cb13"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>(find-agent :coder)    <span class="co">; =&gt; agent struct or NIL</span></span></code></pre></div>
+    <p>Channel plugins (Telegram, IRC) use a default agent if no specific one is requested. To wire a named agent to a channel, start it in a hook:</p>
+    <div class="sourceCode" id="cb14"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>(add-hook <span class="dt">&#39;*after-init-hook*</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">lambda</span> ()</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">let*</span> ((agent   (find-agent :coder))</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>           (session (make-session :agent agent)))</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>      <span class="co">;; store session for use by channel handler</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>      (<span class="kw">setf</span> my-coding-session session))))</span></code></pre></div>
+    <hr />
+    <h2 id="custom-tools">§ 5. Custom Tools</h2>
+    <p>Define tools that agents can call with <code>define-user-tool</code>:</p>
+    <div class="sourceCode" id="cb15"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">;;; Simple tool: get current time</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>(define-user-tool get-current-time</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  :description <span class="st">&quot;Returns the current date and time as a string.&quot;</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  :parameters  <span class="kw">nil</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  :function    (<span class="kw">lambda</span> (args)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                 (<span class="kw">declare</span> (<span class="kw">ignore</span> args))</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>                 (<span class="kw">multiple-value-bind</span> (s <span class="kw">min</span> h d mo y)</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>                     (<span class="kw">decode-universal-time</span> (<span class="kw">get-universal-time</span>))</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>                   (<span class="kw">format</span> <span class="kw">nil</span> <span class="st">&quot;~4,&#39;0D-~2,&#39;0D-~2,&#39;0D ~2,&#39;0D:~2,&#39;0D:~2,&#39;0D&quot;</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>                           y mo d h <span class="kw">min</span> s))))</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="co">;;; Tool with parameters</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>(define-user-tool translate</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>  :description <span class="st">&quot;Translate text to a target language.&quot;</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>  :parameters  &#39;((<span class="bu">:name</span> <span class="st">&quot;text&quot;</span>     <span class="bu">:type</span> <span class="st">&quot;string&quot;</span>  :description <span class="st">&quot;Text to translate.&quot;</span>)</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>                 (<span class="bu">:name</span> <span class="st">&quot;language&quot;</span> <span class="bu">:type</span> <span class="st">&quot;string&quot;</span>  :description <span class="st">&quot;Target language code (e.g. &#39;fr&#39;, &#39;de&#39;).&quot;</span>))</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>  :function    (<span class="kw">lambda</span> (args)</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>                 (<span class="kw">let</span> ((text (<span class="kw">gethash</span> <span class="st">&quot;text&quot;</span> args))</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>                       (lang (<span class="kw">gethash</span> <span class="st">&quot;language&quot;</span> args)))</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>                   <span class="co">;; call your translation API here</span></span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>                   (<span class="kw">format</span> <span class="kw">nil</span> <span class="st">&quot;[Translation to ~A]: ~A&quot;</span> lang text))))</span></code></pre></div>
+    <p>Tools defined with <code>define-user-tool</code> go into <code>*user-tool-registry*</code>. To include them when creating an agent manually:</p>
+    <div class="sourceCode" id="cb16"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> ((registry (clambda:make-tool-registry)))</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  (clambda/builtins:register-builtins registry)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  (clambda/config:merge-user-tools! registry)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">;; registry now has both built-in and user tools</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  (make-agent <span class="bu">:name</span> <span class="st">&quot;my-agent&quot;</span> :client client :tool-registry registry))</span></code></pre></div>
+    <p>See <a href="../tools/custom-tools.md">Custom Tools</a> for the full tool API.</p>
+    <hr />
+    <h2 id="hooks">§ 6. Hooks</h2>
+    <p>Hooks let you plug into Clambda’s lifecycle without modifying core code.</p>
+    <div class="sourceCode" id="cb17"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">;;; After init: called after all of init.lisp loads</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>(add-hook <span class="dt">&#39;*after-init-hook*</span> <span class="op">#&#39;</span>my-startup-fn)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co">;;; Before each agent turn: (session user-message)</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>(add-hook <span class="dt">&#39;*before-agent-turn-hook*</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">lambda</span> (session msg)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">format</span> <span class="kw">t</span> <span class="st">&quot;[hook] New turn: ~A~%&quot;</span> (<span class="kw">subseq</span> msg <span class="dv">0</span> (<span class="kw">min</span> <span class="dv">40</span> (<span class="kw">length</span> msg))))))</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="co">;;; After each tool call: (tool-name result-string)</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>(add-hook <span class="dt">&#39;*after-tool-call-hook*</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">lambda</span> (name result)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">format</span> <span class="kw">t</span> <span class="st">&quot;[hook] Tool ~A → ~A chars~%&quot;</span> name (<span class="kw">length</span> result))))</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="co">;;; On inbound channel message: (channel-keyword message-plist)</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>(add-hook <span class="dt">&#39;*channel-message-hook*</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">lambda</span> (channel msg)</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">format</span> <span class="kw">t</span> <span class="st">&quot;[hook] Channel ~A: ~A~%&quot;</span> channel msg)))</span></code></pre></div>
+    <p>Remove a hook:</p>
+    <div class="sourceCode" id="cb18"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(remove-hook <span class="dt">&#39;*after-init-hook*</span> <span class="op">#&#39;</span>my-startup-fn)</span></code></pre></div>
+    <hr />
+    <h2 id="cron-scheduled-tasks">§ 7. Cron / Scheduled Tasks</h2>
+    <div class="sourceCode" id="cb19"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co">;;; Periodic task: every 30 minutes</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>(<span class="kw">defun</span><span class="fu"> my-check </span>()</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">format</span> <span class="kw">t</span> <span class="st">&quot;[cron] Checking...~%&quot;</span>))</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>(add-hook <span class="dt">&#39;*after-init-hook*</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">lambda</span> ()</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    (schedule-task <span class="st">&quot;my-check&quot;</span> :every <span class="dv">1800</span> <span class="op">#&#39;</span>my-check</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>                   :description <span class="st">&quot;Check every 30 minutes&quot;</span>)))</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="co">;;; One-shot task: fires 10 seconds after startup</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>(add-hook <span class="dt">&#39;*after-init-hook*</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">lambda</span> ()</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    (schedule-once <span class="st">&quot;startup-ping&quot;</span> :after <span class="dv">10</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>      (<span class="kw">lambda</span> () (<span class="kw">format</span> <span class="kw">t</span> <span class="st">&quot;[cron] Clambda is up!~%&quot;</span>))</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>      :description <span class="st">&quot;Startup notification&quot;</span>)))</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="co">;;; Cancel and inspect tasks</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>(list-tasks)            <span class="co">; =&gt; list of scheduled-task objects</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>(describe-tasks)        <span class="co">; =&gt; human-readable output to stdout</span></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>(cancel-task <span class="st">&quot;my-check&quot;</span>)</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>(clear-tasks)           <span class="co">; cancel all</span></span></code></pre></div>
+    <hr />
+    <h2 id="full-lisp-is-the-config">§ 8. Full Lisp is the Config</h2>
+    <p>Because init.lisp is real Lisp, you can do anything:</p>
+    <div class="sourceCode" id="cb20"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co">;;; Conditional config by hostname</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> ((host (<span class="kw">machine-instance</span>)))</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">cond</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    ((<span class="kw">string=</span> host <span class="st">&quot;home-server&quot;</span>)</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>     (<span class="kw">setf</span> *default-model* <span class="st">&quot;google/gemma-3-12b&quot;</span>))</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    ((<span class="kw">string=</span> host <span class="st">&quot;laptop&quot;</span>)</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>     (<span class="kw">setf</span> *default-model* <span class="st">&quot;google/gemma-3-4b&quot;</span>))</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">t</span> <span class="kw">nil</span>)))</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="co">;;; Read API keys from a separate secrets file</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>(<span class="kw">let</span> ((secrets (<span class="kw">merge-pathnames</span> <span class="st">&quot;secrets.lisp&quot;</span> *clambda-home*)))</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">when</span> (<span class="kw">probe-file</span> secrets)</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">load</span> secrets)))</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a><span class="co">;;; Load additional config fragments</span></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>(<span class="kw">dolist</span> (f (<span class="kw">directory</span> (<span class="kw">merge-pathnames</span> <span class="st">&quot;conf.d/*.lisp&quot;</span> *clambda-home*)))</span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">load</span> f))</span></code></pre></div>
+    <hr />
+    <h2 id="remote-management-api">§ 9. Remote Management API</h2>
+    <div class="sourceCode" id="cb21"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co">;;; Set bearer token (required for auth)</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>(<span class="kw">setf</span> *api-token* <span class="st">&quot;YOUR_SECRET_TOKEN&quot;</span>)</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="co">;;; Start API server on startup</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>(add-hook <span class="dt">&#39;*after-init-hook*</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">lambda</span> ()</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    (start-server :port <span class="dv">18789</span> :address <span class="st">&quot;127.0.0.1&quot;</span>)))</span></code></pre></div>
+    <p>Management endpoints:</p>
+    <table>
+    <thead>
+    <tr class="header">
+    <th>Method</th>
+    <th>Path</th>
+    <th>Auth</th>
+    <th>Description</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr class="odd">
+    <td>GET</td>
+    <td><code>/health</code></td>
+    <td>—</td>
+    <td>Health check</td>
+    </tr>
+    <tr class="even">
+    <td>GET</td>
+    <td><code>/api/system</code></td>
+    <td>✓</td>
+    <td>Version, uptime, counts</td>
+    </tr>
+    <tr class="odd">
+    <td>GET</td>
+    <td><code>/api/agents</code></td>
+    <td>✓</td>
+    <td>List registered agents</td>
+    </tr>
+    <tr class="even">
+    <td>POST</td>
+    <td><code>/api/agents/:name/start</code></td>
+    <td>✓</td>
+    <td>Create session</td>
+    </tr>
+    <tr class="odd">
+    <td>POST</td>
+    <td><code>/api/agents/:name/message</code></td>
+    <td>✓</td>
+    <td>Send message, get reply</td>
+    </tr>
+    <tr class="even">
+    <td>GET</td>
+    <td><code>/api/agents/:name/history</code></td>
+    <td>✓</td>
+    <td>Session history</td>
+    </tr>
+    <tr class="odd">
+    <td>DELETE</td>
+    <td><code>/api/agents/:name/stop</code></td>
+    <td>✓</td>
+    <td>Terminate session</td>
+    </tr>
+    <tr class="even">
+    <td>GET</td>
+    <td><code>/api/sessions</code></td>
+    <td>✓</td>
+    <td>All sessions</td>
+    </tr>
+    <tr class="odd">
+    <td>GET</td>
+    <td><code>/api/channels</code></td>
+    <td>✓</td>
+    <td>Registered channels</td>
+    </tr>
+    <tr class="even">
+    <td>GET</td>
+    <td><code>/api/tasks</code></td>
+    <td>✓</td>
+    <td>Cron task list</td>
+    </tr>
+    </tbody>
+    </table>
+    <p>See <a href="../api/index.md">HTTP API Reference</a> for full details.</p>
+    <hr />
+    <h2 id="complete-example">Complete Example</h2>
+    <p>See <a href="../../projects/clambda-core/example-init.lisp"><code>example-init.lisp</code></a> for a fully commented example covering all features.</p>
+
+    <footer>
+      <p>
+        Clambda — Free Software (GPL-3.0).
+        Built with λ and love.
+        <a href="https://github.com/chrysolambda-ops/clambda">Source on GitHub</a>.
+      </p>
+    </footer>
+  </main>
+
+</body>
+</html>

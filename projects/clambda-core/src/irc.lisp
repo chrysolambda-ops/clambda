@@ -96,6 +96,9 @@ Slots:
   (nickserv-password nil)
   (allowed-users    nil)
   (trigger-prefix   nil)
+  ;; Per-channel allowlist (Layer 9b)
+  (channel-policies nil)            ; alist of (channel-name :allowed-users list)
+  (dm-allowed-users nil)            ; list of nicks allowed to DM, or NIL (use global)
   ;; Runtime (nil = not connected)
   (socket           nil)
   (stream           nil)
@@ -513,6 +516,27 @@ SENDER-NICK is included for context but responses go to REPLY-TARGET."
                             conn)
         (error () nil)))))
 
+(defun %effective-channel-allowed (conn channel-name)
+  "Return the effective allowed-users list for CHANNEL-NAME in CONN.
+
+If CHANNEL-NAME has an explicit policy in (irc-channel-policies conn):
+  - Returns its :allowed-users value (NIL means all users allowed in that channel).
+If no policy exists for this channel:
+  - Falls back to (irc-allowed-users conn) (global allowlist)."
+  (let ((entry (assoc channel-name (irc-channel-policies conn)
+                      :test #'string-equal)))
+    (if entry
+        (getf (cdr entry) :allowed-users)
+        (irc-allowed-users conn))))
+
+(defun %effective-dm-allowed (conn)
+  "Return the effective allowed-users list for DMs to CONN.
+
+If (irc-dm-allowed-users conn) is non-NIL, returns it.
+Otherwise falls back to (irc-allowed-users conn)."
+  (or (irc-dm-allowed-users conn)
+      (irc-allowed-users conn)))
+
 (defun %handle-privmsg (conn prefix target text)
   "Dispatch an incoming PRIVMSG line.
 
@@ -530,10 +554,13 @@ SENDER-NICK is included for context but responses go to REPLY-TARGET."
     ;; Sanity checks
     (unless (and text sender-nick reply-target) (return-from %handle-privmsg nil))
 
-    ;; Check allowed-users
-    (when (and (irc-allowed-users conn)
-               (not (member sender-nick (irc-allowed-users conn) :test #'string-equal)))
-      (return-from %handle-privmsg nil))
+    ;; Check per-target allowlist (channel policy overrides global; DM uses dm-allowed-users)
+    (let ((effective-allowed (if is-channel
+                                 (%effective-channel-allowed conn target)
+                                 (%effective-dm-allowed conn))))
+      (when (and effective-allowed
+                 (not (member sender-nick effective-allowed :test #'string-equal)))
+        (return-from %handle-privmsg nil)))
 
     ;; Handle CTCP (text wrapped in ctrl-A)
     (let ((ctrl-a (code-char 1)))
@@ -636,7 +663,7 @@ Implements exponential backoff reconnection (max 300 seconds)."
                        nick (realname "Clambda IRC Bot")
                        channels nickserv-password
                        allowed-users trigger-prefix
-                       agent
+                       agent channel-policies dm-allowed-users
                   &aux (conn *irc-connection*))
   "Connect to an IRC server and start background threads.
 
@@ -654,6 +681,8 @@ Implements exponential backoff reconnection (max 300 seconds)."
     :allowed-users     — optional list of nicks that may use the bot (nil = all)
     :trigger-prefix    — optional trigger prefix (nil = use '<nick>:')
     :agent             — agent instance, name string/keyword, or nil (uses default)
+    :channel-policies  — alist of (channel :allowed-users list) per-channel overrides
+    :dm-allowed-users  — list of nicks allowed to DM the bot (nil = use allowed-users)
 
   Returns the IRC-CONNECTION struct. Also sets *IRC-CONNECTION*.
 
@@ -681,6 +710,8 @@ Implements exponential backoff reconnection (max 300 seconds)."
   (when allowed-users     (setf (irc-allowed-users conn)     allowed-users))
   (when trigger-prefix    (setf (irc-trigger-prefix conn)    trigger-prefix))
   (when agent             (setf (irc-agent conn)             agent))
+  (when channel-policies  (setf (irc-channel-policies conn)  channel-policies))
+  (when dm-allowed-users  (setf (irc-dm-allowed-users conn)  dm-allowed-users))
   ;; Apply tls-p (always override, even if nil)
   (setf (irc-tls-p conn) tls)
   ;; Set as global
@@ -741,7 +772,7 @@ Implements exponential backoff reconnection (max 300 seconds)."
      &key (server "irc.libera.chat") (port 6697) (tls t)
           (nick "clambda") (realname "Clambda IRC Bot")
           channels nickserv-password allowed-users trigger-prefix
-          agent
+          agent channel-policies dm-allowed-users
      &allow-other-keys)
   "Register an IRC channel from init.lisp. Creates and stores an IRC-CONNECTION.
 Does NOT auto-connect — call (START-IRC) to connect.
@@ -754,7 +785,10 @@ Example in init.lisp:
     :nick \"clambda\"
     :channels '(\"#clambda\" \"#lisp\")
     :nickserv-password \"s3cr3t\"
-    :allowed-users '(\"alice\" \"bob\"))
+    :allowed-users '(\"alice\" \"bob\")
+    :channel-policies '((\"#bots\" :allowed-users nil)
+                        (\"#priv\" :allowed-users (\"alice\")))
+    :dm-allowed-users '(\"alice\"))
 
   ;; Then connect:
   (add-hook '*after-init-hook* #'clambda/irc:start-irc)"
@@ -769,7 +803,9 @@ Example in init.lisp:
                 :nickserv-password nickserv-password
                 :allowed-users     allowed-users
                 :trigger-prefix    trigger-prefix
-                :agent             agent)))
+                :agent             agent
+                :channel-policies  channel-policies
+                :dm-allowed-users  dm-allowed-users)))
     (setf *irc-connection* conn)
     (format t "~&[irc] Channel configured: ~A:~A~:[~; (TLS)~] nick=~A channels=~A~%"
             server port tls nick (or channels '())))

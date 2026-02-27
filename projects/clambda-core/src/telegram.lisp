@@ -52,6 +52,15 @@ Override in init.lisp to customise the bot's personality.")
 Shorter values mean faster shutdown when STOP-TELEGRAM is called.
 Maximum allowed by Telegram API is 30.")
 
+(defvar *telegram-streaming* t
+  "When T (default), stream partial agent responses via editMessageText.
+When NIL, send the complete response as a single sendMessage.")
+
+(defvar *telegram-stream-debounce-ms* 500
+  "Minimum milliseconds between editMessageText calls during streaming.
+Prevents flooding the Telegram API with too-frequent edit requests.
+Default 500ms = at most 2 edits/second.")
+
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 2. Channel Struct
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -230,7 +239,150 @@ Returns the session."
             session)))))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
-;;;; § 7. Update Processing
+;;;; § 7. Streaming Helpers
+;;;; ─────────────────────────────────────────────────────────────────────────────
+
+(defun %current-time-ms ()
+  "Return current time in milliseconds as an integer.
+Uses GET-INTERNAL-REAL-TIME and INTERNAL-TIME-UNITS-PER-SECOND."
+  (floor (* 1000 (get-internal-real-time)) internal-time-units-per-second))
+
+(defun %split-telegram-text (text &optional (max-len 4096))
+  "Split TEXT into chunks of at most MAX-LEN characters for Telegram messages.
+Tries to break at a newline boundary first, then at a space, then hard-cuts.
+Returns a list of chunk strings."
+  (if (<= (length text) max-len)
+      (list text)
+      (let ((result '())
+            (start  0)
+            (len    (length text)))
+        (loop while (< start len)
+              do (let ((end (min (+ start max-len) len)))
+                   ;; Try to break at a newline for readability
+                   (when (< end len)
+                     (let ((nl (position #\Newline text
+                                         :start start :end end :from-end t)))
+                       (if nl
+                           (setf end (1+ nl))
+                           ;; No newline — try space
+                           (let ((space (position #\Space text
+                                                  :start start :end end
+                                                  :from-end t)))
+                             (when space (setf end (1+ space)))))))
+                   (let ((chunk (string-trim " " (subseq text start end))))
+                     (when (> (length chunk) 0)
+                       (push chunk result)))
+                   (setf start end)))
+        (nreverse result))))
+
+(defun telegram-edit-message (chan chat-id message-id text
+                              &key (parse-mode "Markdown"))
+  "Edit an existing Telegram message using the editMessageText API method.
+
+CHAN       — telegram-channel struct
+CHAT-ID    — integer chat ID
+MESSAGE-ID — integer message ID to edit
+TEXT       — new text content
+PARSE-MODE — Telegram parse mode (default: \"Markdown\")
+
+Silently swallows \"message is not modified\" errors (Telegram 400 when the
+text is unchanged).  Logs other errors to *ERROR-OUTPUT* without propagating.
+Returns the API response hash-table on success, NIL on error."
+  (handler-case
+      (%tg-call (telegram-channel-token chan) "editMessageText"
+                :chat_id    chat-id
+                :message_id message-id
+                :text       text
+                :parse_mode parse-mode)
+    (error (e)
+      (let ((msg (princ-to-string e)))
+        (cond
+          ;; Silently swallow "message is not modified" — text was unchanged
+          ((search "message is not modified" msg :test #'char-equal)
+           nil)
+          ;; Log other errors
+          (t
+           (format *error-output*
+                   "~&[telegram] editMessageText error (chat ~A, msg ~A): ~A~%"
+                   chat-id message-id e)
+           nil))))))
+
+(defun %run-agent-streaming (chan chat-id session text)
+  "Run the agent with streaming partial-response updates via Telegram editMessageText.
+
+Steps:
+  1. Send a placeholder '…' message and capture its message_id.
+  2. If placeholder send failed, fall back to non-streaming.
+  3. Create an adjustable char buffer for token accumulation.
+  4. Dynamically bind *ON-STREAM-DELTA* to a lambda that appends each token
+     to the buffer and calls editMessageText after *TELEGRAM-STREAM-DEBOUNCE-MS*.
+  5. Run the agent with :STREAM T.
+  6. After the agent finishes, do a final edit with the complete response.
+  7. If the final response exceeds 4096 chars, split it and send extra chunks."
+  (let* ((placeholder-resp (telegram-send-message chan chat-id "…"))
+         (placeholder-id   (and placeholder-resp
+                                (gethash "message_id"
+                                         (gethash "result" placeholder-resp)))))
+    (if (null placeholder-id)
+        ;; Fallback: non-streaming (placeholder send failed)
+        (let* ((opts     (clambda/loop:make-loop-options
+                          :max-turns clambda/config:*default-max-turns*
+                          :stream    nil))
+               (response (handler-case
+                              (clambda/loop:run-agent session text :options opts)
+                            (error (e)
+                              (format *error-output*
+                                      "~&[telegram] Agent error (chat ~A): ~A~%"
+                                      chat-id e)
+                              (format nil "Sorry, I ran into an error: ~A" e)))))
+          (telegram-send-message chan chat-id (or response "…")))
+
+        ;; Streaming path: edit the placeholder as tokens arrive
+        (let* ((buf          (make-array 0
+                                         :element-type 'character
+                                         :fill-pointer 0
+                                         :adjustable   t))
+               (last-edit-ms (%current-time-ms))
+               (opts         (clambda/loop:make-loop-options
+                              :max-turns clambda/config:*default-max-turns*
+                              :stream    t)))
+          (handler-case
+              (let ((clambda/loop:*on-stream-delta*
+                      (lambda (delta)
+                        (loop for ch across delta
+                              do (vector-push-extend ch buf))
+                        (let* ((now          (%current-time-ms))
+                               (current-text (coerce buf 'string)))
+                          (when (>= (- now last-edit-ms)
+                                    *telegram-stream-debounce-ms*)
+                            ;; Debounce window expired — send an intermediate edit
+                            (let ((edit-text (if (> (length current-text) 4096)
+                                                 (subseq current-text 0 4096)
+                                                 current-text)))
+                              (telegram-edit-message chan chat-id placeholder-id
+                                                     edit-text))
+                            (setf last-edit-ms now))))))
+                (clambda/loop:run-agent session text :options opts))
+            (error (e)
+              (format *error-output*
+                      "~&[telegram] Streaming agent error (chat ~A): ~A~%"
+                      chat-id e)))
+
+          ;; Final edit: send complete accumulated response
+          (let ((final-text (coerce buf 'string)))
+            (if (> (length final-text) 0)
+                (let ((chunks (%split-telegram-text final-text 4096)))
+                  ;; Edit placeholder with first chunk
+                  (telegram-edit-message chan chat-id placeholder-id (first chunks))
+                  ;; Send any additional chunks as new messages
+                  (dolist (chunk (rest chunks))
+                    (telegram-send-message chan chat-id chunk)))
+                ;; Buffer is empty — agent produced no output
+                (telegram-edit-message chan chat-id placeholder-id
+                                       "Sorry, I couldn't generate a response.")))))))
+
+;;;; ─────────────────────────────────────────────────────────────────────────────
+;;;; § 8. Update Processing
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
 (defun %extract-message-fields (update)
@@ -283,19 +435,23 @@ rather than crashing the polling loop."
          (clambda/config:run-hook-with-args 'clambda/config:*channel-message-hook*
                                              chan text)
 
-         ;; Get or create session for this chat
-         (let* ((session (find-or-create-session chan chat-id))
-                (opts    (clambda/loop:make-loop-options
-                          :max-turns clambda/config:*default-max-turns*
-                          :stream    nil))
-                (response
-                  (handler-case
-                      (clambda/loop:run-agent session text :options opts)
-                    (error (e)
-                      (format *error-output*
-                              "~&[telegram] Agent error (chat ~A): ~A~%" chat-id e)
-                      (format nil "Sorry, I ran into an error: ~A" e)))))
-           (telegram-send-message chan chat-id (or response "…"))))))))
+         ;; Get or create session for this chat, then dispatch
+         (let ((session (find-or-create-session chan chat-id)))
+           (if *telegram-streaming*
+               ;; Streaming: send placeholder, edit as tokens arrive
+               (%run-agent-streaming chan chat-id session text)
+               ;; Non-streaming: run agent, then sendMessage
+               (let* ((opts     (clambda/loop:make-loop-options
+                                 :max-turns clambda/config:*default-max-turns*
+                                 :stream    nil))
+                      (response (handler-case
+                                    (clambda/loop:run-agent session text :options opts)
+                                  (error (e)
+                                    (format *error-output*
+                                            "~&[telegram] Agent error (chat ~A): ~A~%"
+                                            chat-id e)
+                                    (format nil "Sorry, I ran into an error: ~A" e)))))
+                 (telegram-send-message chan chat-id (or response "…"))))))))))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 8. The Polling Loop
@@ -427,6 +583,7 @@ Returns the list of successfully started channel objects."
      &key token
           (allowed-users nil)
           (polling-interval 1)
+          (streaming t)
      &allow-other-keys)
   "Register a Telegram channel from init.lisp.
 
@@ -437,7 +594,8 @@ Usage:
   (register-channel :telegram
     :token \"BOT_TOKEN\"
     :allowed-users '(12345678)  ; optional user-ID allowlist
-    :polling-interval 1)        ; seconds between polls (default 1)
+    :polling-interval 1         ; seconds between polls (default 1)
+    :streaming t)               ; enable streaming partial responses (default T)
 
 After init.lisp loads, start the channel explicitly:
   (clambda/telegram:start-telegram)
@@ -450,6 +608,7 @@ After init.lisp loads, start the channel explicitly:
                                       :allowed-users    allowed-users
                                       :polling-interval polling-interval)))
     (setf *telegram-channel* chan)
+    (setf *telegram-streaming* streaming)
     (format t "~&[telegram] Channel registered (not yet polling). ~
                Call (start-telegram) to begin.~%"))
   ;; Store raw config in *registered-channels* via default method

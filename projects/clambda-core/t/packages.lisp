@@ -18,10 +18,16 @@
                 #:telegram-channel-last-update-id
                 #:telegram-api-url
                 #:allowed-user-p
-                #:process-update)
+                #:process-update
+                ;; Streaming (Layer 9a)
+                #:*telegram-streaming*
+                #:*telegram-stream-debounce-ms*
+                #:telegram-edit-message)
   ;; Internal helpers accessed via :: for white-box testing
   ;; (clambda/telegram::%extract-message-fields ...)
   ;; (clambda/telegram::%plist->ht ...)
+  ;; (clambda/telegram::%split-telegram-text ...)
+  ;; (clambda/telegram::%current-time-ms ...)
   )
 
 (defpackage #:clambda-core/tests/browser
@@ -56,9 +62,13 @@
                 #:irc-allowed-users #:irc-trigger-prefix
                 #:irc-running-p #:irc-connected-p
                 #:irc-flood-queue #:irc-flood-lock #:irc-flood-cvar
-                #:*irc-send-interval*)
+                #:*irc-send-interval*
+                ;; Per-channel allowlist (Layer 9b)
+                #:irc-channel-policies
+                #:irc-dm-allowed-users)
   ;; Internal helpers for white-box testing
   ;; clambda/irc::%strip-cr, clambda/irc::%extract-message-body, etc.
+  ;; clambda/irc::%effective-channel-allowed, clambda/irc::%effective-dm-allowed
   )
 
 ;;; ── Layer 8a: Cron scheduler tests ──────────────────────────────────────────

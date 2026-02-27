@@ -210,3 +210,67 @@ Mirrors the structure of a real Telegram API update object."
          (update (%make-update 99)))  ; no message key at all
     (process-update chan update)
     (is = 0 (hash-table-count (clambda/telegram::telegram-channel-sessions chan)))))
+
+;;;; ─────────────────────────────────────────────────────────────────────────────
+;;;; § 7. Streaming configuration
+;;;; ─────────────────────────────────────────────────────────────────────────────
+
+(define-test "*telegram-streaming*: default is T"
+  (true clambda/telegram:*telegram-streaming*))
+
+(define-test "*telegram-stream-debounce-ms*: default is 500"
+  (is = 500 clambda/telegram:*telegram-stream-debounce-ms*))
+
+(define-test "streaming vars can be rebound dynamically"
+  (let ((clambda/telegram:*telegram-streaming* nil))
+    (false clambda/telegram:*telegram-streaming*))
+  ;; After let exits, original value is restored
+  (true clambda/telegram:*telegram-streaming*))
+
+;;;; ─────────────────────────────────────────────────────────────────────────────
+;;;; § 8. %split-telegram-text helper
+;;;; ─────────────────────────────────────────────────────────────────────────────
+
+(define-test "%split-telegram-text: short text is single chunk"
+  (let ((chunks (clambda/telegram::%split-telegram-text "Hello!" 4096)))
+    (is = 1 (length chunks))
+    (is string= "Hello!" (first chunks))))
+
+(define-test "%split-telegram-text: text exactly at limit is single chunk"
+  (let* ((text (make-string 4096 :initial-element #\a))
+         (chunks (clambda/telegram::%split-telegram-text text 4096)))
+    (is = 1 (length chunks))))
+
+(define-test "%split-telegram-text: text over limit is split"
+  (let* ((text (make-string 5000 :initial-element #\x))
+         (chunks (clambda/telegram::%split-telegram-text text 4096)))
+    (is = 2 (length chunks))
+    ;; First chunk ≤ 4096
+    (true (<= (length (first chunks)) 4096))
+    ;; All content preserved
+    (is = 5000 (reduce #'+ chunks :key #'length))))
+
+(define-test "%split-telegram-text: splits at newline boundary"
+  (let* (;; 4000 x chars + newline + 200 y chars = 4201 total
+         (text (concatenate 'string
+                             (make-string 4000 :initial-element #\x)
+                             (string #\Newline)
+                             (make-string 200 :initial-element #\y)))
+         (chunks (clambda/telegram::%split-telegram-text text 4096)))
+    ;; Should split after the newline, not at hard 4096
+    (is = 2 (length chunks))
+    (true (<= (length (first chunks)) 4096))))
+
+;;;; ─────────────────────────────────────────────────────────────────────────────
+;;;; § 9. %current-time-ms helper
+;;;; ─────────────────────────────────────────────────────────────────────────────
+
+(define-test "%current-time-ms: returns a non-negative integer"
+  (let ((t1 (clambda/telegram::%current-time-ms)))
+    (true (integerp t1))
+    (true (>= t1 0))))
+
+(define-test "%current-time-ms: monotonically non-decreasing"
+  (let* ((t1 (clambda/telegram::%current-time-ms))
+         (t2 (clambda/telegram::%current-time-ms)))
+    (true (>= t2 t1))))

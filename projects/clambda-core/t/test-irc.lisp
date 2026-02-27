@@ -315,3 +315,62 @@
                      (getf parsed :params)
                      (getf parsed :trailing))))
     (is string= original rebuilt)))
+
+;;;; ─────────────────────────────────────────────────────────────────────────────
+;;;; § 10. Per-channel allowlist tests
+;;;; ─────────────────────────────────────────────────────────────────────────────
+
+(define-test "irc-channel-policies: default is nil"
+  (let ((conn (make-irc-connection)))
+    (is eq nil (irc-channel-policies conn))))
+
+(define-test "irc-dm-allowed-users: default is nil"
+  (let ((conn (make-irc-connection)))
+    (is eq nil (irc-dm-allowed-users conn))))
+
+(define-test "%effective-channel-allowed: no policy falls back to global"
+  (let ((conn (make-irc-connection :allowed-users '("alice" "bob"))))
+    ;; No channel-policies set → falls back to global allowed-users
+    (let ((result (clambda/irc::%effective-channel-allowed conn "#test")))
+      (is equal '("alice" "bob") result))))
+
+(define-test "%effective-channel-allowed: channel policy overrides global"
+  (let ((conn (make-irc-connection
+                :allowed-users '("global-user")
+                :channel-policies '(("#bots" :allowed-users nil)
+                                    ("#priv" :allowed-users ("alice" "bob"))))))
+    ;; #bots has explicit nil → all users allowed in #bots
+    (let ((bots-allowed (clambda/irc::%effective-channel-allowed conn "#bots")))
+      (is eq nil bots-allowed))   ; nil = open
+    ;; #priv has explicit list
+    (let ((priv-allowed (clambda/irc::%effective-channel-allowed conn "#priv")))
+      (is equal '("alice" "bob") priv-allowed))
+    ;; #other has no policy → falls back to global
+    (let ((other-allowed (clambda/irc::%effective-channel-allowed conn "#other")))
+      (is equal '("global-user") other-allowed))))
+
+(define-test "%effective-dm-allowed: nil dm-allowed-users falls back to global"
+  (let ((conn (make-irc-connection :allowed-users '("alice"))))
+    (let ((result (clambda/irc::%effective-dm-allowed conn)))
+      (is equal '("alice") result))))
+
+(define-test "%effective-dm-allowed: dm-allowed-users overrides global"
+  (let ((conn (make-irc-connection
+                :allowed-users '("alice")
+                :dm-allowed-users '("bob" "carol"))))
+    (let ((result (clambda/irc::%effective-dm-allowed conn)))
+      (is equal '("bob" "carol") result))))
+
+(define-test "%effective-channel-allowed: case-insensitive channel name match"
+  (let ((conn (make-irc-connection
+                :channel-policies '(("#Bots" :allowed-users ("alice"))))))
+    ;; Should match "#bots" (case-insensitive via string-equal)
+    (let ((result (clambda/irc::%effective-channel-allowed conn "#bots")))
+      (is equal '("alice") result))))
+
+(define-test "make-irc-connection: channel-policies and dm-allowed-users stored"
+  (let ((conn (make-irc-connection
+                :channel-policies '(("#test" :allowed-users ("alice")))
+                :dm-allowed-users '("bob"))))
+    (is equal '(("#test" :allowed-users ("alice"))) (irc-channel-policies conn))
+    (is equal '("bob") (irc-dm-allowed-users conn))))

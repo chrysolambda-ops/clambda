@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <base href="/clambda/">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deployment Guide — Clambda</title>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --bg-card: #161616;
+      --bg-code: #1a1a1a;
+      --border: #2a2a2a;
+      --accent: #f0c040;     /* lambda yellow */
+      --accent2: #8b5cf6;    /* lisp purple */
+      --text: #e0e0e0;
+      --text-dim: #909090;
+      --link: #f0c040;
+      --link-hover: #ffe080;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    nav {
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    nav .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+      text-decoration: none;
+    }
+    nav .logo .lambda {
+      font-size: 2rem;
+      color: var(--accent);
+      font-weight: 700;
+      font-family: monospace;
+    }
+    nav .logo .name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    nav .logo .version {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+    nav h3 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin: 20px 0 8px 0;
+      padding: 0 8px;
+    }
+    nav ul {
+      list-style: none;
+    }
+    nav li a {
+      display: block;
+      padding: 5px 8px;
+      border-radius: 5px;
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all 0.15s;
+    }
+    nav li a:hover, nav li a.active {
+      background: rgba(240,192,64,0.1);
+      color: var(--accent);
+    }
+
+    /* Main content */
+    main {
+      padding: 48px;
+      max-width: 900px;
+    }
+    @media (max-width: 768px) {
+      body { grid-template-columns: 1fr; }
+      nav { display: none; }
+      main { padding: 24px; }
+    }
+
+    /* Typography */
+    h1 { font-size: 2rem; color: var(--text); margin-bottom: 16px; font-weight: 700; }
+    h2 { font-size: 1.4rem; color: var(--text); margin: 40px 0 12px; font-weight: 600;
+         border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    h3 { font-size: 1.1rem; color: var(--text); margin: 28px 0 8px; }
+    h4 { font-size: 1rem; color: var(--text-dim); margin: 20px 0 8px; }
+    p  { margin-bottom: 16px; }
+    ul, ol { margin-bottom: 16px; padding-left: 24px; }
+    li { margin-bottom: 4px; }
+    blockquote {
+      border-left: 3px solid var(--accent);
+      margin: 20px 0;
+      padding: 8px 16px;
+      background: rgba(240,192,64,0.05);
+      color: var(--text-dim);
+      border-radius: 0 6px 6px 0;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { color: var(--link-hover); text-decoration: underline; }
+    strong { color: var(--text); }
+    em { color: var(--text-dim); }
+    hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--bg-code);
+      color: var(--accent);
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border);
+    }
+    td {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* Code */
+    code {
+      font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+      font-size: 0.88em;
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+      font-size: 0.88rem;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--text-dim); }
+
+    /* Header bar on mobile */
+    .mobile-header {
+      display: none;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      align-items: center;
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="logo">
+      <span class="lambda">λ</span>
+      <span>
+        <div class="name">Clambda</div>
+        <div class="version">v0.8.0</div>
+      </span>
+    </a>
+
+    <h3>Getting Started</h3>
+    <ul>
+      <li><a href="index.html">Overview</a></li>
+      <li><a href="getting-started/README.html">Quick Start</a></li>
+      <li><a href="getting-started/installation.html">Installation</a></li>
+    </ul>
+
+    <h3>Configuration</h3>
+    <ul>
+      <li><a href="configuration/init-lisp.html">init.lisp Guide</a></li>
+    </ul>
+
+    <h3>Architecture</h3>
+    <ul>
+      <li><a href="architecture/index.html">Overview</a></li>
+    </ul>
+
+    <h3>Channels</h3>
+    <ul>
+      <li><a href="channels/index.html">Overview</a></li>
+      <li><a href="channels/telegram.html">Telegram</a></li>
+      <li><a href="channels/irc.html">IRC</a></li>
+    </ul>
+
+    <h3>API &amp; Tools</h3>
+    <ul>
+      <li><a href="api/index.html">HTTP API</a></li>
+      <li><a href="api/tools.html">Built-in Tools</a></li>
+      <li><a href="tools/custom-tools.html">Custom Tools</a></li>
+    </ul>
+
+    <h3>Deployment</h3>
+    <ul>
+      <li><a href="deployment/index.html">Deployment Guide</a></li>
+    </ul>
+
+    <h3>Project</h3>
+    <ul>
+      <li><a href="https://github.com/chrysolambda-ops/clambda" target="_blank">GitHub →</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <h1 id="deployment-guide">Deployment Guide</h1>
+    <p>Running Clambda as a persistent service — surviving reboots, auto-reconnecting, logging everything.</p>
+    <h2 id="basic-run-in-screentmux">Basic: Run in Screen/tmux</h2>
+    <p>The simplest approach: start Clambda in a persistent terminal session.</p>
+    <div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Start a named tmux session</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">tmux</span> new-session <span class="at">-d</span> <span class="at">-s</span> clambda</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># In the session, load Clambda</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">tmux</span> send-keys <span class="at">-t</span> clambda <span class="dt">\</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;sbcl --eval &#39;(ql:quickload :clambda-core)&#39; --eval &#39;(clambda/config:load-user-config)&#39;&quot;</span> <span class="dt">\</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  Enter</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Attach to watch logs</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ex">tmux</span> attach <span class="at">-t</span> clambda</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Detach (keep running)</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="ex">Ctrl+B,</span> D</span></code></pre></div>
+    <hr />
+    <h2 id="recommended-systemd-service">Recommended: systemd Service</h2>
+    <p>Create a systemd unit to start Clambda automatically on boot.</p>
+    <h3 id="create-a-startup-script">1. Create a startup script</h3>
+    <div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> ~/bin/clambda-start.sh <span class="op">&lt;&lt; &#39;EOF&#39;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="st">#!/bin/bash</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="st"># Clambda startup script</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="st">set -euo pipefail</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="st"># Load API keys from environment file</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="st">if [ -f &quot;$HOME/.clambda/env&quot; ]; then</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="st">  set -a</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="st">  source &quot;$HOME/.clambda/env&quot;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="st">  set +a</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="st">fi</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="st"># Guix library path (if applicable)</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="st">if [ -d &quot;$HOME/.guix-profile/lib&quot; ]; then</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="st">  export LD_LIBRARY_PATH=&quot;$HOME/.guix-profile/lib:${LD_LIBRARY_PATH:-}&quot;</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="st">fi</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="st">exec sbcl \</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="st">  --eval &#39;(ql:quickload :clambda-core :silent t)&#39; \</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="st">  --eval &#39;(clambda/config:load-user-config)&#39; \</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="st">  --eval &#39;(loop (sleep 3600))&#39;   # keep SBCL alive</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x ~/bin/clambda-start.sh</span></code></pre></div>
+    <h3 id="create-the-environment-file">2. Create the environment file</h3>
+    <p>Store secrets outside the code:</p>
+    <div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> ~/.clambda/env <span class="op">&lt;&lt; &#39;EOF&#39;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="st">OPENROUTER_API_KEY=sk-or-v1-your-key-here</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="st">ANTHROPIC_API_KEY=sk-ant-your-key-here</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.clambda/env</span></code></pre></div>
+    <h3 id="create-the-systemd-unit">3. Create the systemd unit</h3>
+    <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/.config/systemd/user/</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> ~/.config/systemd/user/clambda.service <span class="op">&lt;&lt; EOF</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="st">[Unit]</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="st">Description=Clambda AI Agent Platform</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="st">After=network-online.target</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="st">Wants=network-online.target</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="st">[Service]</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="st">Type=simple</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="st">WorkingDirectory=%h</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="st">ExecStart=%h/bin/clambda-start.sh</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="st">Restart=on-failure</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="st">RestartSec=30</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="st">StandardOutput=append:%h/logs/clambda.log</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="st">StandardError=append:%h/logs/clambda.log</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="st">Environment=HOME=%h</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="st">[Install]</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="st">WantedBy=default.target</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span></code></pre></div>
+    <h3 id="enable-and-start">4. Enable and start</h3>
+    <div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/logs</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Enable systemd user linger (service starts on boot, not just login)</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="ex">loginctl</span> enable-linger <span class="va">$USER</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Reload systemd and start</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="ex">systemctl</span> <span class="at">--user</span> daemon-reload</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="ex">systemctl</span> <span class="at">--user</span> enable clambda</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="ex">systemctl</span> <span class="at">--user</span> start clambda</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Check status</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="ex">systemctl</span> <span class="at">--user</span> status clambda</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Follow logs</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="ex">journalctl</span> <span class="at">--user</span> <span class="at">-u</span> clambda <span class="at">-f</span></span></code></pre></div>
+    <hr />
+    <h2 id="log-management">Log Management</h2>
+    <p>Clambda emits two kinds of logs:</p>
+    <h3 id="jsonl-structured-log-agent-activity">1. JSONL structured log (agent activity)</h3>
+    <p>Configured in init.lisp:</p>
+    <div class="sourceCode" id="cb6"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(add-hook <span class="dt">&#39;*after-init-hook*</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">lambda</span> ()</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    (start-server :port <span class="dv">18789</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                  :address <span class="st">&quot;127.0.0.1&quot;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                  :log-file (<span class="kw">merge-pathnames</span> <span class="st">&quot;logs/clambda.jsonl&quot;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                                             (<span class="kw">user-homedir-pathname</span>)))))</span></code></pre></div>
+    <p>Query with <code>jq</code>:</p>
+    <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># All LLM requests today</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> ~/logs/clambda.jsonl <span class="kw">|</span> <span class="ex">jq</span> <span class="st">&#39;select(.event == &quot;llm_request&quot;)&#39;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Tool calls in last 100 lines</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span> <span class="at">-100</span> ~/logs/clambda.jsonl <span class="kw">|</span> <span class="ex">jq</span> <span class="st">&#39;select(.event == &quot;tool_call&quot;)&#39;</span></span></code></pre></div>
+    <h3 id="console-log-startup-errors-debug-output">2. Console log (startup, errors, debug output)</h3>
+    <p>Captured by systemd in <code>~/logs/clambda.log</code>:</p>
+    <div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span> <span class="at">-f</span> ~/logs/clambda.log</span></code></pre></div>
+    <h3 id="log-rotation-logrotate">Log rotation (logrotate)</h3>
+    <div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> ~/.config/logrotate/clambda <span class="op">&lt;&lt; &#39;EOF&#39;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="st">/home/YOUR_USER/logs/clambda.log</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="st">/home/YOUR_USER/logs/clambda.jsonl {</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="st">  daily</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="st">  rotate 7</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="st">  compress</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="st">  delaycompress</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="st">  missingok</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="st">  notifempty</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="st">  copytruncate</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Run manually to test</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="ex">logrotate</span> <span class="at">--state</span> ~/.config/logrotate/clambda.state <span class="dt">\</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>          ~/.config/logrotate/clambda</span></code></pre></div>
+    <hr />
+    <h2 id="health-monitoring">Health Monitoring</h2>
+    <p>Use the HTTP <code>/health</code> endpoint as a health probe:</p>
+    <div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Basic health check (no auth required)</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-sf</span> http://localhost:18789/health <span class="kw">&amp;&amp;</span> <span class="bu">echo</span> <span class="st">&quot;OK&quot;</span> <span class="kw">||</span> <span class="bu">echo</span> <span class="st">&quot;DOWN&quot;</span></span></code></pre></div>
+    <h3 id="watchdog-cron-via-clambdas-own-scheduler">Watchdog cron (via Clambda’s own scheduler)</h3>
+    <div class="sourceCode" id="cb11"><pre class="sourceCode lisp"><code class="sourceCode commonlisp"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">;; In init.lisp: watchdog for critical subsystems</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>(<span class="kw">defvar</span><span class="fu"> *last-healthy-t* </span><span class="dv">0</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>(<span class="kw">defun</span><span class="fu"> </span>%health-watchdog ()</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">setf</span> *last-healthy-t* (<span class="kw">get-universal-time</span>))</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">;; Check IRC connection</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">when</span> (<span class="kw">and</span> (clambda/irc:irc-connected-p) (<span class="kw">not</span> (clambda/irc:irc-running-p)))</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">format</span> <span class="kw">t</span> <span class="st">&quot;[watchdog] IRC not running — restarting...~%&quot;</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    (clambda/irc:start-irc))</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  <span class="co">;; Check Telegram</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">unless</span> (clambda/telegram:telegram-running-p)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    (<span class="kw">format</span> <span class="kw">t</span> <span class="st">&quot;[watchdog] Telegram not running — restarting...~%&quot;</span>)</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    (clambda/telegram:start-telegram)))</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>(add-hook <span class="dt">&#39;*after-init-hook*</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>  (<span class="kw">lambda</span> ()</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    (schedule-task <span class="st">&quot;health-watchdog&quot;</span> :every <span class="dv">60</span> <span class="op">#&#39;</span>%health-watchdog</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>                   :description <span class="st">&quot;Restart failed subsystems&quot;</span>)))</span></code></pre></div>
+    <hr />
+    <h2 id="resource-usage">Resource Usage</h2>
+    <p>Clambda’s idle resource footprint is modest:</p>
+    <table>
+    <thead>
+    <tr class="header">
+    <th>Resource</th>
+    <th>Typical idle usage</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr class="odd">
+    <td>Memory (RSS)</td>
+    <td>200–400 MB (SBCL + loaded systems)</td>
+    </tr>
+    <tr class="even">
+    <td>CPU</td>
+    <td>~0% (sleeping threads)</td>
+    </tr>
+    <tr class="odd">
+    <td>Threads</td>
+    <td>~5–8 (polling, IRC, flood, cron, HTTP)</td>
+    </tr>
+    <tr class="even">
+    <td>Disk</td>
+    <td>Minimal (logs only)</td>
+    </tr>
+    </tbody>
+    </table>
+    <p>The bulk of memory is SBCL’s compiled image + loaded Quicklisp libraries. LLM inference happens on the remote LM Studio/Ollama server.</p>
+    <hr />
+    <h2 id="saving-a-core-image-fast-startup">Saving a Core Image (fast startup)</h2>
+    <p>For faster startup, save a preloaded SBCL core:</p>
+    <div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sbcl</span> <span class="at">--eval</span> <span class="st">&#39;(ql:quickload :clambda-core)&#39;</span> <span class="dt">\</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">--eval</span> <span class="st">&#39;(save-lisp-and-die &quot;/home/user/clambda.core&quot; :executable t :purify t)&#39;</span></span></code></pre></div>
+    <p>Then start with:</p>
+    <div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">/home/user/clambda.core</span> <span class="dt">\</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--eval</span> <span class="st">&#39;(clambda/config:load-user-config)&#39;</span> <span class="dt">\</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--eval</span> <span class="st">&#39;(loop (sleep 3600))&#39;</span></span></code></pre></div>
+    <p>Startup time goes from ~30 seconds to ~1 second.</p>
+    <hr />
+    <h2 id="multiple-instances">Multiple Instances</h2>
+    <p>To run multiple Clambda instances (e.g., different agents on different ports):</p>
+    <div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Instance 1: ceo-chryso on port 18789</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="va">CLAMBDA_HOME</span><span class="op">=</span>~/.clambda-ceo <span class="ex">sbcl</span> <span class="at">--load</span> ceo-startup.lisp <span class="kw">&amp;</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Instance 2: researcher on port 18790</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="va">CLAMBDA_HOME</span><span class="op">=</span>~/.clambda-researcher <span class="ex">sbcl</span> <span class="at">--load</span> researcher-startup.lisp <span class="kw">&amp;</span></span></code></pre></div>
+    <p>Each instance has its own <code>CLAMBDA_HOME</code>, <code>init.lisp</code>, and port.</p>
+    <hr />
+    <h2 id="security-checklist">Security Checklist</h2>
+    <ul class="task-list">
+    <li><label><input type="checkbox" /><code>init.lisp</code> has <code>chmod 600</code> (secrets inside)</label></li>
+    <li><label><input type="checkbox" /><code>~/.clambda/env</code> has <code>chmod 600</code></label></li>
+    <li><label><input type="checkbox" />HTTP API uses a strong random bearer token (<code>openssl rand -hex 24</code>)</label></li>
+    <li><label><input type="checkbox" />HTTP API bound to <code>127.0.0.1</code> (not <code>0.0.0.0</code>) unless behind a reverse proxy</label></li>
+    <li><label><input type="checkbox" />Telegram bot has an allowlist configured (not open to all)</label></li>
+    <li><label><input type="checkbox" />IRC <code>allowed-users</code> is set appropriately</label></li>
+    <li><label><input type="checkbox" />SBCL process runs as a non-root user</label></li>
+    <li><label><input type="checkbox" />Logs are not world-readable (<code>chmod 750 ~/logs/</code>)</label></li>
+    </ul>
+
+    <footer>
+      <p>
+        Clambda — Free Software (GPL-3.0).
+        Built with λ and love.
+        <a href="https://github.com/chrysolambda-ops/clambda">Source on GitHub</a>.
+      </p>
+    </footer>
+  </main>
+
+</body>
+</html>
