@@ -639,6 +639,7 @@
                 #:register-tool! #:find-tool #:list-tools
                 #:define-tool #:dispatch-tool-call
                 #:tool-definitions-for-llm
+                #:copy-tools-to-registry
                 #:tool-result #:tool-result-ok #:tool-result-error
                 #:tool-result-value #:format-tool-result)
   (:import-from #:clambda/builtins

@@ -4,10 +4,19 @@
 
 ;;; ── Tool result ──────────────────────────────────────────────────────────────
 
-(defstruct (tool-result (:constructor %make-tool-result))
+(defstruct (tool-result (:constructor %make-tool-result)
+                        (:conc-name tr-))
   "Encapsulates the result of a tool call."
   (ok    t   :type boolean)  ; t = success, nil = error
   (value nil))               ; string output or error description
+
+(defun tool-result-ok-p (result)
+  "Return T if RESULT represents a successful tool call."
+  (tr-ok result))
+
+(defun tool-result-value (result)
+  "Return the payload string for RESULT."
+  (tr-value result))
 
 (defun tool-result-ok (value)
   "Create a successful tool result with VALUE (string)."
@@ -21,7 +30,7 @@
 
 (defun format-tool-result (result)
   "Return the string value of a TOOL-RESULT, prefixed with ERROR: if failed."
-  (if (tool-result-ok result)
+  (if (tool-result-ok-p result)
       (tool-result-value result)
       (format nil "ERROR: ~a" (tool-result-value result))))
 
