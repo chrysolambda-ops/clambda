@@ -450,7 +450,8 @@
    #:*fallback-models*
    #:*heartbeat-interval*
    #:*workspace-inject-files*
-   #:*workspace-inject-refresh-interval*))
+   #:*workspace-inject-refresh-interval*
+   #:*model-supports-vision*))
 
 ;;; ── Telegram Channel ─────────────────────────────────────────────────────────
 ;;;
@@ -744,7 +745,8 @@
                 #:*default-model* #:*default-max-turns*
                 #:*default-stream* #:*log-level* #:*startup-message*
                 #:*workspace-inject-files*
-                #:*workspace-inject-refresh-interval*)
+                #:*workspace-inject-refresh-interval*
+                #:*model-supports-vision*)
   (:import-from #:clawmacs/telegram
                 #:telegram-channel #:make-telegram-channel
                 #:telegram-channel-token #:telegram-channel-allowed-users
@@ -903,6 +905,7 @@
    #:*default-stream* #:*log-level* #:*startup-message*
    #:*workspace-inject-files*
    #:*workspace-inject-refresh-interval*
+   #:*model-supports-vision*
    ;; Telegram channel
    #:telegram-channel #:make-telegram-channel
    #:telegram-channel-token #:telegram-channel-allowed-users
@@ -966,6 +969,7 @@
                 #:*default-stream* #:*log-level* #:*startup-message*
                 #:*workspace-inject-files*
                 #:*workspace-inject-refresh-interval*
+                #:*model-supports-vision*
                 #:describe-options #:*option-registry*
                 #:*clawmacs-home* #:clawmacs-home
                 #:load-user-config)
@@ -1040,6 +1044,7 @@
    #:*default-stream* #:*log-level* #:*startup-message*
    #:*workspace-inject-files*
    #:*workspace-inject-refresh-interval*
+   #:*model-supports-vision*
    #:describe-options #:*option-registry*
    #:*clawmacs-home* #:clawmacs-home
    #:tool-registry #:make-tool-registry

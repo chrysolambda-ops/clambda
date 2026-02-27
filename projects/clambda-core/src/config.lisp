@@ -122,6 +122,10 @@ Useful from init.lisp or the REPL to discover what's configurable."
   :type integer
   :doc "Seconds between workspace injection refresh checks.")
 
+(defoption *model-supports-vision* nil
+  :type boolean
+  :doc "If T, enable vision-capable image analysis tool path.")
+
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 4. Hook System
 ;;;; ─────────────────────────────────────────────────────────────────────────────

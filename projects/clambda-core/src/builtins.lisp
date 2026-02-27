@@ -106,6 +106,24 @@ with 'TTS not available' if no engine is found (graceful no-op)."
 
 ;;; ── exec helper ──────────────────────────────────────────────────────────────
 
+(defun %image-path-or-url-p (s)
+  (and (stringp s)
+       (> (length s) 0)
+       (or (search "http://" s :test #'char-equal)
+           (search "https://" s :test #'char-equal)
+           (probe-file s))))
+
+(defun %encode-image-base64 (path)
+  (when (and path (probe-file path))
+    (multiple-value-bind (out err code)
+        (uiop:run-program (list "/bin/bash" "-c"
+                                (format nil "base64 -w0 ~s" path))
+                          :output '(:string :stripped t)
+                          :error-output '(:string :stripped t)
+                          :ignore-error-status t)
+      (declare (ignore err))
+      (when (zerop code) out))))
+
 (defun run-shell-command (command &key workdir)
   "Run COMMAND in a shell. Return (values stdout stderr exit-code)."
   (let ((cmd (if workdir
@@ -323,6 +341,37 @@ Returns a confirmation or 'TTS not available' if no TTS engine is installed."
                  (:|query| (:|type| "string" :|description| "Search query")
                   :|max_results| (:|type| "integer" :|description| "Maximum results (default 5)"))
                  :|required| #("query")))
+
+  ;; ── image-analyze (vision stub) ──────────────────────────────────────────
+  (clawmacs/tools:register-tool!
+   registry
+   "image_analyze"
+   (lambda (args)
+     (let ((image (gethash "image" args)))
+       (cond
+         ((or (null image) (string= image ""))
+          (clawmacs/tools:tool-result-error "image is required"))
+         ((not (and (boundp 'clawmacs/config::*model-supports-vision*)
+                    clawmacs/config::*model-supports-vision*))
+          (clawmacs/tools:tool-result-ok
+           "Image analysis not available with current model"))
+         ((not (%image-path-or-url-p image))
+          (clawmacs/tools:tool-result-error
+           (format nil "Image not found or invalid URL/path: ~a" image)))
+         (t
+          (let ((encoded (and (not (or (search "http://" image :test #'char-equal)
+                                       (search "https://" image :test #'char-equal)))
+                              (%encode-image-base64 image))))
+            (clawmacs/tools:tool-result-ok
+             (if encoded
+                 (format nil "Vision model enabled; encoded ~d base64 chars and queued image payload for analysis (stub)."
+                         (length encoded))
+                 "Vision model enabled; URL image accepted and queued for analysis (stub).")))))))
+   :description "Analyze an image from path/URL (vision stub)."
+   :parameters '(:|type| "object"
+                 :|properties|
+                 (:|image| (:|type| "string" :|description| "Image path or URL"))
+                 :|required| #("image")))
 
   ;; ── send-message (inter-agent) ───────────────────────────────────────────
   (clawmacs/tools:register-tool!
