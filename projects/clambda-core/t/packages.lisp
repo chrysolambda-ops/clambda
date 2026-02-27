@@ -1,4 +1,5 @@
 ;;;; t/packages.lisp — Test packages for clambda-core
+;;;; Updated in Layer 8: added clambda-core/tests/cron and clambda-core/tests/remote-api
 
 (defpackage #:clambda-core/tests
   (:use #:cl #:clambda)
@@ -59,3 +60,39 @@
   ;; Internal helpers for white-box testing
   ;; clambda/irc::%strip-cr, clambda/irc::%extract-message-body, etc.
   )
+
+;;; ── Layer 8a: Cron scheduler tests ──────────────────────────────────────────
+
+(defpackage #:clambda-core/tests/cron
+  (:use #:cl #:parachute)
+  (:import-from #:clambda/cron
+                #:scheduled-task
+                #:make-scheduled-task
+                #:task-name #:task-kind #:task-interval #:task-fire-at
+                #:task-active-p #:task-description
+                #:task-last-run #:task-last-error #:task-run-count
+                #:schedule-task #:schedule-once
+                #:cancel-task #:find-task #:list-tasks #:clear-tasks
+                #:task-info #:describe-tasks
+                #:*cron-sleep-interval*
+                #:*task-registry*))
+
+;;; ── Layer 8b: Remote Management API tests ────────────────────────────────────
+
+(defpackage #:clambda-core/tests/remote-api
+  (:use #:cl #:parachute)
+  (:import-from #:clambda/http-server
+                #:*api-token*
+                #:check-auth
+                #:*default-port*
+                #:*http-sessions*
+                #:http-session-get
+                #:http-session-create
+                #:http-session-delete
+                #:list-http-sessions
+                #:*server-start-time*
+                #:uptime-seconds)
+  (:import-from #:clambda/cron
+                #:schedule-task #:cancel-task #:find-task
+                #:list-tasks #:clear-tasks #:task-info
+                #:*cron-sleep-interval*))

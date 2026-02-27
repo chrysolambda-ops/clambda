@@ -209,3 +209,99 @@
 ;; (let ((private (merge-pathnames "private.lisp" *clambda-home*)))
 ;;   (when (probe-file private)
 ;;     (load private)))
+
+;;;; ─────────────────────────────────────────────────────────────────────────────
+;;;; § 8. Cron / Scheduled Tasks (Layer 8a)
+;;;; ─────────────────────────────────────────────────────────────────────────────
+;;;;
+;;;; Schedule periodic or one-shot tasks using clambda's built-in scheduler.
+;;;; Tasks run in background threads. Errors are caught and stored in last-error.
+;;;;
+;;;; (schedule-task NAME :every SECONDS FUNCTION &key description)
+;;;; (schedule-once NAME :after SECONDS FUNCTION &key description)
+
+;; Example: Poll your mailbox every 30 minutes
+;; (defun my-check-email ()
+;;   (format t "~&[cron] Checking email...~%")
+;;   ;; ... your email checking logic here
+;;   )
+;;
+;; (schedule-task "check-email" :every (* 30 60) #'my-check-email
+;;                :description "Poll mailbox every 30 minutes")
+
+;; Example: One-shot startup notification (fires 5 seconds after startup)
+;; (schedule-once "startup-ping" :after 5
+;;   (lambda ()
+;;     (format t "~&[cron] Clambda is up and running!~%"))
+;;   :description "One-time startup notification")
+
+;; Example: Hourly summary with an agent
+;; (defvar *summary-session* nil)
+;;
+;; (defun generate-hourly-summary ()
+;;   (unless *summary-session*
+;;     (setf *summary-session*
+;;           (make-session :agent (find-agent "summarizer"))))
+;;   (run-agent *summary-session* "Generate a brief status summary."))
+;;
+;; (schedule-task "hourly-summary" :every 3600 #'generate-hourly-summary
+;;                :description "LLM status summary every hour")
+
+;; Inspect scheduled tasks:
+;; (list-tasks)          ; list all scheduled-task objects
+;; (describe-tasks)      ; human-readable summary to stdout
+;; (cancel-task "name")  ; cancel by name
+;; (clear-tasks)         ; cancel all
+
+;;;; ─────────────────────────────────────────────────────────────────────────────
+;;;; § 9. Remote Management API (Layer 8b)
+;;;; ─────────────────────────────────────────────────────────────────────────────
+;;;;
+;;;; Clambda includes a REST API server for remote management.
+;;;; Set a bearer token to require authentication.
+;;;;
+;;;; Start the API server from init.lisp or manually:
+;;;;   (start-server :port 7474 :address "127.0.0.1")
+;;;;
+;;;; Management endpoints:
+;;;;   GET  /health                          — health check (no auth required)
+;;;;   GET  /api/system                      — system info
+;;;;   GET  /api/agents                      — list registered agents
+;;;;   POST /api/agents/:name/start          — create session for agent
+;;;;   POST /api/agents/:name/message        — send message to agent
+;;;;   GET  /api/agents/:name/history        — session message history
+;;;;   DELETE /api/agents/:name/stop         — terminate agent session
+;;;;   GET  /api/sessions                    — list all sessions
+;;;;   GET  /api/channels                    — list registered channels
+;;;;   GET  /api/tasks                       — list cron tasks
+;;;;
+;;;; Legacy endpoints (no breaking changes from Layer 5):
+;;;;   POST /chat           — synchronous chat
+;;;;   POST /chat/stream    — streaming SSE chat
+;;;;   GET  /agents         — list agents
+;;;;   GET  /sessions       — list sessions
+
+;; Required: set a bearer token (strongly recommended for remote access)
+;; (setf *api-token* "change-me-to-a-random-secret")
+
+;; Optional: start the server automatically on init
+;; (add-hook '*after-init-hook*
+;;           (lambda ()
+;;             (start-server :port 7474 :address "0.0.0.0")))
+
+;; Example curl usage:
+;;
+;; # Health check (no auth)
+;; curl http://localhost:7474/health
+;;
+;; # With auth:
+;; TOKEN="my-secret"
+;; curl -H "Authorization: Bearer $TOKEN" http://localhost:7474/api/system
+;; curl -H "Authorization: Bearer $TOKEN" http://localhost:7474/api/agents
+;; curl -H "Authorization: Bearer $TOKEN" http://localhost:7474/api/tasks
+;;
+;; # Send a message to an agent
+;; curl -X POST -H "Authorization: Bearer $TOKEN" \
+;;      -H "Content-Type: application/json" \
+;;      -d '{"message": "What is 2 + 2?"}' \
+;;      http://localhost:7474/api/agents/my-agent/message

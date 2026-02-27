@@ -8,11 +8,12 @@
 ;;;; the Emacs-style configuration system (Layer 6a),
 ;;;; the Telegram Bot API channel (Layer 6b),
 ;;;; the IRC client channel (Layer 6c),
-;;;; and the Playwright browser control module (Layer 7).
+;;;; the Playwright browser control module (Layer 7),
+;;;; and the cron scheduler + remote management API (Layer 8).
 
 (defsystem "clambda-core"
   :description "Core agent platform architecture in Common Lisp"
-  :version "0.7.0"
+  :version "0.8.0"
   :author "Gensym <gensym@cl-team>"
   :license "AGPL-3.0-or-later"
   :depends-on ("cl-llm"
@@ -40,6 +41,8 @@
                (:file "src/registry")
                (:file "src/subagents")
                (:file "src/channels")
+               ;; Layer 8a: Cron / scheduled task scheduler
+               (:file "src/cron")
                (:file "src/http-server")
                ;; Layer 6a: Emacs-style config system
                (:file "src/config")
@@ -62,4 +65,7 @@
                ;; Layer 6c: IRC tests
                (:file "t/test-irc")
                ;; Layer 7: Browser tests
-               (:file "t/test-browser")))
+               (:file "t/test-browser")
+               ;; Layer 8: Cron + Remote Management API tests
+               (:file "t/test-cron")
+               (:file "t/test-remote-api")))

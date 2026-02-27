@@ -293,22 +293,65 @@
    #:channel-closed-error
    #:channel-timeout-error))
 
+;;; ── Cron / Scheduled Task Scheduler (Layer 8a) ──────────────────────────────
+
+(defpackage #:clambda/cron
+  (:use #:cl)
+  (:export
+   ;; Task struct + constructor
+   #:scheduled-task
+   #:make-scheduled-task
+   ;; Accessors (conc-name task-)
+   #:task-name
+   #:task-kind
+   #:task-interval
+   #:task-fire-at
+   #:task-function
+   #:task-thread
+   #:task-active-p
+   #:task-description
+   #:task-last-run
+   #:task-last-error
+   #:task-run-count
+   ;; Public API
+   #:schedule-task
+   #:schedule-once
+   #:cancel-task
+   #:find-task
+   #:list-tasks
+   #:clear-tasks
+   ;; Introspection
+   #:task-info
+   #:describe-tasks
+   ;; Configuration
+   #:*cron-sleep-interval*
+   ;; Registry (for inspection)
+   #:*task-registry*))
+
 ;;; ── HTTP API Server ──────────────────────────────────────────────────────────
 
 (defpackage #:clambda/http-server
   (:use #:cl)
   (:import-from #:clambda/logging
-                #:log-event #:log-error-event #:*log-file*)
+                #:log-event #:log-error-event #:*log-file* #:*log-enabled*)
   (:import-from #:clambda/session
-                #:session #:make-session #:session-id #:session-messages)
+                #:session #:make-session #:session-id #:session-messages
+                #:session-total-tokens)
+  (:import-from #:clambda/agent
+                #:agent #:agent-name #:agent-role #:agent-model)
   (:import-from #:clambda/registry
                 #:*agent-registry* #:find-agent #:list-agents
-                #:instantiate-agent-spec #:agent-spec-name)
+                #:instantiate-agent-spec #:agent-spec
+                #:agent-spec-name #:agent-spec-role #:agent-spec-model)
   (:import-from #:clambda/loop
                 #:run-agent #:make-loop-options)
   (:import-from #:clambda/channels
                 #:queue-channel #:make-queue-channel
                 #:channel-send #:channel-receive #:channel-poll)
+  (:import-from #:clambda/cron
+                #:list-tasks #:task-info)
+  (:import-from #:cl-llm/protocol
+                #:message-role #:message-content)
   (:export
    ;; Server lifecycle
    #:*default-port*
@@ -318,10 +361,17 @@
    #:restart-server
    ;; Active server instance
    #:*server*
-   ;; Session store (for the HTTP server)
+   #:*server-start-time*
+   #:uptime-seconds
+   ;; Auth
+   #:*api-token*
+   #:check-auth
+   ;; Session store
    #:*http-sessions*
    #:http-session-get
-   #:http-session-create))
+   #:http-session-create
+   #:http-session-delete
+   #:list-http-sessions))
 
 ;;; ── Config system ────────────────────────────────────────────────────────────
 ;;;
@@ -585,11 +635,24 @@
                 #:repl-channel #:make-repl-channel
                 #:queue-channel #:make-queue-channel
                 #:channel-closed-error #:channel-timeout-error)
+  (:import-from #:clambda/cron
+                #:scheduled-task #:make-scheduled-task
+                #:task-name #:task-kind #:task-interval #:task-fire-at
+                #:task-function #:task-thread #:task-active-p
+                #:task-description #:task-last-run #:task-last-error
+                #:task-run-count
+                #:schedule-task #:schedule-once
+                #:cancel-task #:find-task #:list-tasks #:clear-tasks
+                #:task-info #:describe-tasks
+                #:*cron-sleep-interval* #:*task-registry*)
   (:import-from #:clambda/http-server
                 #:*default-port* #:start-server #:stop-server
                 #:server-running-p #:restart-server
-                #:*server* #:*http-sessions*
-                #:http-session-get #:http-session-create)
+                #:*server* #:*server-start-time* #:uptime-seconds
+                #:*api-token* #:check-auth
+                #:*http-sessions*
+                #:http-session-get #:http-session-create
+                #:http-session-delete #:list-http-sessions)
   (:import-from #:clambda/config
                 #:*clambda-home* #:clambda-home
                 #:load-user-config #:user-config-loaded-p
@@ -706,11 +769,24 @@
    #:repl-channel #:make-repl-channel
    #:queue-channel #:make-queue-channel
    #:channel-closed-error #:channel-timeout-error
-   ;; HTTP server
+   ;; Cron scheduler (Layer 8a)
+   #:scheduled-task #:make-scheduled-task
+   #:task-name #:task-kind #:task-interval #:task-fire-at
+   #:task-function #:task-thread #:task-active-p
+   #:task-description #:task-last-run #:task-last-error
+   #:task-run-count
+   #:schedule-task #:schedule-once
+   #:cancel-task #:find-task #:list-tasks #:clear-tasks
+   #:task-info #:describe-tasks
+   #:*cron-sleep-interval* #:*task-registry*
+   ;; HTTP server (Layer 8b)
    #:*default-port* #:start-server #:stop-server
    #:server-running-p #:restart-server
-   #:*server* #:*http-sessions*
+   #:*server* #:*server-start-time* #:uptime-seconds
+   #:*api-token* #:check-auth
+   #:*http-sessions*
    #:http-session-get #:http-session-create
+   #:http-session-delete #:list-http-sessions
    ;; Config system
    #:*clambda-home* #:clambda-home
    #:load-user-config #:user-config-loaded-p
@@ -814,6 +890,15 @@
                 #:browser-navigate #:browser-snapshot #:browser-screenshot
                 #:browser-click #:browser-type #:browser-evaluate
                 #:register-browser-tools #:make-browser-registry)
+  (:import-from #:clambda/cron
+                #:schedule-task #:schedule-once
+                #:cancel-task #:find-task #:list-tasks #:clear-tasks
+                #:task-info #:describe-tasks
+                #:*cron-sleep-interval*)
+  (:import-from #:clambda/http-server
+                #:*api-token* #:start-server #:stop-server
+                #:server-running-p #:restart-server
+                #:*default-port*)
   (:export
    ;; Re-export everything imported so users can (use-package :clambda-user)
    ;; from a downstream package if desired.
@@ -856,4 +941,13 @@
    #:browser-launch #:browser-close #:browser-running-p
    #:browser-navigate #:browser-snapshot #:browser-screenshot
    #:browser-click #:browser-type #:browser-evaluate
-   #:register-browser-tools #:make-browser-registry))
+   #:register-browser-tools #:make-browser-registry
+   ;; Cron scheduler (Layer 8a)
+   #:schedule-task #:schedule-once
+   #:cancel-task #:find-task #:list-tasks #:clear-tasks
+   #:task-info #:describe-tasks
+   #:*cron-sleep-interval*
+   ;; HTTP server management (Layer 8b)
+   #:*api-token* #:start-server #:stop-server
+   #:server-running-p #:restart-server
+   #:*default-port*))

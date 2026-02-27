@@ -521,6 +521,88 @@ npx playwright install chromium   # ~200MB
 
 ---
 
+---
+
+## Layer 8: Cron Scheduler + Remote Management API
+
+### Layer 8a: `clambda/cron`
+
+**File:** `src/cron.lisp`
+**Package:** `clambda/cron`
+**Loaded:** before `clambda/http-server` (http-server imports `list-tasks`, `task-info`)
+
+Thread-based task scheduler with two task kinds: `:periodic` (repeating) and `:once` (one-shot).
+Cooperative cancellation via sleep-interval granularity. Error isolation in task functions.
+
+#### `scheduled-task` struct (`:conc-name task-`)
+
+```
+name, kind, interval, fire-at    — task identity and timing
+function                          — (lambda ()) to call
+thread                            — bt:thread running the task
+active-p                          — NIL → thread exits after current sleep
+description, last-run, last-error, run-count — metadata
+```
+
+#### Threading Model
+
+```
+schedule-task / schedule-once
+  └── bt:make-thread → %periodic-task-loop / %once-task-body
+        loop:
+          %sleep-until target-time in *cron-sleep-interval* chunks
+            (checks active-p on each wake)
+          %run-task-function — catches errors, stores in last-error
+          update fire-at (periodic only)
+          :once → %unregister-task, exit
+```
+
+#### Public API
+
+```lisp
+(schedule-task "name" :every 30 #'fn &key description)   ; periodic
+(schedule-once "name" :after 300 #'fn &key description)  ; one-shot
+(cancel-task "name")         ; → T / NIL; cooperative (up to *cron-sleep-interval*)
+(find-task "name")           ; → scheduled-task or NIL
+(list-tasks)                 ; → list of all active tasks
+(clear-tasks)                ; → count cancelled
+(task-info task)             ; → hash-table (JSON-serializable)
+(describe-tasks &optional stream) ; → human-readable output
+```
+
+### Layer 8b: `clambda/http-server` (updated)
+
+**All Layer 5 endpoints unchanged.** Layer 8b adds:
+
+#### Management Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/health` | none | Server alive, uptime |
+| GET | `/api/system` | ✓ | Version, uptime, log file, counts |
+| GET | `/api/agents` | ✓ | List registered agents |
+| POST | `/api/agents/:name/start` | ✓ | Create/get management session |
+| POST | `/api/agents/:name/message` | ✓ | Send message, get response |
+| GET | `/api/agents/:name/history` | ✓ | Session message history |
+| DELETE | `/api/agents/:name/stop` | ✓ | Delete session |
+| GET | `/api/sessions` | ✓ | All active sessions |
+| GET | `/api/channels` | ✓ | Registered channel configs |
+| GET | `/api/tasks` | ✓ | Cron task list |
+
+#### Auth
+
+`*api-token*` (default NIL = disabled). When set, all protected endpoints require:
+`Authorization: Bearer <token>`
+
+`check-auth` returns NIL on pass, JSON-error string on fail — callers use `return-from` on fail.
+
+#### Session Key Convention
+
+Management API uses session keys `"mgmt:<agent-name>"` in `*http-sessions*`.
+`get-or-create-agent-session` resolves agent from registry and creates session if missing.
+
+---
+
 ## 5. Extension Points for OpenClaw Rewrite
 
 ### What's already implemented (as of Layer 5 Phase 3)
@@ -552,11 +634,12 @@ npx playwright install chromium   # ~200MB
 | Telegram channel plugin | ✅ Done: `clambda/telegram` Layer 6b | — |
 | IRC channel plugin | ✅ Done: `clambda/irc` Layer 6c | — |
 | Web browser control | ✅ Done: `clambda/browser` Layer 7 | — |
+| Cron / scheduled tasks | ✅ Done: `clambda/cron` Layer 8a | — |
+| Remote management API | ✅ Done: `clambda/http-server` Layer 8b | — |
 | Skills system (SKILL.md loading) | Not implemented | High |
 | Discord channel plugin | Not implemented | Medium |
 | Canvas / UI presentation | Not implemented | Low |
 | Node pairing (mobile/devices) | Not implemented | Low |
-| Cron / scheduled tasks | Not implemented | Medium |
 | Multi-model routing | Not implemented | Low |
 
 ### Natural extension points

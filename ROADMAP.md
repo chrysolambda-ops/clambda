@@ -358,6 +358,49 @@ npx playwright install chromium   # ~200MB one-time download
 
 ## What's Left
 
+## ✅ Layer 8 Complete — Cron Scheduler + Remote Management API
+
+All Layer 8 tasks complete as of 2026-02-27:
+
+1. ✅ **`clambda/cron` module** — `src/cron.lisp` (297 lines)
+   - Thread-based scheduler: `:periodic` (every N seconds) and `:once` (one-shot) tasks
+   - Cooperative cancellation via `active-p` flag + `*cron-sleep-interval*` sleep granularity
+   - Public API: `schedule-task`, `schedule-once`, `cancel-task`, `find-task`, `list-tasks`, `clear-tasks`
+   - Introspection: `task-info` (JSON-serializable hash-table), `describe-tasks`
+   - Error isolation: task function errors caught, stored in `task-last-error`, task continues
+   - Integration: `clambda-user` package exports cron API for `init.lisp` use
+   - 52/52 tests pass in `t/test-cron.lisp`
+
+2. ✅ **`clambda/http-server` updated** — Layer 8b management endpoints added
+   - Bearer token authentication (`*api-token*`, `check-auth`)
+   - `GET /health` — health check (no auth required, suitable for load balancers)
+   - `GET /api/system` — version, uptime, log file, agent/session/task counts
+   - `GET /api/agents` — list registered agents
+   - `POST /api/agents/:name/start` — create or retrieve management session for agent
+   - `POST /api/agents/:name/message` — synchronous message dispatch to agent
+   - `GET /api/agents/:name/history` — session message history
+   - `DELETE /api/agents/:name/stop` — terminate agent session
+   - `GET /api/sessions` — list all active sessions
+   - `GET /api/channels` — list registered channel configurations
+   - `GET /api/tasks` — list cron tasks (delegates to `clambda/cron:list-tasks`)
+   - All legacy endpoints from Layer 5 unchanged (`/chat`, `/chat/stream`, `/agents`, `/sessions`)
+   - 29/29 tests pass in `t/test-remote-api.lisp`
+
+3. ✅ **`example-init.lisp` updated** — §8 Cron, §9 Remote API sections with full examples
+
+4. ✅ **`clambda-core.asd` updated** to v0.8.0
+   - `src/cron` loaded before `src/http-server` (dependency order correct)
+   - Test suite updated with `t/test-cron` and `t/test-remote-api`
+
+5. ✅ **`clambda` + `clambda-user` packages updated** — all new symbols re-exported
+
+**Total test count across all packages:**
+- Cron: 52 | Remote API: 29 | Browser: 28 | IRC: 87 | Telegram: 39 = **235 parachute tests, 0 failures**
+
+---
+
+### What's Left
+
 ### For Channel Plugins (Discord, etc.)
 
 1. **Discord channel** — `clambda/channels/discord.lisp`
@@ -369,8 +412,3 @@ npx playwright install chromium   # ~200MB one-time download
    - Parse tool definitions from skill metadata
    - Inject skill instructions into agent system prompt
    - Effort: Medium (2–3 days)
-
-3. **Cron / scheduled tasks** — `clambda/cron`
-   - Periodic agent triggers
-   - Integrate with bordeaux-threads sleep-loop or a proper scheduler
-   - Effort: Small-Medium (1–2 days)
