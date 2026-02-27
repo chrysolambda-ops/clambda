@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>$title$ — Clambda</title>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --bg-card: #161616;
+      --bg-code: #1a1a1a;
+      --border: #2a2a2a;
+      --accent: #f0c040;     /* lambda yellow */
+      --accent2: #8b5cf6;    /* lisp purple */
+      --text: #e0e0e0;
+      --text-dim: #909090;
+      --link: #f0c040;
+      --link-hover: #ffe080;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    nav {
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    nav .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+      text-decoration: none;
+    }
+    nav .logo .lambda {
+      font-size: 2rem;
+      color: var(--accent);
+      font-weight: 700;
+      font-family: monospace;
+    }
+    nav .logo .name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    nav .logo .version {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+    nav h3 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin: 20px 0 8px 0;
+      padding: 0 8px;
+    }
+    nav ul {
+      list-style: none;
+    }
+    nav li a {
+      display: block;
+      padding: 5px 8px;
+      border-radius: 5px;
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all 0.15s;
+    }
+    nav li a:hover, nav li a.active {
+      background: rgba(240,192,64,0.1);
+      color: var(--accent);
+    }
+
+    /* Main content */
+    main {
+      padding: 48px;
+      max-width: 900px;
+    }
+    @media (max-width: 768px) {
+      body { grid-template-columns: 1fr; }
+      nav { display: none; }
+      main { padding: 24px; }
+    }
+
+    /* Typography */
+    h1 { font-size: 2rem; color: var(--text); margin-bottom: 16px; font-weight: 700; }
+    h2 { font-size: 1.4rem; color: var(--text); margin: 40px 0 12px; font-weight: 600;
+         border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    h3 { font-size: 1.1rem; color: var(--text); margin: 28px 0 8px; }
+    h4 { font-size: 1rem; color: var(--text-dim); margin: 20px 0 8px; }
+    p  { margin-bottom: 16px; }
+    ul, ol { margin-bottom: 16px; padding-left: 24px; }
+    li { margin-bottom: 4px; }
+    blockquote {
+      border-left: 3px solid var(--accent);
+      margin: 20px 0;
+      padding: 8px 16px;
+      background: rgba(240,192,64,0.05);
+      color: var(--text-dim);
+      border-radius: 0 6px 6px 0;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { color: var(--link-hover); text-decoration: underline; }
+    strong { color: var(--text); }
+    em { color: var(--text-dim); }
+    hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--bg-code);
+      color: var(--accent);
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border);
+    }
+    td {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* Code */
+    code {
+      font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+      font-size: 0.88em;
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+      font-size: 0.88rem;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--text-dim); }
+
+    /* Header bar on mobile */
+    .mobile-header {
+      display: none;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      align-items: center;
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="../index.html" class="logo">
+      <span class="lambda">λ</span>
+      <span>
+        <div class="name">Clambda</div>
+        <div class="version">v0.8.0</div>
+      </span>
+    </a>
+
+    <h3>Getting Started</h3>
+    <ul>
+      <li><a href="../index.html">Overview</a></li>
+      <li><a href="../getting-started/README.html">Quick Start</a></li>
+      <li><a href="../getting-started/installation.html">Installation</a></li>
+    </ul>
+
+    <h3>Configuration</h3>
+    <ul>
+      <li><a href="../configuration/init-lisp.html">init.lisp Guide</a></li>
+    </ul>
+
+    <h3>Architecture</h3>
+    <ul>
+      <li><a href="../architecture/index.html">Overview</a></li>
+    </ul>
+
+    <h3>Channels</h3>
+    <ul>
+      <li><a href="../channels/index.html">Overview</a></li>
+      <li><a href="../channels/telegram.html">Telegram</a></li>
+      <li><a href="../channels/irc.html">IRC</a></li>
+    </ul>
+
+    <h3>API &amp; Tools</h3>
+    <ul>
+      <li><a href="../api/index.html">HTTP API</a></li>
+      <li><a href="../api/tools.html">Built-in Tools</a></li>
+      <li><a href="../tools/custom-tools.html">Custom Tools</a></li>
+    </ul>
+
+    <h3>Deployment</h3>
+    <ul>
+      <li><a href="../deployment/index.html">Deployment Guide</a></li>
+    </ul>
+
+    <h3>Project</h3>
+    <ul>
+      <li><a href="https://github.com/chrysolambda-ops/clambda" target="_blank">GitHub →</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    $body$
+
+    <footer>
+      <p>
+        Clambda — Free Software (GPL-3.0).
+        Built with λ and love.
+        <a href="https://github.com/chrysolambda-ops/clambda">Source on GitHub</a>.
+      </p>
+    </footer>
+  </main>
+
+</body>
+</html>

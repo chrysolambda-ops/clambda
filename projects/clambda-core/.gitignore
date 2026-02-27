@@ -1,0 +1,23 @@
+# Secrets — never commit credentials
+*.secret
+*.secrets
+.env
+secrets/
+init.lisp
+
+# Node
+node_modules/
+browser/node_modules/
+
+# SBCL/ASDF artifacts
+*.fasl
+*.lx64fsl
+*.dx64fsl
+
+# Docs build output (source in docs/, HTML output built separately for gh-pages)
+docs/_site/
+
+# OS
+.DS_Store
+*~
+\#*\#
