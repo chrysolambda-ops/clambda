@@ -78,6 +78,14 @@ The global *task-lock* is shared — safe for sequential tests."
       (true (task-active-p task))
       (cancel-task "once-test"))))
 
+(define-test "schedule-task: supports :after one-shot compatibility API"
+  (with-clean-registry
+    (let ((task (schedule-task "compat-once" :after 9999 (lambda ()))))
+      (true (typep task 'scheduled-task))
+      (is eq :once (task-kind task))
+      (is = 9999 (task-interval task))
+      (cancel-task "compat-once"))))
+
 ;;; ─────────────────────────────────────────────────────────────────────────────
 ;;; 3. find-task / list-tasks
 ;;; ─────────────────────────────────────────────────────────────────────────────

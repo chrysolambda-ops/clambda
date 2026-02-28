@@ -171,6 +171,19 @@ Returns T on success, signals error on failure."
     (assert (= 0 (clawmacs:session-message-count session)))
     (format t "PASS: messages cleared~%")
 
+    ;; save-session signature/runtime smoke: must accept (session path)
+    (let* ((tmp (merge-pathnames (format nil "clawmacs-session-~d.json" (get-universal-time))
+                                 (uiop:temporary-directory)))
+           (saved (clawmacs:save-session session tmp)))
+      (assert (stringp saved))
+      (assert (probe-file saved))
+      (let ((loaded (clawmacs:load-session agent saved)))
+        (assert (typep loaded 'clawmacs:session))
+        (assert (string= (clawmacs:session-id loaded)
+                         (clawmacs:session-id session))))
+      (delete-file saved)
+      (format t "PASS: save-session/load-session round trip~%"))
+
     (format t "~%Session test PASSED.~%")
     t))
 

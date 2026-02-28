@@ -9,6 +9,9 @@
 ## Index
 
 | # | Date | Category | Summary |
+| 32 | 2026-02-27 | prompt/tool-calling | Small local model often narrates tool use instead of emitting tool calls without an explicit system-level tool policy |
+| 31 | 2026-02-27 | api/compat | `schedule-task` only accepted `:every`+`:function`; compatibility call form with `:after` and trailing function failed with `odd number of &KEY arguments` |
+| 30 | 2026-02-27 | packages | `memory-search` exported from `clawmacs/memory` but not re-exported by top-level `clawmacs` |
 | 29 | 2026-02-27 | runtime/logging | HTTP server startup wrote logs to `logs/clawmacs.jsonl` without creating parent directory |
 | 27 | 2026-02-27 | idiom/parachute | Used `is-true`/`is-false` (don't exist) instead of parachute's `true`/`false` predicates |
 | 28 | 2026-02-27 | packages | Forgot to export new accessor `agent-spec-p` and `agent-turn-error-cause` — test import failed until added |
@@ -351,3 +354,34 @@ design struct slot names and public API names independently; use `:conc-name` to
 **Fix:** Call `(ensure-directories-exist clawmacs/logging:*log-file*)` in `start-server` after selecting the log path.
 **Lesson:** When defaulting to on-disk log files, always ensure parent directories exist at startup.
 **Tags:** #runtime #logging #filesystem #http-server
+
+## Category: packages
+
+### #30 — 2026-02-27
+**What:** `memory-search` existed and was exported from `clawmacs/memory`, but was not imported/exported by the top-level `clawmacs` package.
+**Why:** Top-level convenience package re-export list drifted from sub-package public API.
+**Fix:** Added `#:memory-search` to `clawmacs` `:import-from` and `:export` lists in `src/packages.lisp`.
+**Lesson:** Any user-facing function added to a sub-package must be mirrored in the top-level convenience package during the same change.
+**Tags:** #packages #exports #api-surface
+
+---
+
+## Category: api/compat
+
+### #31 — 2026-02-27
+**What:** Calling `(schedule-task "name" :after 9999 (lambda () nil))` failed with `odd number of &KEY arguments`.
+**Why:** `schedule-task` used a strict `&key` lambda list (`:every`, `:function`, `:description`) and did not support the compatibility form (`:after` + trailing function).
+**Fix:** Reworked `schedule-task` to parse `&rest` arguments manually, support both `:every` (periodic) and `:after` (one-shot), and accept a trailing positional function designator for compatibility.
+**Lesson:** For public APIs with historical/interop call styles, avoid rigid `&key` signatures when compatibility forms are expected; parse mixed forms explicitly and validate conflicts (`:every` vs `:after`).
+**Tags:** #api #compatibility #keywords #cron
+
+---
+
+## Category: prompt/tool-calling
+
+### #32 — 2026-02-27
+**What:** Small local model (`google/gemma-3-4b`) often described intended tool usage in plain text instead of emitting tool calls.
+**Why:** Base system prompt did not include an explicit, strict tool-calling policy for tool-capable turns.
+**Fix:** Added a structured tool-use policy hint to the injected system message when tools are available, and made request payload explicit with `"tool_choice": "auto"` when tools are sent.
+**Lesson:** Smaller models need direct behavioral constraints in the system prompt for function-calling reliability; also make tool-calling request fields explicit in API payloads.
+**Tags:** #prompting #tool-calling #llm #reliability
