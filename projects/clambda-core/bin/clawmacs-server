@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# clawmacs-server — Start Clawmacs headless server (HTTP API + channels + SWANK)
+#
+# Usage:
+#   ./bin/clawmacs-server              # defaults: port 18800, SWANK 4005
+#   ./bin/clawmacs-server --port 9090  # custom HTTP port
+#   ./bin/clawmacs-server --no-swank   # skip SWANK server
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PORT="${CLAWMACS_PORT:-18800}"
+SWANK_PORT="${CLAWMACS_SWANK_PORT:-4005}"
+ADDRESS="${CLAWMACS_ADDRESS:-127.0.0.1}"
+NO_SWANK=0
+NO_CHANNELS=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --port)       PORT="$2"; shift 2 ;;
+    --swank-port) SWANK_PORT="$2"; shift 2 ;;
+    --address)    ADDRESS="$2"; shift 2 ;;
+    --no-swank)   NO_SWANK=1; shift ;;
+    --no-channels) NO_CHANNELS=1; shift ;;
+    -h|--help)
+      echo "Usage: clawmacs-server [--port PORT] [--swank-port PORT] [--address ADDR] [--no-swank] [--no-channels]"
+      exit 0 ;;
+    *) echo "Unknown option: $1" >&2; exit 1 ;;
+  esac
+done
+
+# Required for cl+ssl / dexador on Debian/Guix
+export LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:${HOME}/.guix-profile/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+# ASDF source registry — find our systems
+export CL_SOURCE_REGISTRY="${SCRIPT_DIR}//:${SCRIPT_DIR}/../cl-llm//"
+
+echo "╔══════════════════════════════════════════╗"
+echo "║  Clawmacs Server                         ║"
+echo "║  HTTP: ${ADDRESS}:${PORT}                ║"
+if [[ $NO_SWANK -eq 0 ]]; then
+echo "║  SWANK: localhost:${SWANK_PORT}          ║"
+fi
+echo "╚══════════════════════════════════════════╝"
+
+SWANK_FORM=""
+if [[ $NO_SWANK -eq 0 ]]; then
+  SWANK_FORM="(clawmacs:start-swank :port ${SWANK_PORT})"
+fi
+
+CHANNELS_FORM=""
+if [[ $NO_CHANNELS -eq 0 ]]; then
+  CHANNELS_FORM="(clawmacs:start-all-channels)"
+fi
+
+exec sbcl --noinform --disable-debugger \
+  --eval '(require :asdf)' \
+  --eval "(asdf:load-system \"clawmacs-core\")" \
+  --eval "(clawmacs/config:load-init)" \
+  --eval "(clawmacs:start-server :port ${PORT} :address \"${ADDRESS}\")" \
+  --eval "${SWANK_FORM:-nil}" \
+  --eval "${CHANNELS_FORM:-nil}" \
+  --eval '(format t "~&[clawmacs] Server running. Ctrl-C to stop.~%")' \
+  --eval '(handler-case (loop (sleep 3600)) (sb-sys:interactive-interrupt () (format t "~&[clawmacs] Shutting down.~%") (clawmacs:stop-server) (sb-ext:exit :code 0)))'

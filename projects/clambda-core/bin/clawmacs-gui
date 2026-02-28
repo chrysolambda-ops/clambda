@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# clawmacs-gui — Start Clawmacs McCLIM graphical interface
+#
+# Usage:
+#   ./bin/clawmacs-gui                              # defaults: LM Studio, gemma-3-4b
+#   ./bin/clawmacs-gui --model google/gemma-3-12b   # different model
+#
+# Requires: McCLIM (via Quicklisp), an X11 or Wayland display
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+MODEL="${CLAWMACS_MODEL:-google/gemma-3-4b}"
+AGENT_NAME="${CLAWMACS_AGENT_NAME:-clawmacs}"
+AGENT_ROLE="${CLAWMACS_AGENT_ROLE:-assistant}"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --model)      MODEL="$2"; shift 2 ;;
+    --name)       AGENT_NAME="$2"; shift 2 ;;
+    --role)       AGENT_ROLE="$2"; shift 2 ;;
+    -h|--help)
+      echo "Usage: clawmacs-gui [--model MODEL] [--name NAME] [--role ROLE]"
+      exit 0 ;;
+    *) echo "Unknown option: $1" >&2; exit 1 ;;
+  esac
+done
+
+# Check for display
+if [[ -z "${DISPLAY:-}" ]] && [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
+  echo "Error: No DISPLAY or WAYLAND_DISPLAY set. McCLIM needs a graphical session." >&2
+  exit 1
+fi
+
+# Required for cl+ssl / dexador
+export LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:${HOME}/.guix-profile/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+# ASDF source registry — need clambda-core, cl-llm, and clambda-gui
+export CL_SOURCE_REGISTRY="${SCRIPT_DIR}//:${SCRIPT_DIR}/../cl-llm//:${SCRIPT_DIR}/../clambda-gui//"
+
+exec sbcl --noinform --disable-debugger \
+  --eval '(require :asdf)' \
+  --eval '(asdf:load-system "clawmacs-gui")' \
+  --eval "(clawmacs/config:load-init)" \
+  --eval "(clawmacs-gui:run-gui :model \"${MODEL}\" :name \"${AGENT_NAME}\" :role \"${AGENT_ROLE}\")" \
+  --eval '(sb-ext:exit :code 0)'

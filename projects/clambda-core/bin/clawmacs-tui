@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# clawmacs-tui — Start Clawmacs terminal chat UI
+#
+# Usage:
+#   ./bin/clawmacs-tui                              # defaults: LM Studio, gemma-3-4b
+#   ./bin/clawmacs-tui --model google/gemma-3-12b   # different model
+#   ./bin/clawmacs-tui --base-url http://localhost:11434/v1 --model llama3.1:8b  # Ollama
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+BASE_URL="${CLAWMACS_LLM_BASE_URL:-http://192.168.1.189:1234/v1}"
+API_KEY="${CLAWMACS_LLM_API_KEY:-lm-studio}"
+MODEL="${CLAWMACS_MODEL:-google/gemma-3-4b}"
+SYSTEM_PROMPT=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --base-url) BASE_URL="$2"; shift 2 ;;
+    --api-key)  API_KEY="$2"; shift 2 ;;
+    --model)    MODEL="$2"; shift 2 ;;
+    --system-prompt) SYSTEM_PROMPT="$2"; shift 2 ;;
+    -h|--help)
+      echo "Usage: clawmacs-tui [--base-url URL] [--api-key KEY] [--model MODEL] [--system-prompt PROMPT]"
+      exit 0 ;;
+    *) echo "Unknown option: $1" >&2; exit 1 ;;
+  esac
+done
+
+# Required for cl+ssl / dexador
+export LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:${HOME}/.guix-profile/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+# ASDF source registry
+export CL_SOURCE_REGISTRY="${SCRIPT_DIR}//:${SCRIPT_DIR}/../cl-llm//"
+
+SYSTEM_PROMPT_FORM=""
+if [[ -n "$SYSTEM_PROMPT" ]]; then
+  # Escape double quotes for Lisp string
+  ESCAPED=$(printf '%s' "$SYSTEM_PROMPT" | sed 's/"/\\"/g')
+  SYSTEM_PROMPT_FORM=":system-prompt \"${ESCAPED}\""
+fi
+
+exec sbcl --noinform --disable-debugger \
+  --eval '(require :asdf)' \
+  --eval '(asdf:load-system "cl-tui")' \
+  --eval "(cl-tui:run-tui :base-url \"${BASE_URL}\" :api-key \"${API_KEY}\" :model \"${MODEL}\" ${SYSTEM_PROMPT_FORM})" \
+  --eval '(sb-ext:exit :code 0)'
