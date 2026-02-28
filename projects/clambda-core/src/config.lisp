@@ -134,6 +134,38 @@ Useful from init.lisp or the REPL to discover what's configurable."
   :type boolean
   :doc "If T, enable vision-capable image analysis tool path.")
 
+(defoption *embedding-model* "text-embedding-nomic-embed-text-v1.5"
+  :type string
+  :doc "Embedding model used by memory_search vector retrieval.")
+
+(defoption *embedding-base-url* "http://192.168.1.189:1234/v1"
+  :type string
+  :doc "Base URL for embeddings endpoint (OpenAI-compatible /v1/embeddings).")
+
+(defoption *vision-model* nil
+  :type (or null string)
+  :doc "Optional model override used specifically for image_analyze.")
+
+(defoption *vision-base-url* nil
+  :type (or null string)
+  :doc "Optional base URL override used specifically for image_analyze.")
+
+(defoption *embedding-base-url* "http://192.168.1.189:1234/v1"
+  :type string
+  :doc "Base URL for the embeddings API endpoint.")
+
+(defoption *embedding-model* "text-embedding-nomic-embed-text-v1.5"
+  :type string
+  :doc "Model name for text embedding requests.")
+
+(defoption *vision-model* nil
+  :type (or null string)
+  :doc "Model to use for image analysis. When nil, uses *default-model*.")
+
+(defoption *vision-base-url* nil
+  :type (or null string)
+  :doc "Base URL for vision model. When nil, uses the default LLM endpoint.")
+
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 4. Hook System
 ;;;; ─────────────────────────────────────────────────────────────────────────────

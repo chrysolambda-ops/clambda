@@ -25,6 +25,7 @@
                "uiop"
                "dexador"
                "cl-ppcre"
+               "cl-base64"
                "bordeaux-threads"
                "hunchentoot"
                ;; Layer 6c: IRC raw socket + TLS

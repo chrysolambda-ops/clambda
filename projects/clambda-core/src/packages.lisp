@@ -453,7 +453,15 @@
    #:*heartbeat-interval*
    #:*workspace-inject-files*
    #:*workspace-inject-refresh-interval*
-   #:*model-supports-vision*))
+   #:*model-supports-vision*
+   #:*embedding-model* #:*embedding-base-url*
+   #:*vision-model* #:*vision-base-url*
+   #:*embedding-model* #:*embedding-base-url*
+   #:*vision-model* #:*vision-base-url*
+   #:*embedding-base-url*
+   #:*embedding-model*
+   #:*vision-model*
+   #:*vision-base-url*))
 
 ;;; ── Telegram Channel ─────────────────────────────────────────────────────────
 ;;;
@@ -702,7 +710,9 @@
                 #:*default-context-window* #:*context-compaction-keep-last-messages*
                 #:*log-level* #:*startup-message* #:*fallback-models*
                 #:*heartbeat-interval* #:*workspace-inject-files*
-                #:*workspace-inject-refresh-interval* #:*model-supports-vision*)
+                #:*workspace-inject-refresh-interval* #:*model-supports-vision*
+                #:*embedding-base-url* #:*embedding-model*
+                #:*vision-model* #:*vision-base-url*)
   (:import-from #:clawmacs/conditions
                 #:clawmacs-error #:agent-error #:session-error
                 #:tool-not-found #:tool-execution-error
@@ -768,7 +778,11 @@
                 #:*default-stream* #:*log-level* #:*startup-message*
                 #:*workspace-inject-files*
                 #:*workspace-inject-refresh-interval*
-                #:*model-supports-vision*)
+                #:*model-supports-vision*
+                #:*embedding-model* #:*embedding-base-url*
+                #:*vision-model* #:*vision-base-url*
+                #:*embedding-model* #:*embedding-base-url*
+                #:*vision-model* #:*vision-base-url*)
   (:import-from #:clawmacs/telegram
                 #:telegram-channel #:make-telegram-channel
                 #:telegram-channel-token #:telegram-channel-allowed-users
@@ -874,6 +888,10 @@
    #:*log-level* #:*startup-message* #:*fallback-models*
    #:*heartbeat-interval* #:*workspace-inject-files*
    #:*workspace-inject-refresh-interval* #:*model-supports-vision*
+   #:*embedding-model* #:*embedding-base-url*
+   #:*vision-model* #:*vision-base-url*
+   #:*embedding-base-url* #:*embedding-model*
+   #:*vision-model* #:*vision-base-url*
    ;; Conditions
    #:clawmacs-error #:agent-error #:session-error
    #:tool-not-found

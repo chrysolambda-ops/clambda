@@ -106,23 +106,54 @@ with 'TTS not available' if no engine is found (graceful no-op)."
 
 ;;; ── exec helper ──────────────────────────────────────────────────────────────
 
-(defun %image-path-or-url-p (s)
+(defun %url-p (s)
   (and (stringp s)
        (> (length s) 0)
        (or (search "http://" s :test #'char-equal)
-           (search "https://" s :test #'char-equal)
+           (search "https://" s :test #'char-equal))))
+
+(defun %image-path-or-url-p (s)
+  (and (stringp s)
+       (> (length s) 0)
+       (or (%url-p s)
            (probe-file s))))
+
+(defun %read-file-octets (path)
+  (with-open-file (in path :direction :input :element-type '(unsigned-byte 8))
+    (let* ((size (file-length in))
+           (buf (make-array size :element-type '(unsigned-byte 8))))
+      (read-sequence buf in)
+      buf)))
+
+(defun %path->mime-type (path)
+  (let ((type (and path (pathname-type path))))
+    (cond
+      ((and type (string-equal type "png")) "image/png")
+      ((and type (or (string-equal type "jpg") (string-equal type "jpeg"))) "image/jpeg")
+      ((and type (string-equal type "gif")) "image/gif")
+      ((and type (string-equal type "webp")) "image/webp")
+      (t "image/png"))))
 
 (defun %encode-image-base64 (path)
   (when (and path (probe-file path))
-    (multiple-value-bind (out err code)
-        (uiop:run-program (list "/bin/bash" "-c"
-                                (format nil "base64 -w0 ~s" path))
-                          :output '(:string :stripped t)
-                          :error-output '(:string :stripped t)
-                          :ignore-error-status t)
-      (declare (ignore err))
-      (when (zerop code) out))))
+    (cl-base64:usb8-array-to-base64-string (%read-file-octets path))))
+
+(defun %config-value (name)
+  (ignore-errors
+    (let* ((pkg (find-package '#:clawmacs/config))
+           (sym (and pkg (find-symbol name pkg))))
+      (and sym (boundp sym) (symbol-value sym)))))
+
+(defun %resolve-vision-client-settings ()
+  (let ((vision-base (%config-value "*VISION-BASE-URL*"))
+        (vision-model (%config-value "*VISION-MODEL*"))
+        (default-model (%config-value "*DEFAULT-MODEL*"))
+        (telegram-base (ignore-errors
+                         (let* ((pkg (find-package '#:clawmacs/telegram))
+                                (sym (and pkg (find-symbol "*TELEGRAM-LLM-BASE-URL*" pkg))))
+                           (and sym (boundp sym) (symbol-value sym))))))
+    (values (or vision-base telegram-base "http://192.168.1.189:1234/v1")
+            (or vision-model default-model))))
 
 (defun run-shell-command (command &key workdir)
   "Run COMMAND in a shell. Return (values stdout stderr exit-code)."
@@ -342,35 +373,69 @@ Returns a confirmation or 'TTS not available' if no TTS engine is installed."
                   :|max_results| (:|type| "integer" :|description| "Maximum results (default 5)"))
                  :|required| #("query")))
 
-  ;; ── image-analyze (vision stub) ──────────────────────────────────────────
+  ;; ── image-analyze (vision) ──────────────────────────────────────────
   (clawmacs/tools:register-tool!
    registry
    "image_analyze"
    (lambda (args)
-     (let ((image (gethash "image" args)))
+     (let ((image (gethash "image" args))
+           (prompt (or (gethash "prompt" args)
+                       "Describe this image in detail.")))
        (cond
          ((or (null image) (string= image ""))
           (clawmacs/tools:tool-result-error "image is required"))
          ((not (and (boundp 'clawmacs/config::*model-supports-vision*)
                     clawmacs/config::*model-supports-vision*))
-          (clawmacs/tools:tool-result-ok
-           "Image analysis not available with current model"))
+          (clawmacs/tools:tool-result-error
+           "Image analysis disabled: set clawmacs/config::*model-supports-vision* to T and configure a vision-capable model."))
          ((not (%image-path-or-url-p image))
           (clawmacs/tools:tool-result-error
            (format nil "Image not found or invalid URL/path: ~a" image)))
          (t
-          (let ((encoded (and (not (or (search "http://" image :test #'char-equal)
-                                       (search "https://" image :test #'char-equal)))
-                              (%encode-image-base64 image))))
-            (clawmacs/tools:tool-result-ok
-             (if encoded
-                 (format nil "Vision model enabled; encoded ~d base64 chars and queued image payload for analysis (stub)."
-                         (length encoded))
-                 "Vision model enabled; URL image accepted and queued for analysis (stub).")))))))
-   :description "Analyze an image from path/URL (vision stub)."
+          (handler-case
+              (multiple-value-bind (base-url model)
+                  (%resolve-vision-client-settings)
+                (unless (and model (not (string= model "")))
+                  (error "No vision/default model configured. Set *vision-model* or *default-model*."))
+                (let* ((client (cl-llm:make-client :base-url base-url
+                                                   :api-key "lm-studio"
+                                                   :model model))
+                       (image-url (if (%url-p image)
+                                      image
+                                      (let ((encoded (%encode-image-base64 image)))
+                                        (unless encoded
+                                          (error "Failed to encode image: ~a" image))
+                                        (format nil "data:~a;base64,~a"
+                                                (%path->mime-type image)
+                                                encoded))))
+                       (content (list
+                                 (let ((txt (make-hash-table :test #'equal)))
+                                   (setf (gethash "type" txt) "text")
+                                   (setf (gethash "text" txt) prompt)
+                                   txt)
+                                 (let ((img (make-hash-table :test #'equal))
+                                       (img-url (make-hash-table :test #'equal)))
+                                   (setf (gethash "type" img) "image_url")
+                                   (setf (gethash "url" img-url) image-url)
+                                   (setf (gethash "image_url" img) img-url)
+                                   img)))
+                       (response (cl-llm:chat client
+                                              (list (cl-llm:user-message content))
+                                              :model model))
+                       (choice (first (cl-llm:response-choices response)))
+                       (msg (and choice (cl-llm:choice-message choice)))
+                       (answer (and msg (cl-llm:message-content msg))))
+                  (if answer
+                      (clawmacs/tools:tool-result-ok answer)
+                      (clawmacs/tools:tool-result-error "Vision model returned no content."))))
+            (error (e)
+              (clawmacs/tools:tool-result-error
+               (format nil "image_analyze failed: ~a" e))))))))
+   :description "Analyze an image using a vision-capable model."
    :parameters '(:|type| "object"
                  :|properties|
-                 (:|image| (:|type| "string" :|description| "Image path or URL"))
+                 (:|image| (:|type| "string" :|description| "Image file path or URL")
+                  :|prompt| (:|type| "string" :|description| "Analysis prompt (default: describe the image)"))
                  :|required| #("image")))
 
   ;; ── send-message (inter-agent) ───────────────────────────────────────────
