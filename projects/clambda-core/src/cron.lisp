@@ -153,40 +153,82 @@ Sleeps until fire-at, runs function once, then removes itself."
 ;;;; § 5. Public API
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 
-(defun schedule-task (name &key every function description)
-  "Schedule FUNCTION to run every EVERY seconds, with the given NAME.
+(defun schedule-task (name &rest args)
+  "Schedule a task with NAME.
 
-NAME        — string identifier (must be unique; replaces any existing task).
-:EVERY      — interval in seconds (real number).
-:FUNCTION   — a (lambda ()) or function designator.
-:DESCRIPTION — optional string documentation.
+Supports two modes:
 
-The task fires immediately after EVERY seconds, then repeats indefinitely.
-Cancel with (CANCEL-TASK name).
+  Periodic:
+    (schedule-task name :every <seconds> :function fn [:description str])
 
-Example:
-  (schedule-task \"check-email\" :every 1800 #'check-email
-                 :description \"Poll mailbox every 30 minutes\")"
+  One-shot (compat):
+    (schedule-task name :after <seconds> :function fn [:description str])
+    (schedule-task name :after <seconds> fn [:description str])
+
+When :AFTER is supplied, delegates to SCHEDULE-ONCE.
+When :EVERY is supplied, creates a repeating periodic task.
+:EVERY and :AFTER are mutually exclusive."
   (check-type name string)
-  (assert every () ":EVERY interval is required for schedule-task")
-  (assert function () ":FUNCTION is required for schedule-task")
-  ;; Cancel any existing task with same name
-  (cancel-task name)
-  (let* ((task (make-scheduled-task
-                :name        name
-                :kind        :periodic
-                :interval    every
-                :fire-at     (+ (get-universal-time) (round every))
-                :function    function
-                :active-p    t
-                :description description
-                :run-count   0)))
-    (%register-task task)
-    (setf (task-thread task)
-          (bt:make-thread
-           (lambda () (%periodic-task-loop task))
-           :name (format nil "cron:~a" name)))
-    task))
+  (let ((every nil)
+        (after nil)
+        (function nil)
+        (description nil)
+        (tail args))
+    ;; Parse mixed positional/keyword args.
+    ;; Accept a trailing positional function for convenience:
+    ;;   (schedule-task "x" :after 5 (lambda () ...))
+    (loop :while tail
+          :for key = (first tail)
+          :do
+             (cond
+               ;; Positional trailing function designator.
+               ((and (null (rest tail))
+                     (typep key '(or function symbol)))
+                (setf function key
+                      tail nil))
+               ((keywordp key)
+                (unless (rest tail)
+                  (error "Keyword ~s requires a value in schedule-task." key))
+                (let ((val (second tail)))
+                  (case key
+                    (:every       (setf every val))
+                    (:after       (setf after val))
+                    (:function    (setf function val))
+                    (:description (setf description val))
+                    (otherwise
+                     (error "Unknown keyword ~s in schedule-task." key))))
+                (setf tail (cddr tail)))
+               (t
+                (error "Invalid schedule-task argument: ~s" key))))
+
+    (when (and every after)
+      (error "schedule-task accepts either :EVERY or :AFTER, not both."))
+    (when (null function)
+      (error ":FUNCTION is required for schedule-task."))
+
+    (cond
+      (after
+       (schedule-once name :after after :function function :description description))
+      (every
+       ;; Cancel any existing task with same name
+       (cancel-task name)
+       (let* ((task (make-scheduled-task
+                     :name        name
+                     :kind        :periodic
+                     :interval    every
+                     :fire-at     (+ (get-universal-time) (round every))
+                     :function    function
+                     :active-p    t
+                     :description description
+                     :run-count   0)))
+         (%register-task task)
+         (setf (task-thread task)
+               (bt:make-thread
+                (lambda () (%periodic-task-loop task))
+                :name (format nil "cron:~a" name)))
+         task))
+      (t
+       (error "schedule-task requires either :EVERY or :AFTER.")))))
 
 (defun schedule-once (name &key after function description)
   "Schedule FUNCTION to run once after AFTER seconds, with the given NAME.

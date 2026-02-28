@@ -647,19 +647,25 @@
                 #:agent #:make-agent
                 #:agent-name #:agent-display-name #:agent-emoji #:agent-theme
                 #:agent-role #:agent-model
+                #:agent-workspace #:default-agent-workspace
                 #:agent-workspace-path #:agent-system-prompt
-                #:agent-client #:agent-tool-registry)
+                #:agent-client #:agent-tool-registry
+                #:agent-effective-system-prompt
+                #:agent-with-tools)
   (:import-from #:clawmacs/session
                 #:session #:make-session
                 #:session-id #:session-agent #:session-messages
+                #:session-metadata #:session-created-at
                 #:session-add-message #:session-clear-messages
-                #:session-message-count #:session-total-tokens
+                #:session-message-count #:session-last-message
+                #:session-total-tokens
                 #:save-session #:load-session)
   (:import-from #:clawmacs/tools
                 #:tool-registry #:make-tool-registry
                 #:register-tool! #:find-tool #:list-tools
                 #:define-tool #:dispatch-tool-call
                 #:tool-definitions-for-llm
+                #:schema-plist->ht
                 #:copy-tools-to-registry
                 #:tool-result #:tool-result-ok #:tool-result-error
                 #:tool-result-value #:format-tool-result)
@@ -682,7 +688,7 @@
                 #:memory-entry-path #:memory-entry-content
                 #:workspace-memory #:workspace-memory-entries
                 #:workspace-memory-path
-                #:load-workspace-memory #:search-memory
+                #:load-workspace-memory #:search-memory #:memory-search
                 #:memory-context-string)
   (:import-from #:clawmacs/conditions
                 #:clawmacs-error #:agent-error #:session-error
@@ -799,8 +805,11 @@
    #:agent #:make-agent
    #:agent-name #:agent-display-name #:agent-emoji #:agent-theme
    #:agent-role #:agent-model
+   #:agent-workspace #:default-agent-workspace
    #:agent-workspace-path #:agent-system-prompt
    #:agent-client #:agent-tool-registry
+   #:agent-effective-system-prompt
+   #:agent-with-tools
    ;; Session
    #:session #:make-session
    #:session-id #:session-agent #:session-messages
@@ -834,7 +843,7 @@
    #:memory-entry-path #:memory-entry-content
    #:workspace-memory #:workspace-memory-entries
    #:workspace-memory-path
-   #:load-workspace-memory #:search-memory
+   #:load-workspace-memory #:search-memory #:memory-search
    #:memory-context-string
    ;; Conditions
    #:clawmacs-error #:agent-error #:session-error

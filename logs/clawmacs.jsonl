@@ -1,0 +1,2 @@
+{"timestamp":"2026-02-28T02:36:32Z","event_type":"server_start","port":19999,"address":"127.0.0.1"}
+{"timestamp":"2026-02-28T02:36:32Z","event_type":"llm_request","agent":"test","model":"google/gemma-3-4b","message_count":2,"tools_count":9}
