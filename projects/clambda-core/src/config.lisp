@@ -150,22 +150,6 @@ Useful from init.lisp or the REPL to discover what's configurable."
   :type (or null string)
   :doc "Optional base URL override used specifically for image_analyze.")
 
-(defoption *embedding-base-url* "http://192.168.1.189:1234/v1"
-  :type string
-  :doc "Base URL for the embeddings API endpoint.")
-
-(defoption *embedding-model* "text-embedding-nomic-embed-text-v1.5"
-  :type string
-  :doc "Model name for text embedding requests.")
-
-(defoption *vision-model* nil
-  :type (or null string)
-  :doc "Model to use for image analysis. When nil, uses *default-model*.")
-
-(defoption *vision-base-url* nil
-  :type (or null string)
-  :doc "Base URL for vision model. When nil, uses the default LLM endpoint.")
-
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 4. Hook System
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -443,7 +427,21 @@ Example startup:
       (t
        (format t "~&[clawmacs] Loading ~A ...~%" (namestring path))
        (handler-case
-           (let ((*package* (find-package '#:clawmacs-user)))
+           (let* ((user-pkg (find-package '#:clawmacs-user))
+                  (config-pkg (find-package '#:clawmacs/config))
+                  (*package* user-pkg))
+             ;; Ensure option vars resolve to clawmacs/config symbols inside
+             ;; CLAWMACS-USER (and are proclaimed SPECIAL) before reading init.
+             (dolist (entry *option-registry*)
+               (let* ((opt-sym (car entry))
+                      (name (symbol-name opt-sym))
+                      (cfg-sym (nth-value 0 (find-symbol name config-pkg)))
+                      (usr-sym (nth-value 0 (find-symbol name user-pkg))))
+                 (when cfg-sym
+                   (when (and usr-sym (not (eq usr-sym cfg-sym)))
+                     (ignore-errors (unintern usr-sym user-pkg)))
+                   (import cfg-sym user-pkg)
+                   (proclaim `(special ,cfg-sym)))))
              (load path :verbose nil :print nil)
              ;; Success
              (setf *user-config-loaded* t)

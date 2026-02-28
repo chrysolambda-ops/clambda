@@ -468,13 +468,7 @@
    #:*workspace-inject-refresh-interval*
    #:*model-supports-vision*
    #:*embedding-model* #:*embedding-base-url*
-   #:*vision-model* #:*vision-base-url*
-   #:*embedding-model* #:*embedding-base-url*
-   #:*vision-model* #:*vision-base-url*
-   #:*embedding-base-url*
-   #:*embedding-model*
-   #:*vision-model*
-   #:*vision-base-url*))
+   #:*vision-model* #:*vision-base-url*))
 
 ;;; ── Telegram Channel ─────────────────────────────────────────────────────────
 ;;;
@@ -819,8 +813,6 @@
                 #:*workspace-inject-refresh-interval*
                 #:*model-supports-vision*
                 #:*embedding-model* #:*embedding-base-url*
-                #:*vision-model* #:*vision-base-url*
-                #:*embedding-model* #:*embedding-base-url*
                 #:*vision-model* #:*vision-base-url*)
   (:import-from #:clawmacs/telegram
                 #:telegram-channel #:make-telegram-channel
@@ -938,8 +930,6 @@
    #:*heartbeat-interval* #:*workspace-inject-files*
    #:*workspace-inject-refresh-interval* #:*model-supports-vision*
    #:*embedding-model* #:*embedding-base-url*
-   #:*vision-model* #:*vision-base-url*
-   #:*embedding-base-url* #:*embedding-model*
    #:*vision-model* #:*vision-base-url*
    ;; Conditions
    #:clawmacs-error #:agent-error #:session-error

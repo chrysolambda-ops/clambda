@@ -2,6 +2,10 @@
 
 (in-package #:clawmacs/loop)
 
+(declaim (special clawmacs/config::*fallback-models*
+                  clawmacs/config::*default-context-window*
+                  clawmacs/config::*context-compaction-keep-last-messages*))
+
 ;;; ── Dynamic hooks ────────────────────────────────────────────────────────────
 
 (defvar *on-tool-call* nil
@@ -303,6 +307,56 @@ Returns a list of TOOL-CALL structs, or NIL."
        (member (cl-llm/conditions:http-error-status condition)
                '(429 500 502 503 504))))
 
+(defun %alternation-template-error-p (condition)
+  (and (typep condition 'cl-llm/conditions:http-error)
+       (= 400 (cl-llm/conditions:http-error-status condition))
+       (let ((body (ignore-errors (cl-llm/conditions:http-error-body condition))))
+         (and (stringp body)
+              (or (search "roles must alternate user/assistant" body :test #'char-equal)
+                  (search "Conversation roles must alternate" body :test #'char-equal))))))
+
+(defun %normalize-messages-for-strict-alternation (messages)
+  "Convert MESSAGE roles to a user/assistant alternating sequence.
+Used as a fallback for strict prompt templates that reject system/tool roles."
+  (let ((out '())
+        (expect :user)
+        (system-prefix nil))
+    ;; Fold system messages into a prefix for the first user turn.
+    (dolist (m messages)
+      (when (eq (cl-llm/protocol:message-role m) :system)
+        (let ((content (or (cl-llm/protocol:message-content m) "")))
+          (setf system-prefix (if system-prefix
+                                  (format nil "~a~%~%~a" system-prefix content)
+                                  content)))))
+    (dolist (m messages)
+      (let* ((role (cl-llm/protocol:message-role m))
+             (content (or (cl-llm/protocol:message-content m) ""))
+             (normalized-role (if (eq role :assistant) :assistant :user))
+             (normalized-content
+               (if (and (eq normalized-role :user) system-prefix)
+                   (prog1 (format nil "[System context]\n~a\n\n~a" system-prefix content)
+                     (setf system-prefix nil))
+                   content)))
+        (when (> (length normalized-content) 0)
+          (if (eq normalized-role expect)
+              (progn
+                (push (if (eq normalized-role :assistant)
+                          (cl-llm/protocol:assistant-message normalized-content)
+                          (cl-llm/protocol:user-message normalized-content))
+                      out)
+                (setf expect (if (eq expect :user) :assistant :user)))
+              ;; Merge consecutive same-role messages to preserve alternation.
+              (when out
+                (let* ((prev (car out))
+                       (prev-role (cl-llm/protocol:message-role prev))
+                       (prev-content (or (cl-llm/protocol:message-content prev) ""))
+                       (merged (format nil "~a\n\n~a" prev-content normalized-content)))
+                  (setf (car out)
+                        (if (eq prev-role :assistant)
+                            (cl-llm/protocol:assistant-message merged)
+                            (cl-llm/protocol:user-message merged)))))))))
+    (nreverse out)))
+
 (defun %chat-with-fallbacks (client messages &key model tools stream callback)
   "Call cl-llm chat/chat-stream with fallback model routing on retryable failures."
   (let* ((fallbacks (or (and (boundp 'clawmacs/config::*fallback-models*)
@@ -318,11 +372,20 @@ Returns a list of TOOL-CALL structs, or NIL."
                   (when (not (equal m (car (last models))))
                     (format *error-output* "~&[clawmacs/loop] retryable error, trying fallback model: ~a~%" m)))
                 (cl-llm/conditions:http-error (e)
-                  (if (%retryable-http-error-p e)
-                      (when (not (equal m (car (last models))))
-                        (format *error-output* "~&[clawmacs/loop] HTTP ~a on model ~a, trying fallback.~%"
-                                (cl-llm/conditions:http-error-status e) m))
-                      (error e)))))
+                  (cond
+                    ((%retryable-http-error-p e)
+                     (when (not (equal m (car (last models))))
+                       (format *error-output* "~&[clawmacs/loop] HTTP ~a on model ~a, trying fallback.~%"
+                               (cl-llm/conditions:http-error-status e) m)))
+                    ((%alternation-template-error-p e)
+                     (let ((normalized (%normalize-messages-for-strict-alternation messages)))
+                       (when normalized
+                         (format *error-output* "~&[clawmacs/loop] model ~a enforces strict user/assistant alternation; retrying with normalized history.~%" m)
+                         (return (if stream
+                                     (cl-llm:chat-stream client normalized callback :model m :tools nil)
+                                     (cl-llm:chat client normalized :model m :tools nil))))))
+                    (t
+                     (error e))))))
     ;; Last model attempt without swallowing non-retryable conditions.
     (let ((last-model (or (car (last models)) model)))
       (if stream

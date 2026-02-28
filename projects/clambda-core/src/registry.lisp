@@ -6,6 +6,9 @@
 
 (in-package #:clawmacs/registry)
 
+(declaim (special clawmacs/config::*heartbeat-interval*
+                  clawmacs/config::*default-max-turns*))
+
 ;;; ── Agent Spec ───────────────────────────────────────────────────────────────
 
 (defstruct (agent-spec (:conc-name agent-spec-))
