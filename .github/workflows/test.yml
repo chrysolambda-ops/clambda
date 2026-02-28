@@ -1,0 +1,38 @@
+name: test
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  sbcl-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SBCL and tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sbcl curl
+
+      - name: Install Quicklisp
+        run: |
+          curl -O https://beta.quicklisp.org/quicklisp.lisp
+          sbcl --non-interactive \
+               --load quicklisp.lisp \
+               --eval '(quicklisp-quickstart:install :path "~/quicklisp")' \
+               --eval '(ql:add-to-init-file)' \
+               --quit
+
+      - name: Load and test clawmacs-core
+        run: |
+          sbcl --non-interactive \
+               --load ~/quicklisp/setup.lisp \
+               --eval '(push #P"'"'"${GITHUB_WORKSPACE}/projects/clambda-core/'"'"' asdf:*central-registry*)' \
+               --eval '(push #P"'"'"${GITHUB_WORKSPACE}/projects/cl-llm/'"'"' asdf:*central-registry*)' \
+               --eval '(asdf:load-system :clawmacs-core)' \
+               --eval '(asdf:test-system :clawmacs-core)' \
+               --quit
