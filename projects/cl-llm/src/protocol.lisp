@@ -155,7 +155,9 @@
     ;; Tools
     (when tools
       (setf (gethash "tools" ht)
-            (map 'vector #'tool-definition->ht tools)))
+            (map 'vector #'tool-definition->ht tools))
+      ;; Be explicit for smaller models / local providers.
+      (setf (gethash "tool_choice" ht) "auto"))
     ht))
 
 ;;; ── Deserialization ──────────────────────────────────────────────────────────

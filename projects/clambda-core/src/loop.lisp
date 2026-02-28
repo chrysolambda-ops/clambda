@@ -179,11 +179,22 @@ The LLM is asked to return pure JSON. If parsing fails, returns NIL."
   (let* ((agent (session-agent session))
          (sys-prompt (clawmacs/agent:agent-effective-system-prompt agent))
          (history (clawmacs/session:session-messages session))
-         (mem-context (%agent-memory-context agent)))
+         (mem-context (%agent-memory-context agent))
+         (registry (clawmacs/agent:agent-tool-registry agent))
+         (tool-hint
+          (if (and registry (not (endp (clawmacs/tools:list-tools registry))))
+              (concatenate
+               'string
+               "\n\nTool-use policy (strict):\n"
+               "- If the user asks to use a tool or the task requires tool data/actions, you MUST emit a tool call via function calling.\n"
+               "- Do NOT describe tool usage in plain text when a tool call is appropriate.\n"
+               "- Prefer concise, valid arguments that match each tool schema exactly.\n"
+               "- After tool results arrive, continue with the next tool call or final answer.\n")
+              "")))
     (cons (cl-llm/protocol:system-message
            (if (and mem-context (> (length mem-context) 0))
-               (concatenate 'string mem-context sys-prompt)
-               sys-prompt))
+               (concatenate 'string mem-context sys-prompt tool-hint)
+               (concatenate 'string sys-prompt tool-hint)))
           history)))
 
 (defun handle-tool-calls (session registry tool-calls verbose &optional opts)
