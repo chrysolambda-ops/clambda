@@ -105,7 +105,7 @@
   (:import-from #:cl-tui/commands
                 #:handle-command #:command-p)
   (:import-from #:cl-llm
-                #:make-client #:chat-stream
+                #:make-client
                 #:user-message #:assistant-message)
   (:export
    #:run

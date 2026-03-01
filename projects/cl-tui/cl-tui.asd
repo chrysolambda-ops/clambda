@@ -6,6 +6,7 @@
   :author "Gensym <gensym@cl-team>"
   :license "AGPL-3.0-or-later"
   :depends-on ("cl-llm"
+               "clawmacs-core"
                "alexandria"
                "cl-ppcre")
   :serial t

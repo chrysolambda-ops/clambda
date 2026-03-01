@@ -9,6 +9,8 @@ exec sbcl --noinform \
   --eval "(require :asdf)" \
   --eval "(asdf:clear-source-registry)" \
   --eval "(asdf:initialize-source-registry)" \
-  --eval "(asdf:load-system :cl-tui)" \
+  --eval "(ql:quickload :clawmacs-core :silent t)" \
+  --eval "(clawmacs/config:load-user-config)" \
+  --eval "(ql:quickload :cl-tui :silent t)" \
   --eval "(cl-tui:run-tui)" \
   --eval "(sb-ext:exit)"
