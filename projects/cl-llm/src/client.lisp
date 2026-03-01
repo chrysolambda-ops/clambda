@@ -9,21 +9,35 @@
   (base-url        nil :type string)
   (api-key         "not-needed" :type string)
   (model           nil :type (or null string))
-  (default-options nil))  ; instance of request-options or nil
+  (default-options nil)   ; instance of request-options or nil
+  (api-type        :openai :type (member :openai :anthropic)))
 
-(defun make-client (&key base-url api-key model default-options)
+(defun make-client (&key base-url api-key model default-options (api-type :openai))
   "Create a new LLM client.
 
 BASE-URL is the endpoint root, e.g. \"http://localhost:11434/v1\".
 API-KEY defaults to \"not-needed\" (suitable for local models).
 MODEL is the default model name.
-DEFAULT-OPTIONS is an optional REQUEST-OPTIONS struct."
+DEFAULT-OPTIONS is an optional REQUEST-OPTIONS struct.
+API-TYPE is :OPENAI (default) or :ANTHROPIC."
   (assert base-url () "BASE-URL is required")
   (%make-client
    :base-url        (string-right-trim "/" base-url)
    :api-key         (or api-key "not-needed")
    :model           model
-   :default-options default-options))
+   :default-options default-options
+   :api-type        api-type))
+
+(defun make-anthropic-client (&key api-key model)
+  "Create a client configured for the Anthropic Messages API.
+
+API-KEY — your Anthropic API key (starts with sk-ant-).
+MODEL   — default model, e.g. \"claude-opus-4-6\"."
+  (%make-client
+   :base-url "https://api.anthropic.com"
+   :api-key  (or api-key "not-needed")
+   :model    model
+   :api-type :anthropic))
 
 ;;; Predefined providers
 (defun make-ollama-client (&key (host "http://localhost:11434") model)
@@ -44,7 +58,9 @@ DEFAULT-OPTIONS is an optional REQUEST-OPTIONS struct."
 ;;; ── Helpers ──────────────────────────────────────────────────────────────────
 
 (defun chat-url (client)
-  (format nil "~a/chat/completions" (client-base-url client)))
+  (if (eq (client-api-type client) :anthropic)
+      (format nil "~a/v1/messages" (client-base-url client))
+      (format nil "~a/chat/completions" (client-base-url client))))
 
 (defun effective-options (client options)
   "Merge client defaults with per-request options."
@@ -65,16 +81,24 @@ OPTIONS — a REQUEST-OPTIONS struct (optional).
 TOOLS — list of TOOL-DEFINITION structs (optional).
 
 Returns a COMPLETION-RESPONSE."
-  (let* ((effective-model (or model (client-model client)))
+  (let* ((api-type        (client-api-type client))
+         (effective-model (or model (client-model client)))
          (effective-opts  (effective-options client options))
-         (request-ht      (cl-llm/protocol::build-request-ht
-                           effective-model messages effective-opts tools))
+         (anthropic-p     (eq api-type :anthropic))
+         (request-ht      (if anthropic-p
+                              (cl-llm/protocol::build-anthropic-request-ht
+                               effective-model messages effective-opts tools)
+                              (cl-llm/protocol::build-request-ht
+                               effective-model messages effective-opts tools)))
          (body-str        (com.inuoe.jzon:stringify request-ht))
          (response-str    (cl-llm/http:post-json
                            (chat-url client)
                            (client-api-key client)
-                           body-str)))
-    (cl-llm/protocol::parse-response response-str)))
+                           body-str
+                           :anthropic-p anthropic-p)))
+    (if anthropic-p
+        (cl-llm/protocol::parse-anthropic-response response-str)
+        (cl-llm/protocol::parse-response response-str))))
 
 ;;; ── Streaming chat ───────────────────────────────────────────────────────────
 
@@ -84,10 +108,15 @@ Returns a COMPLETION-RESPONSE."
 
 CALLBACK is called with each TEXT-DELTA string as it arrives.
 Returns the full accumulated text string when done."
-  (let* ((effective-model (or model (client-model client)))
+  (let* ((api-type        (client-api-type client))
+         (anthropic-p     (eq api-type :anthropic))
+         (effective-model (or model (client-model client)))
          (effective-opts  (effective-options client options))
-         (request-ht      (cl-llm/protocol::build-request-ht
-                           effective-model messages effective-opts tools))
+         (request-ht      (if anthropic-p
+                              (cl-llm/protocol::build-anthropic-request-ht
+                               effective-model messages effective-opts tools)
+                              (cl-llm/protocol::build-request-ht
+                               effective-model messages effective-opts tools)))
          ;; Add stream:true
          (_ (setf (gethash "stream" request-ht) t))
          (body-str        (com.inuoe.jzon:stringify request-ht))
@@ -98,13 +127,22 @@ Returns the full accumulated text string when done."
      (client-api-key client)
      body-str
      (lambda (line)
-       (cl-llm/streaming:parse-sse-line
-        line
-        (lambda (delta)
-          (when delta
-            (write-string delta accumulated)
-            (when callback
-              (funcall callback delta)))))))
+       (if anthropic-p
+           (cl-llm/streaming:parse-anthropic-sse-line
+            line
+            (lambda (delta)
+              (when delta
+                (write-string delta accumulated)
+                (when callback
+                  (funcall callback delta)))))
+           (cl-llm/streaming:parse-sse-line
+            line
+            (lambda (delta)
+              (when delta
+                (write-string delta accumulated)
+                (when callback
+                  (funcall callback delta)))))))
+     :anthropic-p anthropic-p)
     (get-output-stream-string accumulated)))
 
 ;;; ── Convenience ──────────────────────────────────────────────────────────────

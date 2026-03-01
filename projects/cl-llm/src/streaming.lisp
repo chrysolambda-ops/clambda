@@ -60,3 +60,49 @@ Also returns a thunk to retrieve the accumulated string.
    :model model
    :options options
    :tools tools))
+
+;;; ── Anthropic SSE parsing ─────────────────────────────────────────────────
+
+(defun parse-anthropic-sse-line (line callback)
+  "Parse a single Anthropic SSE line and call CALLBACK with text delta or NIL.
+
+Anthropic SSE events we care about:
+  event: content_block_delta
+  data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"...\"}}
+
+  event: message_stop
+  data: {\"type\":\"message_stop\"}
+
+We ignore event: lines and only process data: lines."
+  (cond
+    ;; Empty line → SSE separator
+    ((= (length line) 0) nil)
+    ;; event: lines → ignore (we parse data: lines instead)
+    ((and (>= (length line) 6)
+          (string= line "event:" :end1 6))
+     nil)
+    ;; data: lines
+    ((and (> (length line) 6)
+          (string= line "data: " :end1 6))
+     (let ((json-str (subseq line 6)))
+       (handler-case
+           (let* ((obj   (com.inuoe.jzon:parse json-str))
+                  (etype (gethash "type" obj)))
+             (cond
+               ;; Text delta
+               ((string= etype "content_block_delta")
+                (let* ((delta (gethash "delta" obj))
+                       (dtype (when delta (gethash "type" delta)))
+                       (text  (when (and delta (string= dtype "text_delta"))
+                                (gethash "text" delta))))
+                  (funcall callback text)))
+               ;; message_stop — signal end (call with nil)
+               ((string= etype "message_stop")
+                (funcall callback nil))
+               ;; All other event types → ignore
+               (t nil)))
+         (error ()
+           ;; Malformed chunk — ignore silently
+           nil))))
+    ;; Other lines → ignore
+    (t nil)))

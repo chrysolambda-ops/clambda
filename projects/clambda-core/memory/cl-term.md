@@ -1,0 +1,1 @@
+Created a new Common Lisp project named cl-term. It’s a terminal emulator with xterm feature parity, version 0.1.0, authored by Gensym and licensed under GPL-3.0. Dependencies are cffi and bordeaux-threads.

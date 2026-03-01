@@ -41,6 +41,11 @@ Defaults to LM Studio local endpoint. Override in init.lisp:
 (defvar *telegram-llm-api-key* "lm-studio"
   "LLM API key for the Telegram channel agent.")
 
+(defvar *telegram-llm-api-type* :openai
+  "API type for the Telegram channel LLM client.
+Use :OPENAI (default) for OpenAI-compatible APIs (OpenRouter, LM Studio, etc.)
+Use :ANTHROPIC for the direct Anthropic Messages API.")
+
 (defvar *telegram-system-prompt*
   "You are a helpful AI assistant accessible via Telegram. \
 Keep responses concise and suitable for a chat interface."
@@ -263,14 +268,19 @@ Includes personality from *TELEGRAM-SYSTEM-PROMPT*, tool listing, workspace file
   "Build a default Clawmacs agent for Telegram.
 
 Client:  *TELEGRAM-LLM-BASE-URL* + *TELEGRAM-LLM-API-KEY* + *DEFAULT-MODEL*.
+         Uses *TELEGRAM-LLM-API-TYPE* to select :OPENAI or :ANTHROPIC.
 Tools:   builtin registry (exec, read_file, write_file, list_dir, web_fetch, tts, eval_lisp, etc.).
 Prompt:  dynamically built by BUILD-TELEGRAM-SYSTEM-PROMPT (workspace files + tool listing).
 
 Users can override any of these vars in init.lisp before starting the channel."
-  (let* ((client   (cl-llm:make-client
-                    :base-url *telegram-llm-base-url*
-                    :api-key  *telegram-llm-api-key*
-                    :model    clawmacs/config:*default-model*))
+  (let* ((client   (if (eq *telegram-llm-api-type* :anthropic)
+                       (cl-llm:make-anthropic-client
+                        :api-key *telegram-llm-api-key*
+                        :model   clawmacs/config:*default-model*)
+                       (cl-llm:make-client
+                        :base-url *telegram-llm-base-url*
+                        :api-key  *telegram-llm-api-key*
+                        :model    clawmacs/config:*default-model*)))
          (registry (clawmacs/builtins:make-builtin-registry))
          (prompt   (%build-telegram-system-prompt registry)))
     (clawmacs/agent:make-agent

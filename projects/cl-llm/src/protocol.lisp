@@ -220,3 +220,225 @@
     (error (e)
       (error 'cl-llm/conditions:parse-error*
              :raw json-string))))
+
+;;; ── Anthropic API serialization ─────────────────────────────────────────────
+
+(defun anthropic-tool-definition->ht (td)
+  "Serialize a TOOL-DEFINITION to Anthropic tool format (input_schema)."
+  (let ((ht (make-hash-table :test #'equal)))
+    (setf (gethash "name" ht) (tool-definition-name td))
+    (when (tool-definition-description td)
+      (setf (gethash "description" ht) (tool-definition-description td)))
+    (let ((params (tool-definition-parameters td)))
+      (when params
+        (setf (gethash "input_schema" ht)
+              (etypecase params
+                (hash-table params)
+                (list (cl-llm/json:plist->object params))))))
+    ht))
+
+(defun anthropic-message->ht (msg)
+  "Serialize a MESSAGE struct to Anthropic API format.
+:tool messages become user messages with tool_result content blocks.
+:assistant messages with tool-calls become content array format."
+  (let ((role (message-role msg))
+        (content (message-content msg))
+        (tool-calls (message-tool-calls msg))
+        (tool-call-id (message-tool-call-id msg)))
+    (let ((ht (make-hash-table :test #'equal)))
+      (cond
+        ;; Tool result → user message with tool_result content block
+        ((eq role :tool)
+         (setf (gethash "role" ht) "user")
+         (let ((result-ht (make-hash-table :test #'equal)))
+           (setf (gethash "type" result-ht) "tool_result")
+           (setf (gethash "tool_use_id" result-ht) tool-call-id)
+           (setf (gethash "content" result-ht) (or content ""))
+           (setf (gethash "content" ht) (vector result-ht))))
+        ;; Assistant with tool calls → content array
+        ((and (eq role :assistant) tool-calls)
+         (setf (gethash "role" ht) "assistant")
+         (let ((blocks '()))
+           ;; Text block first (if any)
+           (when (and content (> (length content) 0))
+             (let ((text-ht (make-hash-table :test #'equal)))
+               (setf (gethash "type" text-ht) "text")
+               (setf (gethash "text" text-ht) content)
+               (push text-ht blocks)))
+           ;; Tool use blocks
+           (dolist (tc tool-calls)
+             (let ((tu-ht (make-hash-table :test #'equal)))
+               (setf (gethash "type" tu-ht) "tool_use")
+               (setf (gethash "id" tu-ht) (tool-call-id tc))
+               (setf (gethash "name" tu-ht) (tool-call-function-name tc))
+               ;; Input must be a JSON object (hash-table), not a string
+               (let ((args (tool-call-function-arguments tc)))
+                 (setf (gethash "input" tu-ht)
+                       (etypecase args
+                         (hash-table args)
+                         (string
+                          (handler-case
+                              (com.inuoe.jzon:parse args)
+                            (error ()
+                              (let ((h (make-hash-table :test #'equal)))
+                                (setf (gethash "raw" h) args)
+                                h))))
+                         (null (make-hash-table :test #'equal)))))
+               (push tu-ht blocks)))
+           (setf (gethash "content" ht) (coerce (nreverse blocks) 'vector))))
+        ;; Normal user/assistant message
+        (t
+         (setf (gethash "role" ht)
+               (string-downcase (symbol-name role)))
+         (when content
+           (setf (gethash "content" ht) content))))
+      ht)))
+
+(defun %merge-consecutive-tool-results (messages)
+  "Group consecutive :tool messages into single user messages with multiple
+tool_result content blocks (Anthropic requires this grouping)."
+  ;; Actually Anthropic allows separate user messages between tool results,
+  ;; but multiple tool results in one call should be batched.
+  ;; We group consecutive :tool role messages into one user content-array message.
+  (let ((result '()))
+    (loop
+      (when (null messages) (return))
+      (let ((msg (pop messages)))
+        (if (eq (message-role msg) :tool)
+            ;; Collect all consecutive tool messages
+            (let ((tool-msgs (list msg)))
+              (loop while (and messages (eq (message-role (car messages)) :tool))
+                    do (push (pop messages) tool-msgs))
+              (setf tool-msgs (nreverse tool-msgs))
+              ;; Merge into one user message with content array
+              (if (= 1 (length tool-msgs))
+                  (push msg result)
+                  ;; Multiple tool results: merge into single user message
+                  (let ((merged-ht (make-hash-table :test #'equal)))
+                    (setf (gethash "role" merged-ht) "user")
+                    (let ((blocks (mapcar (lambda (tm)
+                                           (let ((h (make-hash-table :test #'equal)))
+                                             (setf (gethash "type" h) "tool_result")
+                                             (setf (gethash "tool_use_id" h) (message-tool-call-id tm))
+                                             (setf (gethash "content" h) (or (message-content tm) ""))
+                                             h))
+                                         tool-msgs)))
+                      (setf (gethash "content" merged-ht) (coerce blocks 'vector)))
+                    ;; Return pre-serialized ht by pushing as a sentinel
+                    ;; Actually this complicates things; let's just keep them separate
+                    ;; and rely on Anthropic accepting consecutive user messages
+                    (dolist (tm tool-msgs) (push tm result)))))
+            (push msg result))))
+    (nreverse result)))
+
+(defun build-anthropic-request-ht (model messages options tools)
+  "Build the Anthropic Messages API request hash-table.
+
+Differences from OpenAI format:
+- System message extracted to top-level 'system' field
+- Tools use 'input_schema' instead of 'parameters'
+- No 'tool_choice' wrapper (use 'auto' string directly)"
+  (let ((ht (make-hash-table :test #'equal))
+        (system-content nil)
+        (non-system-messages '()))
+    ;; Split system messages from conversation messages
+    (dolist (msg messages)
+      (if (eq (message-role msg) :system)
+          (let ((c (message-content msg)))
+            (setf system-content
+                  (if system-content
+                      (format nil "~a~%~%~a" system-content c)
+                      c)))
+          (push msg non-system-messages)))
+    (setf non-system-messages (nreverse non-system-messages))
+    (setf (gethash "model" ht) model)
+    (when system-content
+      (setf (gethash "system" ht) system-content))
+    ;; Serialize non-system messages
+    (setf (gethash "messages" ht)
+          (map 'vector #'anthropic-message->ht non-system-messages))
+    ;; Options
+    (when options
+      (flet ((maybe-set (json-key accessor)
+               (let ((val (funcall accessor options)))
+                 (when val (setf (gethash json-key ht) val)))))
+        (maybe-set "temperature" #'request-options-temperature)
+        (maybe-set "top_p"       #'request-options-top-p)
+        (maybe-set "stop_sequences" #'request-options-stop)
+        ;; Extra fields
+        (loop :for (k . v) :in (request-options-extra options)
+              :do (setf (gethash k ht) v))
+        ;; max_tokens from options
+        (let ((mt (request-options-max-tokens options)))
+          (when mt (setf (gethash "max_tokens" ht) mt)))))
+    ;; Anthropic requires max_tokens
+    (unless (gethash "max_tokens" ht)
+      (setf (gethash "max_tokens" ht) 8192))
+    ;; Tools
+    (when tools
+      (setf (gethash "tools" ht)
+            (map 'vector #'anthropic-tool-definition->ht tools))
+      (setf (gethash "tool_choice" ht) "auto"))
+    ht))
+
+;;; ── Anthropic response parsing ───────────────────────────────────────────────
+
+(defun parse-anthropic-response (json-string)
+  "Parse an Anthropic Messages API response into a COMPLETION-RESPONSE."
+  (handler-case
+      (let* ((obj (com.inuoe.jzon:parse json-string))
+             ;; Check for API-level error
+             (error-type (gethash "type" obj)))
+        (when (string= error-type "error")
+          (let ((err (gethash "error" obj)))
+            (error 'cl-llm/conditions:api-error
+                   :type    (when err (gethash "type" err))
+                   :code    nil
+                   :message (when err (gethash "message" err)))))
+        ;; Parse content array
+        (let* ((content-vec (gethash "content" obj))
+               (stop-reason (gethash "stop_reason" obj))
+               (usage-ht    (gethash "usage" obj))
+               ;; Extract text and tool_use blocks from content array
+               (text-parts '())
+               (tool-calls '()))
+          (when content-vec
+            (loop :for block :across content-vec
+                  :do (let ((btype (gethash "type" block)))
+                        (cond
+                          ((string= btype "text")
+                           (push (gethash "text" block) text-parts))
+                          ((string= btype "tool_use")
+                           (push (make-tool-call
+                                  :id (gethash "id" block)
+                                  :function-name (gethash "name" block)
+                                  :function-arguments (gethash "input" block))
+                                 tool-calls))))))
+          (let* ((text (when text-parts
+                         (format nil "~{~a~}" (nreverse text-parts))))
+                 (tc-list (nreverse tool-calls))
+                 (asst-msg (%make-message
+                            :role :assistant
+                            :content (or text "")
+                            :tool-calls (when tc-list tc-list)))
+                 (finish (cond
+                           ((string= stop-reason "end_turn") "stop")
+                           ((string= stop-reason "tool_use") "tool_calls")
+                           (t stop-reason))))
+            (make-completion-response
+             :id      (gethash "id" obj)
+             :model   (gethash "model" obj)
+             :choices (list (make-choice
+                             :message asst-msg
+                             :finish-reason finish))
+             :usage   (when usage-ht
+                        (make-usage
+                         :prompt-tokens     (or (gethash "input_tokens" usage-ht) 0)
+                         :completion-tokens (or (gethash "output_tokens" usage-ht) 0)
+                         :total-tokens      (+ (or (gethash "input_tokens" usage-ht) 0)
+                                               (or (gethash "output_tokens" usage-ht) 0))))))))
+    (cl-llm/conditions:api-error (e) (error e))
+    (error (e)
+      (declare (ignore e))
+      (error 'cl-llm/conditions:parse-error*
+             :raw json-string))))

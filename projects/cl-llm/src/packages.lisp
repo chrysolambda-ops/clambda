@@ -84,6 +84,8 @@
   (:export
    #:post-json
    #:post-json-stream
+   #:make-headers
+   #:make-anthropic-headers
    ;; Retry configuration
    #:*max-retries*
    #:*retry-base-delay-seconds*))
@@ -101,10 +103,12 @@
    ;; Client struct
    #:client
    #:make-client
+   #:make-anthropic-client
    #:client-base-url
    #:client-api-key
    #:client-model
    #:client-default-options
+   #:client-api-type
    ;; Main API
    #:chat
    #:chat-stream
@@ -118,6 +122,7 @@
                 #:stream-error*)
   (:export
    #:parse-sse-line
+   #:parse-anthropic-sse-line
    #:parse-sse-stream
    #:make-chunk-collector
    #:stream-to-string))
@@ -140,8 +145,8 @@
 (defpackage #:cl-llm
   (:use #:cl)
   (:import-from #:cl-llm/client
-                #:client #:make-client
-                #:client-base-url #:client-api-key #:client-model
+                #:client #:make-client #:make-anthropic-client
+                #:client-base-url #:client-api-key #:client-model #:client-api-type
                 #:chat #:chat-stream #:simple-chat #:with-client)
   (:import-from #:cl-llm/protocol
                 #:message #:system-message #:user-message
@@ -172,8 +177,8 @@
                 #:stream-to-string)
   (:export
    ;; Client
-   #:client #:make-client
-   #:client-base-url #:client-api-key #:client-model
+   #:client #:make-client #:make-anthropic-client
+   #:client-base-url #:client-api-key #:client-model #:client-api-type
    #:chat #:chat-stream #:simple-chat #:with-client
    ;; Messages
    #:message #:system-message #:user-message

@@ -21,11 +21,17 @@ Delay for attempt N = base * 2^(N-1): 1s, 2s, 4s, ...")
 ;;; ── Helpers ──────────────────────────────────────────────────────────────────
 
 (defun make-headers (api-key &optional extra)
-  "Build the Authorization + Content-Type headers."
+  "Build the Authorization + Content-Type headers (OpenAI style Bearer token)."
   (append
    (list (cons "Content-Type"  "application/json")
          (cons "Authorization" (format nil "Bearer ~a" api-key)))
    extra))
+
+(defun make-anthropic-headers (api-key)
+  "Build Anthropic API headers (x-api-key, anthropic-version)."
+  (list (cons "Content-Type"      "application/json")
+        (cons "x-api-key"         api-key)
+        (cons "anthropic-version" "2023-06-01")))
 
 (defun sleep-backoff (attempt)
   "Sleep for base * 2^(attempt-1) seconds (exponential backoff)."
@@ -36,7 +42,8 @@ Delay for attempt N = base * 2^(N-1): 1s, 2s, 4s, ...")
 
 (defun post-json (url api-key body-string
                   &key (max-retries *max-retries*)
-                       (base-delay *retry-base-delay-seconds*))
+                       (base-delay *retry-base-delay-seconds*)
+                       (anthropic-p nil))
   "POST body-string as JSON to URL, return response body string.
 
 Retries on transient errors (429, 500, 502, 503, 504) with exponential
@@ -46,13 +53,16 @@ signals HTTP-ERROR on final failure.
 MAX-RETRIES  — max retry count (default: *MAX-RETRIES*).
 BASE-DELAY   — base delay in seconds (default: *RETRY-BASE-DELAY-SECONDS*)."
   (declare (ignore base-delay)) ; we use *retry-base-delay-seconds* internally
+  (let ((headers (if anthropic-p
+                     (make-anthropic-headers api-key)
+                     (make-headers api-key))))
   (loop
     :for attempt :from 1 :to (1+ max-retries)
     :do
        (handler-case
            (return
              (dexador:post url
-                           :headers (make-headers api-key)
+                           :headers headers
                            :content body-string))
          (dexador:http-request-failed (e)
            (let ((status (dexador:response-status e))
@@ -77,13 +87,14 @@ BASE-DELAY   — base delay in seconds (default: *RETRY-BASE-DELAY-SECONDS*)."
                (t
                 (error 'http-error
                        :status status
-                       :body   body))))))))
+                       :body   body)))))))))
 
 ;;; ── post-json-stream with retry ──────────────────────────────────────────────
 
 (defun post-json-stream (url api-key body-string callback
                          &key (max-retries *max-retries*)
-                              (base-delay *retry-base-delay-seconds*))
+                              (base-delay *retry-base-delay-seconds*)
+                              (anthropic-p nil))
   "POST body-string as JSON to URL with stream:true.
 Calls CALLBACK with each SSE line as it arrives.
 Returns when the stream ends.
@@ -94,6 +105,9 @@ Signals RETRYABLE-ERROR with RETRY restart; HTTP-ERROR on final failure.
 MAX-RETRIES  — max retry count (default: *MAX-RETRIES*).
 BASE-DELAY   — base delay in seconds (default: *RETRY-BASE-DELAY-SECONDS*)."
   (declare (ignore base-delay))
+  (let ((headers (if anthropic-p
+                     (make-anthropic-headers api-key)
+                     (make-headers api-key))))
   (loop
     :for attempt :from 1 :to (1+ max-retries)
     :do
@@ -102,7 +116,7 @@ BASE-DELAY   — base delay in seconds (default: *RETRY-BASE-DELAY-SECONDS*)."
              ;; With :want-stream t, dexador returns the response body as a
              ;; Gray stream in the first return value.
              (let ((stream (dexador:post url
-                                         :headers (make-headers api-key)
+                                         :headers headers
                                          :content body-string
                                          :want-stream t)))
                (unwind-protect
@@ -139,4 +153,4 @@ BASE-DELAY   — base delay in seconds (default: *RETRY-BASE-DELAY-SECONDS*)."
                (t
                 (error 'http-error
                        :status status
-                       :body   body))))))))
+                       :body   body)))))))))
