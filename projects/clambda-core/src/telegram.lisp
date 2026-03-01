@@ -179,6 +179,7 @@ Silently swallows errors."
     (error (e)
       (format *error-output*
               "~&[telegram] sendChatAction error (chat ~A): ~A~%" chat-id e)
+      (log-error :telegram "sendChatAction error (chat ~A): ~A" chat-id e)
       nil)))
 
 (defun telegram-send-message (chan chat-id text &key (parse-mode nil))
@@ -196,6 +197,7 @@ continues even if one sendMessage fails)."
     (error (e)
       (format *error-output*
               "~&[telegram] sendMessage error (chat ~A): ~A~%" chat-id e)
+      (log-error :telegram "sendMessage error (chat ~A): ~A" chat-id e)
       nil)))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -360,6 +362,8 @@ Returns the API response hash-table on success, NIL on error."
            (format *error-output*
                    "~&[telegram] editMessageText error (chat ~A, msg ~A): ~A~%"
                    chat-id message-id e)
+           (log-error :telegram "editMessageText error (chat ~A, msg ~A): ~A"
+                      chat-id message-id e)
            nil))))))
 
 (defun %run-agent-streaming (chan chat-id session text)
@@ -389,6 +393,7 @@ Steps:
                               (format *error-output*
                                       "~&[telegram] Agent error (chat ~A): ~A~%"
                                       chat-id e)
+                              (log-error :telegram "Agent error (chat ~A): ~A" chat-id e)
                               (format nil "Sorry, I ran into an error: ~A" e)))))
           (telegram-send-message chan chat-id (or response "…")))
 
@@ -421,7 +426,8 @@ Steps:
             (error (e)
               (format *error-output*
                       "~&[telegram] Streaming agent error (chat ~A): ~A~%"
-                      chat-id e)))
+                      chat-id e)
+              (log-error :telegram "Streaming agent error (chat ~A): ~A" chat-id e)))
 
           ;; Final edit: send complete accumulated response
           (let ((final-text (coerce buf 'string)))
@@ -620,7 +626,8 @@ Called on startup to populate the command menu in Telegram clients."
                       "~&[telegram] setMyCommands failed: ~A~%" parsed))))
     (error (e)
       (format *error-output*
-              "~&[telegram] Failed to register bot commands: ~A~%" e))))
+              "~&[telegram] Failed to register bot commands: ~A~%" e)
+      (log-error :telegram "Failed to register bot commands: ~A" e))))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 9. Update Processing (was § 8)
@@ -696,7 +703,8 @@ rather than crashing the polling loop."
                                     (format *error-output*
                                             "~&[telegram] Agent error (chat ~A): ~A~%"
                                             chat-id e)
-                                    (format nil "Sorry, I ran into an error: ~A" e)))))
+                                    (log-error :telegram "Agent error (chat ~A): ~A" chat-id e)
+                              (format nil "Sorry, I ran into an error: ~A" e)))))
                  (telegram-send-message chan chat-id (or response "…"))))))))))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
@@ -728,7 +736,8 @@ The loop exits cleanly when RUNNING is set to NIL (by STOP-TELEGRAM)."
                        (error (e)
                          (format *error-output*
                                  "~&[telegram] Error processing update ~A: ~A~%"
-                                 uid e)))))
+                                 uid e)
+                         (log-error :telegram "Error processing update ~A: ~A" uid e)))))
                  (when updates
                    (sleep (telegram-channel-polling-interval chan))))
              ;; Network / HTTP errors — log and retry after a brief wait
@@ -736,7 +745,8 @@ The loop exits cleanly when RUNNING is set to NIL (by STOP-TELEGRAM)."
                (when (telegram-channel-running chan)   ; don't log during shutdown
                  (format *error-output*
                          "~&[telegram] Polling error: ~A — retrying in ~As~%"
-                         e (telegram-channel-polling-interval chan)))
+                         e (telegram-channel-polling-interval chan))
+                 (log-error :telegram "Polling error: ~A" e))
                (sleep (telegram-channel-polling-interval chan)))))
   (format t "~&[telegram] Polling loop stopped.~%"))
 

@@ -148,6 +148,10 @@
    ;; Configuration
    #:*log-file*
    #:*log-enabled*
+   ;; Error log
+   #:*error-log-file*
+   #:*error-log-lock*
+   #:log-error
    ;; Log functions
    #:log-event
    #:log-llm-request
@@ -183,7 +187,7 @@
   (:use #:cl)
   (:import-from #:clawmacs/logging
                 #:log-llm-request #:log-tool-call #:log-tool-result
-                #:log-error-event)
+                #:log-error-event #:log-error)
   (:import-from #:clawmacs/agent
                 #:agent
                 #:agent-name
@@ -515,6 +519,9 @@
   ;; System prompt builder
   (:import-from #:clawmacs/system-prompt
                 #:build-telegram-system-prompt)
+  ;; Error logging
+  (:import-from #:clawmacs/logging
+                #:log-error)
   (:export
    ;; Channel struct
    #:telegram-channel
@@ -770,7 +777,7 @@
   (:import-from #:clawmacs/logging
                 #:*log-file* #:*log-enabled*
                 #:log-event #:log-llm-request #:log-tool-call
-                #:log-tool-result #:log-error-event
+                #:log-tool-result #:log-error-event #:log-error
                 #:with-logging)
   (:import-from #:clawmacs/memory
                 #:memory-entry #:memory-entry-name
@@ -961,7 +968,8 @@
    ;; Logging
    #:*log-file* #:*log-enabled*
    #:log-event #:log-llm-request #:log-tool-call
-   #:log-tool-result #:log-error-event
+   #:log-tool-result #:log-error-event #:log-error
+   #:*error-log-file*
    #:with-logging
    ;; Memory
    #:memory-entry #:memory-entry-name

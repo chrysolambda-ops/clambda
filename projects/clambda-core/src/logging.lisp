@@ -123,6 +123,37 @@ CONTEXT — optional extra string context."
       (setf (gethash "context" ht) context))
     (write-log-entry ht)))
 
+;;; ── Error log (human-readable append log) ────────────────────────────────────
+
+(defvar *error-log-file*
+  "/home/slime/.openclaw/workspace-gensym/logs/clawmacs-errors.log"
+  "Path to the human-readable error log. NIL to disable.")
+
+(defvar *error-log-lock* (bt:make-lock "clawmacs-error-log")
+  "Lock guarding concurrent writes to *ERROR-LOG-FILE*.")
+
+(defun log-error (component format-string &rest args)
+  "Append a formatted error line to *ERROR-LOG-FILE* and also to *error-output*.
+
+FORMAT: [ISO-8601 timestamp] [COMPONENT] ERROR: message
+
+COMPONENT is a keyword or string — e.g. :telegram, :loop, :llm, :tool, :cron, :system.
+FORMAT-STRING / ARGS are passed to FORMAT to build the message."
+  (let ((msg (apply #'format nil format-string args))
+        (ts  (current-timestamp))
+        (comp (string-downcase (string component))))
+    ;; Always print to stderr
+    (format *error-output* "~&[~a] [~a] ERROR: ~a~%" ts comp msg)
+    ;; Append to file if configured
+    (when *error-log-file*
+      (ignore-errors
+        (bt:with-lock-held (*error-log-lock*)
+          (with-open-file (out *error-log-file*
+                               :direction :output
+                               :if-exists :append
+                               :if-does-not-exist :create)
+            (format out "[~a] [~a] ERROR: ~a~%" ts comp msg)))))))
+
 ;;; ── Setup macro ──────────────────────────────────────────────────────────────
 
 (defmacro with-logging ((log-path &key (enabled t)) &body body)

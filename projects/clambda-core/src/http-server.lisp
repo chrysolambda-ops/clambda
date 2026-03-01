@@ -257,6 +257,7 @@ Returns (values nil nil) if the agent is not found."
                  (clawmacs/logging:log-error-event
                   (when agent-name agent-name) "agent_error" (format nil "~a" c)
                   :context "/chat")
+                 (clawmacs/logging:log-error :system "HTTP /chat agent error: ~a" c)
                  (return-from handle-chat
                    (json-error (format nil "Agent error: ~a" c) 500))))))
 

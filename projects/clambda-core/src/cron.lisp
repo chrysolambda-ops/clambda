@@ -117,7 +117,9 @@ Catches and records any error without propagating."
     (error (c)
       (let ((msg (format nil "~a" c)))
         (setf (task-last-error task) msg)
-        (%log "Task ~s errored: ~a" (task-name task) msg)))))
+        (%log "Task ~s errored: ~a" (task-name task) msg)
+        (ignore-errors
+          (clawmacs/logging:log-error :cron "Task ~s errored: ~a" (task-name task) msg))))))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────
 ;;;; § 4. Thread Entry Points

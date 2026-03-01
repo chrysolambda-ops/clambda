@@ -95,10 +95,12 @@ The LLM is asked to return pure JSON. If parsing fails, returns NIL."
                     (format *error-output*
                             "~&[clawmacs/loop] LLM fix parse error — raw: ~s~%"
                             clean)
+                    (log-error :llm "LLM fix parse error — raw: ~s" clean)
                     nil)))))))
     (error (e)
       (format *error-output*
               "~&[clawmacs/loop] LLM auto-repair request failed: ~a~%" e)
+      (log-error :llm "LLM auto-repair request failed: ~a" e)
       nil)))
 
 ;;; ── Helpers ──────────────────────────────────────────────────────────────────
@@ -389,13 +391,15 @@ Used as a fallback for strict prompt templates that reject system/tool roles."
                               (cl-llm:chat client messages :model m :tools tools)))
                 (cl-llm/conditions:retryable-error ()
                   (when (not (equal m (car (last models))))
-                    (format *error-output* "~&[clawmacs/loop] retryable error, trying fallback model: ~a~%" m)))
+                    (format *error-output* "~&[clawmacs/loop] retryable error, trying fallback model: ~a~%" m)
+                    (log-error :llm "retryable error, trying fallback model: ~a" m)))
                 (cl-llm/conditions:http-error (e)
                   (cond
                     ((%retryable-http-error-p e)
                      (when (not (equal m (car (last models))))
                        (format *error-output* "~&[clawmacs/loop] HTTP ~a on model ~a, trying fallback.~%"
-                               (cl-llm/conditions:http-error-status e) m)))
+                               (cl-llm/conditions:http-error-status e) m)
+                     (log-error :llm "HTTP ~a on model ~a, trying fallback" (cl-llm/conditions:http-error-status e) m)))
                     ((%alternation-template-error-p e)
                      (let ((normalized (%normalize-messages-for-strict-alternation messages)))
                        (when normalized
@@ -406,9 +410,11 @@ Used as a fallback for strict prompt templates that reject system/tool roles."
                     (t
                      ;; Log non-retryable error and try fallback if available
                      (if (not (equal m (car (last models))))
-                         (format *error-output* "~&[clawmacs/loop] HTTP ~a on model ~a: ~a — trying fallback.~%"
-                                 (cl-llm/conditions:http-error-status e) m
-                                 (cl-llm/conditions:http-error-body e))
+                         (progn
+                           (format *error-output* "~&[clawmacs/loop] HTTP ~a on model ~a: ~a — trying fallback.~%"
+                                   (cl-llm/conditions:http-error-status e) m
+                                   (cl-llm/conditions:http-error-body e))
+                           (log-error :llm "HTTP ~a on model ~a: ~a" (cl-llm/conditions:http-error-status e) m (cl-llm/conditions:http-error-body e)))
                          (error e)))))))
     ;; Last model attempt without swallowing non-retryable conditions.
     (let ((last-model (or (car (last models)) model)))
