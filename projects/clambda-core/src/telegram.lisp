@@ -118,9 +118,11 @@ Examples:
 
 (defun %plist->ht (plist)
   "Convert a flat keyword/value PLIST to an equal-keyed string hash-table.
-Keyword keys are downcased: :chat_id → \"chat_id\"."
+Keyword keys are downcased: :chat_id → \"chat_id\".
+NIL values are omitted (not serialized)."
   (let ((ht (make-hash-table :test 'equal)))
     (loop for (k v) on plist by #'cddr
+          when v
           do (setf (gethash (string-downcase (string k)) ht) v))
     ht))
 
@@ -166,7 +168,20 @@ Returns a list of update hash-tables (may be empty if no updates arrived)."
         (coerce (or (gethash "result" result) #()) 'list)
         '())))
 
-(defun telegram-send-message (chan chat-id text &key (parse-mode "Markdown"))
+(defun telegram-send-chat-action (chan chat-id action)
+  "Send a chat action (e.g. \"typing\") to CHAT-ID.
+Shows a status indicator in Telegram while the bot is processing.
+Silently swallows errors."
+  (handler-case
+      (%tg-call (telegram-channel-token chan) "sendChatAction"
+                :chat_id chat-id
+                :action  action)
+    (error (e)
+      (format *error-output*
+              "~&[telegram] sendChatAction error (chat ~A): ~A~%" chat-id e)
+      nil)))
+
+(defun telegram-send-message (chan chat-id text &key (parse-mode nil))
   "Send TEXT to CHAT-ID via CHAN's bot token.
 PARSE-MODE defaults to \"Markdown\" — Telegram's simplified Markdown subset.
 
@@ -276,7 +291,7 @@ Returns a list of chunk strings."
         (nreverse result))))
 
 (defun telegram-edit-message (chan chat-id message-id text
-                              &key (parse-mode "Markdown"))
+                              &key (parse-mode nil))
   "Edit an existing Telegram message using the editMessageText API method.
 
 CHAN       — telegram-channel struct
@@ -437,6 +452,8 @@ rather than crashing the polling loop."
 
          ;; Get or create session for this chat, then dispatch
          (let ((session (find-or-create-session chan chat-id)))
+           ;; Show typing indicator while processing
+           (telegram-send-chat-action chan chat-id "typing")
            (if *telegram-streaming*
                ;; Streaming: send placeholder, edit as tokens arrive
                (%run-agent-streaming chan chat-id session text)
