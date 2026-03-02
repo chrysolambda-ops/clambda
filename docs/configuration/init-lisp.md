@@ -61,6 +61,24 @@ Inspect options:
   :streaming     t)
 ```
 
+## Codex OAuth mode (CLI-backed)
+
+```lisp
+(in-package #:clawmacs-user)
+
+;; Use codex CLI (OAuth session from `codex login`)
+(setf clawmacs/telegram:*telegram-llm-api-type* :codex-cli)
+(setf *default-model* "gpt-5-codex")
+```
+
+You can also construct a client directly:
+
+```lisp
+(cl-llm:make-codex-cli-client :model "gpt-5-codex")
+```
+
+See full setup/link flow: [Codex OAuth](../auth/codex-oauth.md)
+
 ## Start HTTP API on boot
 
 ```lisp

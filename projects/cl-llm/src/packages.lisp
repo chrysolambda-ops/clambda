@@ -107,6 +107,7 @@
    #:make-client
    #:make-anthropic-client
    #:make-claude-cli-client
+   #:make-codex-cli-client
    #:client-base-url
    #:client-api-key
    #:client-model
@@ -156,11 +157,23 @@
    #:claude-cli-chat
    #:claude-cli-chat-stream))
 
+(defpackage #:cl-llm/codex-cli
+  (:use #:cl)
+  (:import-from #:cl-llm/protocol
+                #:message-role #:message-content
+                #:assistant-message
+                #:response-choices #:choice-message)
+  (:export
+   #:*codex-cli-path*
+   #:*codex-cli-default-model*
+   #:codex-cli-chat
+   #:codex-cli-chat-stream))
+
 ;; Top-level convenience package
 (defpackage #:cl-llm
   (:use #:cl)
   (:import-from #:cl-llm/client
-                #:client #:make-client #:make-anthropic-client #:make-claude-cli-client
+                #:client #:make-client #:make-anthropic-client #:make-claude-cli-client #:make-codex-cli-client
                 #:client-base-url #:client-api-key #:client-model #:client-api-type
                 #:chat #:chat-stream #:simple-chat #:with-client)
   (:import-from #:cl-llm/protocol
@@ -192,7 +205,7 @@
                 #:stream-to-string)
   (:export
    ;; Client
-   #:client #:make-client #:make-anthropic-client #:make-claude-cli-client
+   #:client #:make-client #:make-anthropic-client #:make-claude-cli-client #:make-codex-cli-client
    #:client-base-url #:client-api-key #:client-model #:client-api-type
    #:chat #:chat-stream #:simple-chat #:with-client
    ;; Messages

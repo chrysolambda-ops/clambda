@@ -52,6 +52,12 @@ Notes:
 - Quicklisp
 - For GUI: McCLIM + CLX
 - Optional browser tooling: Node.js + Playwright (used by browser integration)
+- Optional OAuth CLI backends: `claude` and/or `codex` CLIs
+
+## OAuth CLI sessions
+
+Clawmacs supports OAuth-authenticated CLI backends for local auth flows, including Codex.
+See [Codex OAuth setup](docs/auth/codex-oauth.md) for link/login, config, and troubleshooting.
 
 ---
 

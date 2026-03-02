@@ -78,8 +78,20 @@ sbcl --eval '(ql:quickload :cl-tui)' \
      --eval '(cl-tui:run :model "google/gemma-3-4b")'
 ```
 
+## Codex OAuth quick start (optional)
+
+If you want to use Codex via OAuth (no API key in init):
+
+```bash
+codex login
+```
+
+Then set Telegram/client API type to `:codex-cli` in init.lisp (see config guide).
+Full guide: [Codex OAuth](../auth/codex-oauth.md)
+
 ## Next Steps
 
 - [Installation](installation.md)
 - [Configuration Guide](../configuration/init-lisp.md)
+- [Codex OAuth](../auth/codex-oauth.md)
 - [Architecture Overview](../architecture/index.md)

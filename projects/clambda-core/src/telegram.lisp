@@ -44,7 +44,8 @@ Defaults to LM Studio local endpoint. Override in init.lisp:
 (defvar *telegram-llm-api-type* :openai
   "API type for the Telegram channel LLM client.
 Use :OPENAI (default) for OpenAI-compatible APIs (OpenRouter, LM Studio, etc.)
-Use :ANTHROPIC for the direct Anthropic Messages API.")
+Use :ANTHROPIC for the direct Anthropic Messages API.
+Use :CLAUDE-CLI or :CODEX-CLI for OAuth-authenticated local CLI backends.")
 
 (defvar *telegram-system-prompt*
   "You are a helpful AI assistant accessible via Telegram. \
@@ -276,6 +277,9 @@ Users can override any of these vars in init.lisp before starting the channel."
   (let* ((client   (cond
                      ((eq *telegram-llm-api-type* :claude-cli)
                       (cl-llm:make-claude-cli-client
+                       :model clawmacs/config:*default-model*))
+                     ((eq *telegram-llm-api-type* :codex-cli)
+                      (cl-llm:make-codex-cli-client
                        :model clawmacs/config:*default-model*))
                      ((eq *telegram-llm-api-type* :anthropic)
                       (cl-llm:make-anthropic-client

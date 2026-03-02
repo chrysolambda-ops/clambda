@@ -18,7 +18,8 @@
                (:file "src/client")
                (:file "src/streaming")
                (:file "src/tools")
-               (:file "src/claude-cli"))
+               (:file "src/claude-cli")
+               (:file "src/codex-cli"))
   :in-order-to ((test-op (test-op "cl-llm/tests"))))
 
 (defsystem "cl-llm/tests"
