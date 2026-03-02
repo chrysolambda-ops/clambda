@@ -755,15 +755,21 @@ Implements exponential backoff reconnection (max 300 seconds)."
     (return-from stop-irc nil))
 
   (format t "~&[irc] Stopping...~%")
-  ;; Signal threads to stop
+  ;; Signal threads to stop BEFORE touching the stream.
+  ;; The reader thread checks running-p and will exit its loop.
   (setf (irc-running-p conn) nil)
   ;; Wake up flood thread so it can exit
   (bt:with-lock-held ((irc-flood-lock conn))
     (bt:condition-notify (irc-flood-cvar conn)))
-  ;; Close stream/socket (also causes read-line to return NIL on reader thread)
+  ;; Close stream/socket — this unblocks read-line in the reader thread.
+  ;; The reader thread's handler-case catches the resulting error.
   (%do-disconnect conn)
-  ;; Brief pause to let threads notice
-  (sleep 0.5)
+  ;; Wait for reader thread to finish (with timeout)
+  (let ((reader (irc-reader-thread conn)))
+    (when (and reader (bt:thread-alive-p reader))
+      (sleep 1)))
+  ;; Brief pause to let flood thread exit
+  (sleep 0.2)
   ;; Clear global if it's this connection
   (when (eq conn *irc-connection*)
     (setf *irc-connection* nil))

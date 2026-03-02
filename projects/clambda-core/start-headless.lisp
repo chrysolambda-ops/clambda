@@ -22,14 +22,10 @@
 (clawmacs/telegram:start-all-channels)
 (format t "~&[headless] Telegram running: ~s~%" (clawmacs/telegram:telegram-running-p))
 
-;; Start IRC channel explicitly
-(format t "~&[headless] Starting IRC channel...~%")
-(handler-case
-    (progn
-      (clawmacs/irc:start-irc)
-      (format t "~&[headless] IRC connected.~%"))
-  (error (e)
-    (format *error-output* "~&[headless] IRC start failed: ~A~%" e)))
+;; IRC is already started by start-all-channels above — don't double-start
+;; (Double-starting causes SIGSEGV: closing SSL stream while reader thread is
+;; blocked in SSL_read is undefined behavior in OpenSSL)
+(format t "~&[headless] IRC running: ~S~%" (clawmacs/irc:irc-connected-p))
 
 ;; Also start SWANK for live debugging
 (ignore-errors
