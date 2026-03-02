@@ -200,10 +200,14 @@ Signals an error with guidance when the OAuth session is missing/expired."
   "Signal actionable error if Codex CLI or linked OAuth session is missing." 
   (destructuring-bind (&key codex-cli-found linked-session-found remediation &allow-other-keys)
       (codex-auth-status :model model)
-    (unless codex-cli-found
-      (error "Codex CLI not found on PATH.~%Recovery:~%  ~{~A~%  ~}" remediation))
-    (unless linked-session-found
-      (error "Codex OAuth session not found under ~/.codex/.~%Recovery:~%  ~{~A~%  ~}" remediation))))
+    (flet ((render-remediation ()
+             (with-output-to-string (s)
+               (dolist (step remediation)
+                 (format s "~%  - ~A" step)))))
+      (unless codex-cli-found
+        (error "Codex CLI not found on PATH.~%Recovery:~A" (render-remediation)))
+      (unless linked-session-found
+        (error "Codex OAuth session not found under ~~/.codex/.~%Recovery:~A" (render-remediation))))))
 
 (defun codex-cli-chat (messages &key model system-prompt max-tokens)
   "Send MESSAGES to Codex via codex CLI and return a COMPLETION-RESPONSE."

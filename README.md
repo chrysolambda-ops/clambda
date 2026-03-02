@@ -52,11 +52,11 @@ Notes:
 - Quicklisp
 - For GUI: McCLIM + CLX
 - Optional browser tooling: Node.js + Playwright (used by browser integration)
-- Optional OAuth CLI backend: `claude` CLI (Codex supports native OAuth, no CLI required)
+- Optional OAuth CLI backends: `claude` CLI and `codex` CLI (recommended for Codex subscription bridge runtime)
 
-## Codex OAuth (native browser-link)
+## Codex OAuth (browser-link + bridge runtime)
 
-Clawmacs now supports OpenClaw-style browser-link OAuth for Codex without requiring the `codex` CLI.
+Clawmacs supports OpenClaw-style browser-link OAuth for Codex. Runtime uses a subscription bridge path (Codex CLI transport) instead of direct OpenAI Chat Completions API billing; if unavailable, it temporarily falls back to Claude CLI with an explicit warning.
 Use Telegram commands:
 - `/codex_login`
 - `/codex_link <redirect-url|code#state>`

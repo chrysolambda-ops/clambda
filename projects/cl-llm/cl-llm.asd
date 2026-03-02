@@ -24,7 +24,8 @@
                (:file "src/tools")
                (:file "src/claude-cli")
                (:file "src/codex-cli")
-               (:file "src/codex-oauth"))
+               (:file "src/codex-oauth")
+               (:file "src/codex-oauth-bridge"))
   :in-order-to ((test-op (test-op "cl-llm/tests"))))
 
 (defsystem "cl-llm/tests"

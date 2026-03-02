@@ -649,7 +649,7 @@ Steps:
                (linked (if (getf auth :linked) "linked" "missing"))
                (expired (if (getf auth :expired) "yes" "no")))
           (format nil
-                  "📊 <b>Clawmacs Status</b>~%~%Model: <code>~A</code>~%Uptime: ~A~%Messages in history: ~A~%Token usage: ~A~%Compaction: ~A~%Codex OAuth: ~A~%Token expired: ~A"
+                  "📊 <b>Clawmacs Status</b>~%~%Model: <code>~A</code>~%Uptime: ~A~%Messages in history: ~A~%Token usage: ~A~%Compaction: ~A~%Codex OAuth linked: ~A~%Token expired: ~A~%Runtime bridge fallback: ~A"
                   model uptime msgs
                   (if (= tracked 0)
                       (format nil "~A (estimated) / ~A (~A%%)" tokens window pct)
@@ -657,7 +657,8 @@ Steps:
                   (if (and (boundp 'clawmacs/config:*compaction-enabled*)
                            clawmacs/config:*compaction-enabled*)
                       "enabled" "disabled")
-                  linked expired)))
+                  linked expired
+                  (if cl-llm:*codex-oauth-fallback-enabled* "enabled" "disabled"))))
        (t
         (format nil
                 "📊 <b>Clawmacs Status</b>~%~%Model: <code>~A</code>~%Uptime: ~A~%Messages in history: ~A~%Token usage: ~A~%Compaction: ~A"

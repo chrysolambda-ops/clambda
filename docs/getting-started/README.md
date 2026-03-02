@@ -78,9 +78,9 @@ sbcl --eval '(ql:quickload :cl-tui)' \
      --eval '(cl-tui:run :model "google/gemma-3-4b")'
 ```
 
-## Codex OAuth quick start (optional, no CLI)
+## Codex OAuth quick start (optional, bridge runtime)
 
-If you want Codex via OAuth (without API key and without `codex` CLI):
+If you want Codex via OAuth without API keys:
 
 1. Set in `~/.clawmacs/init.lisp`:
 
@@ -97,6 +97,7 @@ If you want Codex via OAuth (without API key and without `codex` CLI):
 - `/models set gpt-5.3-codex` (or another listed model)
 
 You can also verify in Lisp with `(cl-llm:codex-oauth-status-string)`.
+Runtime uses a subscription bridge transport (Codex CLI path) and avoids direct OpenAI Chat Completions billing path; temporary fallback to Claude CLI is explicit in output.
 Full guide: [Codex OAuth](../auth/codex-oauth.md)
 
 ## Next Steps

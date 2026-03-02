@@ -61,7 +61,7 @@ Inspect options:
   :streaming     t)
 ```
 
-## Codex OAuth mode (native; no CLI)
+## Codex OAuth mode (browser-link + bridge runtime)
 
 ```lisp
 (in-package #:clawmacs-user)
@@ -89,6 +89,8 @@ Telegram flow:
 - `/codex_status`
 
 Storage: `~/.clawmacs/auth/codex-oauth.json` (0600)
+
+Runtime note: `:codex-oauth` uses a subscription bridge transport (Codex CLI path) and avoids direct OpenAI Chat Completions API billing path. If unavailable, it can fall back to Claude CLI with an explicit warning.
 
 See full setup/link flow: [Codex OAuth](../auth/codex-oauth.md)
 

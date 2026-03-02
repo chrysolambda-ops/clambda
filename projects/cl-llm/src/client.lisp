@@ -26,7 +26,7 @@ API-TYPE is :OPENAI (default), :ANTHROPIC, :CLAUDE-CLI, :CODEX-CLI, or :CODEX-OA
    :base-url        (if base-url
                         (string-right-trim "/" base-url)
                         (cond ((eq api-type :codex-cli) "cli://codex")
-                              ((eq api-type :codex-oauth) "https://api.openai.com/v1")
+                              ((eq api-type :codex-oauth) "bridge://codex-oauth")
                               (t "cli://claude")))
    :api-key         (or api-key "not-needed")
    :model           model
@@ -61,9 +61,12 @@ Requires the codex CLI to be installed and authenticated via:
    :model    model
    :api-type :codex-cli))
 
-(defun make-codex-oauth-client (&key model (base-url "https://api.openai.com/v1"))
-  "Create a client that uses native OAuth tokens from cl-llm/codex-oauth.
-No codex CLI dependency."
+(defun make-codex-oauth-client (&key model (base-url "bridge://codex-oauth"))
+  "Create a client that uses browser-link OAuth state with a subscription bridge runtime.
+
+Runtime path does NOT call api.openai.com /chat/completions.
+Primary transport is Codex CLI subscription path; interim fallback is Claude CLI
+with an explicit warning."
   (%make-client
    :base-url base-url
    :api-key  "oauth"
@@ -127,32 +130,39 @@ Returns a COMPLETION-RESPONSE."
          (effective-model (or model (client-model client)))
          (effective-opts  (effective-options client options)))
 
-    ;; Dispatch to CLI backends
-    (when (member api-type '(:claude-cli :codex-cli))
+    ;; Dispatch to CLI/bridge backends
+    (when (member api-type '(:claude-cli :codex-cli :codex-oauth))
       (when tools
         (format *error-output*
                 "~&[cl-llm/client] WARNING: tool calling not supported in ~A mode — tools ignored~%"
                 api-type))
       (return-from chat
-        (if (eq api-type :claude-cli)
-            (cl-llm/claude-cli:claude-cli-chat
-             messages
-             :model         effective-model
-             :system-prompt nil
-             :max-tokens    (when effective-opts
-                              (cl-llm/protocol:request-options-max-tokens effective-opts)))
-            (cl-llm/codex-cli:codex-cli-chat
-             messages
-             :model         effective-model
-             :system-prompt nil
-             :max-tokens    (when effective-opts
-                              (cl-llm/protocol:request-options-max-tokens effective-opts))))))
+        (cond
+          ((eq api-type :claude-cli)
+           (cl-llm/claude-cli:claude-cli-chat
+            messages
+            :model         effective-model
+            :system-prompt nil
+            :max-tokens    (when effective-opts
+                             (cl-llm/protocol:request-options-max-tokens effective-opts))))
+          ((eq api-type :codex-cli)
+           (cl-llm/codex-cli:codex-cli-chat
+            messages
+            :model         effective-model
+            :system-prompt nil
+            :max-tokens    (when effective-opts
+                             (cl-llm/protocol:request-options-max-tokens effective-opts))))
+          (t
+           (cl-llm/codex-oauth-bridge:codex-oauth-bridge-chat
+            messages
+            :model         effective-model
+            :system-prompt nil
+            :max-tokens    (when effective-opts
+                             (cl-llm/protocol:request-options-max-tokens effective-opts)))))))
 
-    ;; HTTP backends (:openai / :anthropic / :codex-oauth)
+    ;; HTTP backends (:openai / :anthropic)
     (let* ((anthropic-p  (eq api-type :anthropic))
-           (effective-api-key (if (eq api-type :codex-oauth)
-                                  (cl-llm/codex-oauth:codex-oauth-access-token)
-                                  (client-api-key client)))
+           (effective-api-key (client-api-key client))
            (request-ht   (if anthropic-p
                              (cl-llm/protocol::build-anthropic-request-ht
                               effective-model messages effective-opts tools)
@@ -180,32 +190,39 @@ Returns the full accumulated text string when done."
          (effective-model (or model (client-model client)))
          (effective-opts  (effective-options client options)))
 
-    ;; Dispatch to CLI backends (non-streaming: callback called once)
-    (when (member api-type '(:claude-cli :codex-cli))
+    ;; Dispatch to CLI/bridge backends (non-streaming: callback called once)
+    (when (member api-type '(:claude-cli :codex-cli :codex-oauth))
       (when tools
         (format *error-output*
                 "~&[cl-llm/client] WARNING: tool calling not supported in ~A mode — tools ignored~%"
                 api-type))
       (return-from chat-stream
-        (if (eq api-type :claude-cli)
-            (cl-llm/claude-cli:claude-cli-chat-stream
-             messages callback
-             :model         effective-model
-             :system-prompt nil
-             :max-tokens    (when effective-opts
-                              (cl-llm/protocol:request-options-max-tokens effective-opts)))
-            (cl-llm/codex-cli:codex-cli-chat-stream
-             messages callback
-             :model         effective-model
-             :system-prompt nil
-             :max-tokens    (when effective-opts
-                              (cl-llm/protocol:request-options-max-tokens effective-opts))))))
+        (cond
+          ((eq api-type :claude-cli)
+           (cl-llm/claude-cli:claude-cli-chat-stream
+            messages callback
+            :model         effective-model
+            :system-prompt nil
+            :max-tokens    (when effective-opts
+                             (cl-llm/protocol:request-options-max-tokens effective-opts))))
+          ((eq api-type :codex-cli)
+           (cl-llm/codex-cli:codex-cli-chat-stream
+            messages callback
+            :model         effective-model
+            :system-prompt nil
+            :max-tokens    (when effective-opts
+                             (cl-llm/protocol:request-options-max-tokens effective-opts))))
+          (t
+           (cl-llm/codex-oauth-bridge:codex-oauth-bridge-chat-stream
+            messages callback
+            :model         effective-model
+            :system-prompt nil
+            :max-tokens    (when effective-opts
+                             (cl-llm/protocol:request-options-max-tokens effective-opts)))))))
 
-    ;; HTTP backends (:openai / :anthropic / :codex-oauth)
+    ;; HTTP backends (:openai / :anthropic)
     (let* ((anthropic-p     (eq api-type :anthropic))
-           (effective-api-key (if (eq api-type :codex-oauth)
-                                  (cl-llm/codex-oauth:codex-oauth-access-token)
-                                  (client-api-key client)))
+           (effective-api-key (client-api-key client))
            (request-ht      (if anthropic-p
                                 (cl-llm/protocol::build-anthropic-request-ht
                                  effective-model messages effective-opts tools)

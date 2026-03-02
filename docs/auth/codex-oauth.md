@@ -1,14 +1,14 @@
-# Codex OAuth (No Codex CLI Required)
+# Codex OAuth (Bridge Runtime)
 
-Clawmacs supports a native browser-link OAuth flow for Codex/OpenAI endpoints.
+Clawmacs keeps `/codex_login` + `/codex_link` browser OAuth UX, but runtime no longer uses direct `api.openai.com/v1/chat/completions` for `:codex-oauth`.
 
-## What changed
+## Runtime transport (important)
 
-- ✅ No `codex` CLI dependency
-- ✅ Login URL generated in bot via `/codex_login`
-- ✅ Paste redirect URL into `/codex_link <redirect-url>`
-- ✅ Tokens stored locally at `~/.clawmacs/auth/codex-oauth.json` (mode `0600`)
-- ✅ Auto-refresh with refresh token during runtime
+For `:codex-oauth` requests:
+1. Primary: Codex subscription-compatible CLI transport (`codex exec`)
+2. Interim fallback: Claude CLI transport with explicit warning in the model reply
+
+This avoids the API-key billing/quota path that caused `insufficient_quota` with subscription-only accounts.
 
 ## init.lisp configuration
 
@@ -20,43 +20,40 @@ Clawmacs supports a native browser-link OAuth flow for Codex/OpenAI endpoints.
 (setf *default-model* "gpt-5-codex")
 ```
 
-Optional endpoint overrides:
+Optional: disable interim fallback (strict mode)
 
 ```lisp
-(setf cl-llm:*codex-oauth-authorize-endpoint* "https://auth.openai.com/oauth/authorize")
-(setf cl-llm:*codex-oauth-token-endpoint* "https://auth.openai.com/oauth/token")
-(setf cl-llm:*codex-oauth-redirect-uri* "https://localhost/callback")
+(setf cl-llm:*codex-oauth-fallback-enabled* nil)
 ```
 
 ## Telegram login flow
 
 1. Send `/codex_login`
 2. Open the returned URL and approve access
-3. Copy the full redirect URL from your browser
+3. Copy the full redirect URL
 4. Send `/codex_link <redirect-url>`
 5. Verify with `/codex_status`
 
-Accepted `/codex_link` payloads:
-- full redirect URL containing `?code=...&state=...`
-- `code#state` blob
+## Known interim limitations
+
+- Full OpenClaw parity transport via `@mariozechner/pi-ai` is not wired yet.
+- Streaming for `:codex-oauth` bridge currently emits final text as one chunk.
+- If Codex bridge runtime is unavailable, fallback response is prefixed with a warning.
 
 ## Troubleshooting
 
-### `Codex OAuth client id missing`
-Set `cl-llm:*codex-oauth-client-id*` in `init.lisp`.
+### Codex runtime unavailable
+- Run `codex login` on the host machine
+- Verify session files under `~/.codex/`
+- Retry message or run `/status`
 
-### `OAuth state mismatch`
-Run `/codex_login` again and use the newest redirect.
+### OAuth state mismatch
+Run `/codex_login` again and use the latest redirect URL.
 
-### `Malformed input`
-Paste the full redirect URL exactly as copied from browser.
-
-### Expired token
-Refresh is automatic if a refresh token exists. If refresh fails, relink using `/codex_login` + `/codex_link`.
+### Missing/expired OAuth
+Relink via `/codex_login` + `/codex_link`.
 
 ## Security notes
 
-- Token file path: `~/.clawmacs/auth/codex-oauth.json`
-- File permissions forced to `0600` on save
-- Raw tokens are not printed in status output
-- Re-running link overwrites previous stored session (rotation supported)
+- OAuth session file: `~/.clawmacs/auth/codex-oauth.json` (`0600`)
+- Tokens are not printed in status output

@@ -189,6 +189,17 @@
    #:codex-cli-chat
    #:codex-cli-chat-stream))
 
+(defpackage #:cl-llm/codex-oauth-bridge
+  (:use #:cl)
+  (:import-from #:cl-llm/protocol
+                #:message-content
+                #:response-choices
+                #:choice-message)
+  (:export
+   #:*codex-oauth-fallback-enabled*
+   #:codex-oauth-bridge-chat
+   #:codex-oauth-bridge-chat-stream))
+
 ;; Top-level convenience package
 (defpackage #:cl-llm
   (:use #:cl)
@@ -207,6 +218,8 @@
                 #:*codex-oauth-store-path*
                 #:codex-oauth-start #:codex-oauth-complete #:codex-oauth-refresh
                 #:codex-oauth-access-token #:codex-oauth-status #:codex-oauth-status-string)
+  (:import-from #:cl-llm/codex-oauth-bridge
+                #:*codex-oauth-fallback-enabled*)
   (:import-from #:cl-llm/protocol
                 #:message #:system-message #:user-message
                 #:assistant-message #:tool-message
@@ -244,6 +257,7 @@
    #:*codex-oauth-redirect-uri* #:*codex-oauth-scope* #:*codex-oauth-store-path*
    #:codex-oauth-start #:codex-oauth-complete #:codex-oauth-refresh #:codex-oauth-access-token
    #:codex-oauth-status #:codex-oauth-status-string
+   #:*codex-oauth-fallback-enabled*
    #:chat #:chat-stream #:simple-chat #:with-client
    ;; Messages
    #:message #:system-message #:user-message
