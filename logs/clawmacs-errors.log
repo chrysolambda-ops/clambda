@@ -61,3 +61,77 @@
         "code": null
     }
 }
+[2026-03-02T03:55:59Z] [llm] ERROR: retryable error, trying fallback model: gpt-5.3-codex
+[2026-03-02T03:55:59Z] [telegram] ERROR: Agent error (chat 535004273): HTTP error 404: {
+    "error": {
+        "message": "The model `claude-sonnet-4-6` does not exist or you do not have access to it.",
+        "type": "invalid_request_error",
+        "param": null,
+        "code": "model_not_found"
+    }
+}
+
+[2026-03-02T03:56:14Z] [llm] ERROR: retryable error, trying fallback model: gpt-5.3-codex
+[2026-03-02T03:56:14Z] [telegram] ERROR: Agent error (chat 535004273): HTTP error 404: {
+    "error": {
+        "message": "The model `claude-sonnet-4-6` does not exist or you do not have access to it.",
+        "type": "invalid_request_error",
+        "param": null,
+        "code": "model_not_found"
+    }
+}
+
+[2026-03-02T03:58:37Z] [telegram] ERROR: Agent error (chat 535004273): Retryable HTTP error 429 (attempt 1): {
+    "error": {
+        "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "insufficient_quota"
+    }
+}
+
+[2026-03-02T04:00:08Z] [telegram] ERROR: Agent error (chat 535004273): Retryable HTTP error 429 (attempt 1): {
+    "error": {
+        "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "insufficient_quota"
+    }
+}
+
+[2026-03-02T04:07:02Z] [telegram] ERROR: Agent error (chat 535004273): Retryable HTTP error 429 (attempt 1): {
+    "error": {
+        "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "insufficient_quota"
+    }
+}
+
+[2026-03-02T04:07:11Z] [telegram] ERROR: Agent error (chat 535004273): Retryable HTTP error 429 (attempt 1): {
+    "error": {
+        "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "insufficient_quota"
+    }
+}
+
+[2026-03-02T04:29:05Z] [telegram] ERROR: Agent error (chat 535004273): Codex OAuth runtime failed (The file
+#P"/home/slime/.openclaw/workspace-gensym/projects/clambda-core/{\"nil\":false}"
+does not exist:
+  No such file or directory). Runtime fallback is disabled for safety in this deployment.
+[2026-03-02T06:01:41Z] [telegram] ERROR: Agent error (chat 535004273): Codex OAuth runtime failed (The file
+#P"/home/slime/.openclaw/workspace-gensym/projects/clambda-core/{\"nil\":false}"
+does not exist:
+  No such file or directory). Runtime fallback is disabled for safety in this deployment.
+[2026-03-02T06:04:16Z] [telegram] ERROR: Agent error (chat 535004273): Codex OAuth runtime failed (The file
+#P"/home/slime/.openclaw/workspace-gensym/projects/clambda-core/{\"nil\":false}"
+does not exist:
+  No such file or directory). Runtime fallback is disabled for safety in this deployment.
+[2026-03-02T06:05:13Z] [telegram] ERROR: Agent error (chat 535004273): Codex OAuth runtime failed (The file
+#P"/home/slime/.openclaw/workspace-gensym/projects/clambda-core/{\"nil\":false}"
+does not exist:
+  No such file or directory). Runtime fallback is disabled for safety in this deployment.
+[2026-03-02T06:22:29Z] [llm] ERROR: HTTP 401 on model claude-opus-4-6: {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"},"request_id":"req_011CYdmkpEfPM5MR6trJhWfE"}
+[2026-03-02T06:22:29Z] [telegram] ERROR: Agent error (chat 535004273): HTTP error 401: {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"},"request_id":"req_011CYdmkpUJiK5GynndHJHM1"}

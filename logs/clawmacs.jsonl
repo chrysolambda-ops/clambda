@@ -1,2 +1,8 @@
 {"timestamp":"2026-02-28T02:36:32Z","event_type":"server_start","port":19999,"address":"127.0.0.1"}
 {"timestamp":"2026-02-28T02:36:32Z","event_type":"llm_request","agent":"test","model":"google/gemma-3-4b","message_count":2,"tools_count":9}
+{"timestamp":"2026-03-02T00:25:49Z","event_type":"server_start","port":18800,"address":"127.0.0.1"}
+{"timestamp":"2026-03-02T01:02:48Z","event_type":"http_request","endpoint":"/api/agents/:name/message","agent":"ollama-coder","length":87}
+{"timestamp":"2026-03-02T01:02:48Z","event_type":"llm_request","agent":"ollama-coder","model":"qwen2.5-coder:14b","message_count":2,"tools_count":0}
+{"timestamp":"2026-03-02T02:13:14Z","event_type":"llm_request","agent":"telegram-bot","model":"claude-opus-4-6","message_count":2,"tools_count":15}
+{"timestamp":"2026-03-02T02:13:46Z","event_type":"llm_request","agent":"telegram-bot","model":"claude-opus-4-6","message_count":4,"tools_count":15}
+{"timestamp":"2026-03-02T02:17:36Z","event_type":"llm_request","agent":"telegram-bot","model":"claude-opus-4-6","message_count":6,"tools_count":15}

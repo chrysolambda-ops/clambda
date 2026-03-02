@@ -1140,8 +1140,17 @@ Returns the list of successfully started channel objects."
                  (push *telegram-channel* started))
                (format *error-output*
                        "~&[telegram] :telegram registered but *telegram-channel* is NIL~%")))
+          (:irc
+           (handler-case
+               (progn
+                 (clawmacs/irc:start-irc)
+                 (format t "~&[start-all-channels] IRC channel started.~%")
+                 (push :irc started))
+             (error (e)
+               (format *error-output*
+                       "~&[start-all-channels] IRC start failed: ~A~%" e))))
           (otherwise
-           (format t "~&[telegram] start-all-channels: no starter for channel ~A~%" type)))))
+           (format t "~&[start-all-channels] no starter for channel ~A~%" type)))))
     (nreverse started)))
 
 ;;;; ─────────────────────────────────────────────────────────────────────────────

@@ -115,3 +115,38 @@ OpenRouter rejects these with HTTP 402 when account balance is insufficient.
 
 **Fix:** Set a reasonable default max_tokens (e.g., 4096 for coding tasks).
 Reduce *default-context-window* in init.lisp from 32768 or add :max-tokens option to run-agent.
+- [2026-03-01 21:xx EST] SWANK run-agent call hung with no output when invoking clawmacs/loop:run-agent for agent `gensym`; required manual process kill. Need timeout/error propagation and progress output for long turns.
+
+## [2026-03-01] UX blocker: missing non-interactive run-agent CLI surface
+
+**Reported by:** ceo-chryso subagent (cl-term Phase 4)
+**Severity:** Medium
+
+**What happens:** `./clawmacs start` launches interactive cl-tui and exits on EOF when invoked non-interactively. For automated subagent workflows there is no obvious CLI command like `clawmacs run-agent --agent gensym --prompt ...`.
+
+**Why it blocks:** Forces fallback to direct file edits even when policy prefers Clawmacs-as-agent first.
+
+**Request:** Add a documented non-interactive command for agent execution with timeout + transcript output.
+
+## [2026-03-01] Tooling blocker: clawmacs-core acceptance path fails on missing cl-llm deps
+
+**Reported by:** ceo-chryso subagent (credentials-rotated cl-term continuation)
+**Severity:** Medium
+
+**What happens:** `sbcl --script boot-acceptance.lisp` in `projects/clambda-core` aborts before `run-agent` with:
+`Component "dexador" not found, required by #<SYSTEM "cl-llm">`.
+
+**Why it blocks:** Prevents reliable non-interactive Clawmacs run-agent validation in fresh environments after credential rotation.
+
+**Request:** Ensure `clawmacs-core` startup/bootstrap path either (a) installs/loads required Quicklisp deps (dexador, etc.) automatically, or (b) provides a clear `make deps`/bootstrap step documented and enforced in acceptance scripts.
+
+## [2026-03-01] Workflow blocker: missing canonical non-interactive Clawmacs launcher path
+
+**Reported by:** ceo-chryso subagent (cl-term continuation)
+**Severity:** Medium
+
+**What happens:** Clawmacs-first attempt in `projects/clambda-core` using `./clawmacs start` fails immediately because `./clawmacs` is absent in that tree (`No such file or directory`).
+
+**Why it blocks:** Automation cannot reliably discover the right invocation path for agent execution, forcing direct-edit fallback.
+
+**Request:** Provide a stable, documented launcher entrypoint (e.g., `bin/clawmacs` or `make run-agent`) and ensure it exists in fresh checkouts.
