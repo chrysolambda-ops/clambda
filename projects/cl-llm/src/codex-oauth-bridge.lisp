@@ -36,14 +36,27 @@ One of: :helper, :fallback, :error, :uninitialized.")
              :key #'null)
      :test 'equal)))
 
-(defun %run-node-helper (payload)
-  (let* ((json (com.inuoe.jzon:stringify payload))
-         (helper (namestring *codex-oauth-node-helper*)))
+(defun %payload-input-stream (payload)
+  "Return a fresh character input stream for PAYLOAD JSON.
+
+Important: UIOP:RUN-PROGRAM treats a raw string :INPUT as a pathname designator,
+not stdin content. We must pass a stream to avoid accidental pathname coercion
+(e.g. JSON like {\"nil\":false} being interpreted as a relative file path)."
+  (make-string-input-stream (com.inuoe.jzon:stringify payload)))
+
+(defun %resolve-node-helper-path ()
+  (let ((helper (etypecase *codex-oauth-node-helper*
+                  (pathname (namestring *codex-oauth-node-helper*))
+                  (string *codex-oauth-node-helper*))))
     (unless (probe-file helper)
       (error "Codex OAuth helper not found: ~A" helper))
+    helper))
+
+(defun %run-node-helper (payload)
+  (let ((helper (%resolve-node-helper-path)))
     (multiple-value-bind (out err code)
         (uiop:run-program (list "node" helper)
-                          :input json
+                          :input (%payload-input-stream payload)
                           :output :string
                           :error-output :string
                           :ignore-error-status t)

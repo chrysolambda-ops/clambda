@@ -685,9 +685,22 @@ Returns a confirmation or 'TTS not available' if no TTS engine is installed."
                   (clawmacs/subagents:subagent-kill h)
                   (clawmacs/tools:tool-result-ok (format nil "killed ~a" target)))
                 (clawmacs/tools:tool-result-error "subagent not found"))))
-         (t (clawmacs/tools:tool-result-error "unsupported action (supported: list, kill)")))))
-   :description "Minimal subagents control tool: action=list|kill"
-   :parameters '(:|type| "object" :|properties| (:|action| (:|type| "string") :|target| (:|type| "string")) :|required| #()))
+         ((string= action "steer")
+          (let* ((h (and target (clawmacs/subagents:find-subagent target)))
+                 (msg (or (gethash "message" args) (gethash "text" args))))
+            (cond
+              ((null h) (clawmacs/tools:tool-result-error "subagent not found"))
+              ((null msg) (clawmacs/tools:tool-result-error "message/text required for steer"))
+              ((eq (clawmacs/subagents:subagent-status h) :running)
+               (clawmacs/tools:tool-result-error "subagent is still running; steer after completion"))
+              (t
+               (clawmacs/tools:tool-result-ok
+                (clawmacs/loop:run-agent (clawmacs/subagents:subagent-handle-session h)
+                                         msg
+                                         :options (clawmacs/loop:make-loop-options :max-turns 6)))))))
+         (t (clawmacs/tools:tool-result-error "unsupported action (supported: list, kill, steer)")))))
+   :description "Subagents control tool: action=list|kill|steer"
+   :parameters '(:|type| "object" :|properties| (:|action| (:|type| "string") :|target| (:|type| "string") :|message| (:|type| "string") :|text| (:|type| "string")) :|required| #()))
 
   ;; ── eval-lisp (Emacs scratch buffer) ────────────────────────────────────────
   (clawmacs/tools:register-tool!

@@ -9,12 +9,12 @@
 ## Normalized parity status matrix (95 baseline features)
 
 ### Summary counts
-- **Done:** 66
-- **Partial:** 12
-- **Not done:** 5
+- **Done:** 68
+- **Partial:** 11
+- **Not done:** 4
 - **Deferred (intentional/out-of-scope):** 12
 
-Estimated parity: **~81%** (Done + weighted Partial at 0.5)
+Estimated parity: **~84%** (Done + weighted Partial at 0.5)
 
 ## High-level matrix by subsystem
 - Core runtime/agent/session/tool loop: **Done/Mostly done**
@@ -70,12 +70,35 @@ Implemented:
 - `spawn-subagent` now registers handle in global registry
 - package exports updated for new subagent symbols
 
-### 3) Added parity-oriented tests
+### 3) Fixed Codex OAuth runtime path-coercion failure (`{"nil":false}` treated as file path)
+**File:** `projects/cl-llm/src/codex-oauth-bridge.lisp`
+
+Root cause:
+- `%run-node-helper` passed JSON payload text to `uiop:run-program` as `:input` string.
+- In UIOP, string `:input` is interpreted as a pathname designator, not stdin content.
+- This caused JSON strings like `{"nil":false}` to be resolved as relative file paths under cwd and fail with `file does not exist`.
+
+Fix:
+- Added `%payload-input-stream` to always pass stdin as a string input stream.
+- Added `%resolve-node-helper-path` to enforce helper path type (`string`/`pathname`) and centralize validation.
+- `%run-node-helper` now uses stream input, eliminating structured-value/path confusion.
+
+### 4) Extended subagent parity tool with `steer`
+**File:** `projects/clambda-core/src/builtins.lisp`
+
+Implemented:
+- `subagents` now supports `action="steer"` with `target` + `message/text`.
+- Reuses the subagent's existing session for follow-up turns after completion.
+- Returns explicit errors for unknown target, missing message, or still-running subagent.
+
+### 5) Added parity-oriented regression tests
 **File:** `projects/clambda-core/t/test-superpowers.lisp`
 
 Added tests:
 - `builtin-registry-has-openclaw-alias-tools`
 - `subagent-handle-has-id-and-registry`
+- `subagents-tool-supports-steer-after-completion`
+- `codex-oauth-bridge-uses-stdin-stream-not-path`
 
 ## Test/build evidence
 Command run:

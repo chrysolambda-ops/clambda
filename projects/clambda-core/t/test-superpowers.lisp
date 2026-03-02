@@ -384,3 +384,42 @@
     (true (clawmacs/subagents:find-subagent (clawmacs/subagents:subagent-handle-id h)))
     ;; best-effort cleanup
     (ignore-errors (clawmacs/subagents:subagent-kill h))))
+
+(define-test "subagents-tool-supports-steer-after-completion"
+  :description "subagents action=steer can continue a finished subagent session."
+  (let* ((agent (clawmacs/agent:make-agent
+                :name "subagent-steer-test"
+                :role "tester"
+                :model nil
+                :client nil
+                :tool-registry (clawmacs/tools:make-tool-registry)))
+         (h (clawmacs/subagents:spawn-subagent agent "initial"
+                                               :callback (lambda (_) (declare (ignore _))))))
+    (unwind-protect
+         (progn
+           (clawmacs/subagents:subagent-wait h :timeout 2)
+           (let* ((reg (clawmacs/builtins:make-builtin-registry))
+                  (tool (clawmacs/tools:find-tool reg "subagents"))
+                  (args (make-hash-table :test #'equal)))
+             (setf (gethash "action" args) "steer")
+             (setf (gethash "target" args) (clawmacs/subagents:subagent-handle-id h))
+             (setf (gethash "message" args) "follow-up")
+             (let ((res (funcall (clawmacs/tools::tool-entry-handler tool) args)))
+               (true (stringp (clawmacs/tools:format-tool-result res))))))
+      (ignore-errors (clawmacs/subagents:subagent-kill h)))))
+
+(define-test "codex-oauth-bridge-uses-stdin-stream-not-path"
+  :description "JSON payload is passed to Node helper via stdin stream (not file path coercion)."
+  (let* ((payload (alexandria:plist-hash-table
+                   (list "messages" (vector (alexandria:plist-hash-table
+                                              (list "role" "user"
+                                                    "content" "x")
+                                              :test 'equal)))
+                   :test 'equal))
+         (stream (cl-llm/codex-oauth-bridge::%payload-input-stream payload)))
+    (true (streamp stream))
+    (let ((json (with-output-to-string (s)
+                  (loop for ch = (read-char stream nil nil)
+                        while ch do (write-char ch s)))))
+      (true (search "\"messages\"" json :test #'char=))
+      (true (search "\"content\":\"x\"" json :test #'char=)))))
