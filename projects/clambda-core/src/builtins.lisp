@@ -548,6 +548,147 @@ Returns a confirmation or 'TTS not available' if no TTS engine is installed."
                   :|message| (:|type| "string" :|description| "Message to send"))
                  :|required| #("target" "message")))
 
+  ;; OpenClaw-compatible alias
+  (clawmacs/tools:register-tool!
+   registry
+   "message"
+   (lambda (args)
+     (let ((target (or (gethash "target" args) (gethash "agent" args)))
+           (text (or (gethash "message" args) (gethash "text" args))))
+       (if (or (null target) (null text)
+               (string= target "") (string= text ""))
+           (clawmacs/tools:tool-result-error "target/agent and message/text are required")
+           (if (clawmacs/registry:send-to-agent target text)
+               (clawmacs/tools:tool-result-ok (format nil "Sent message to ~a" target))
+               (clawmacs/tools:tool-result-error (format nil "Agent not found: ~a" target))))))
+   :description "OpenClaw-style message tool alias for inter-agent delivery."
+   :parameters '(:|type| "object"
+                 :|properties|
+                 (:|target| (:|type| "string")
+                  :|agent| (:|type| "string")
+                  :|message| (:|type| "string")
+                  :|text| (:|type| "string"))
+                 :|required| #()))
+
+  ;; OpenClaw-compatible file tool aliases
+  (clawmacs/tools:register-tool! registry "read"
+                                 (lambda (args)
+                                   (let ((path (or (gethash "path" args)
+                                                   (gethash "file_path" args))))
+                                     (if (or (null path) (string= path ""))
+                                         (clawmacs/tools:tool-result-error "path is required")
+                                         (handler-case
+                                             (clawmacs/tools:tool-result-ok (uiop:read-file-string path))
+                                           (error (e)
+                                             (clawmacs/tools:tool-result-error
+                                              (format nil "read failed: ~a" e)))))))
+                                 :description "Alias of read_file"
+                                 :parameters '(:|type| "object" :|properties| (:|path| (:|type| "string") :|file_path| (:|type| "string")) :|required| #()))
+  (clawmacs/tools:register-tool! registry "write"
+                                 (lambda (args)
+                                   (let ((path (or (gethash "path" args) (gethash "file_path" args)))
+                                         (content (gethash "content" args)))
+                                     (if (or (null path) (null content))
+                                         (clawmacs/tools:tool-result-error "path/file_path and content are required")
+                                         (handler-case
+                                             (progn
+                                               (ensure-directories-exist path)
+                                               (with-open-file (out path :direction :output :if-exists :supersede :if-does-not-exist :create)
+                                                 (write-string content out))
+                                               (clawmacs/tools:tool-result-ok (format nil "Wrote ~a bytes" (length content))))
+                                           (error (e)
+                                             (clawmacs/tools:tool-result-error (format nil "write failed: ~a" e)))))))
+                                 :description "Alias of write_file"
+                                 :parameters '(:|type| "object" :|properties| (:|path| (:|type| "string") :|file_path| (:|type| "string") :|content| (:|type| "string")) :|required| #("content")))
+
+  ;; Session + subagent parity tools (minimal but functional)
+  (clawmacs/tools:register-tool!
+   registry "sessions_list"
+   (lambda (_args)
+     (declare (ignore _args))
+     (let ((sessions (clawmacs/http-server:list-http-sessions)))
+       (clawmacs/tools:tool-result-ok
+        (with-output-to-string (s)
+          (format s "Sessions: ~a~%" (length sessions))
+          (dolist (sess sessions)
+            (format s "- ~a (~a msgs)~%"
+                    (clawmacs/session:session-id sess)
+                    (length (clawmacs/session:session-messages sess))))))))
+   :description "List active API sessions."
+   :parameters '(:|type| "object" :|properties| () :|required| #()))
+
+  (clawmacs/tools:register-tool!
+   registry "session_status"
+   (lambda (_args)
+     (declare (ignore _args))
+     (clawmacs/tools:tool-result-ok
+      (format nil "agents=~a sessions=~a tasks=~a"
+              (length (clawmacs/registry:list-agents))
+              (length (clawmacs/http-server:list-http-sessions))
+              (length (clawmacs/cron:list-tasks)))))
+   :description "Return compact runtime/session status summary."
+   :parameters '(:|type| "object" :|properties| () :|required| #()))
+
+  (clawmacs/tools:register-tool!
+   registry "sessions_spawn"
+   (lambda (args)
+     (let* ((agent-name (gethash "agent" args))
+            (session-id (or (gethash "session_id" args)
+                            (format nil "tool-session-~a" (get-universal-time))))
+            (entry (and agent-name (clawmacs/registry:find-agent agent-name)))
+            (agent (typecase entry
+                     (clawmacs/registry:agent-spec (clawmacs/registry:instantiate-agent-spec entry))
+                     (clawmacs/agent:agent entry)
+                     (t nil))))
+       (if (null agent)
+           (clawmacs/tools:tool-result-error "agent is required and must exist")
+           (progn
+             (clawmacs/http-server:http-session-create session-id agent)
+             (clawmacs/tools:tool-result-ok (format nil "spawned ~a for ~a" session-id agent-name))))))
+   :description "Create a named session for an agent."
+   :parameters '(:|type| "object" :|properties| (:|agent| (:|type| "string") :|session_id| (:|type| "string")) :|required| #("agent")))
+
+  (clawmacs/tools:register-tool!
+   registry "sessions_send"
+   (lambda (args)
+     (let* ((session-id (gethash "session_id" args))
+            (text (or (gethash "message" args) (gethash "text" args)))
+            (sess (and session-id (clawmacs/http-server:http-session-get session-id))))
+       (cond
+         ((null session-id) (clawmacs/tools:tool-result-error "session_id required"))
+         ((null text) (clawmacs/tools:tool-result-error "message/text required"))
+         ((null sess) (clawmacs/tools:tool-result-error (format nil "session not found: ~a" session-id)))
+         (t (clawmacs/tools:tool-result-ok
+             (clawmacs/loop:run-agent sess text :options (clawmacs/loop:make-loop-options :max-turns 6)))))))
+   :description "Send a message to an existing session and return response text."
+   :parameters '(:|type| "object" :|properties| (:|session_id| (:|type| "string") :|message| (:|type| "string") :|text| (:|type| "string")) :|required| #("session_id")))
+
+  (clawmacs/tools:register-tool!
+   registry "subagents"
+   (lambda (args)
+     (let ((action (or (gethash "action" args) "list"))
+           (target (gethash "target" args)))
+       (cond
+         ((string= action "list")
+          (let ((hs (clawmacs/subagents:list-subagents)))
+            (clawmacs/tools:tool-result-ok
+             (with-output-to-string (s)
+               (format s "Subagents: ~a~%" (length hs))
+               (dolist (h hs)
+                 (format s "- ~a : ~a~%"
+                         (clawmacs/subagents:subagent-handle-id h)
+                         (clawmacs/subagents:subagent-handle-status h)))))))
+         ((string= action "kill")
+          (let ((h (and target (clawmacs/subagents:find-subagent target))))
+            (if h
+                (progn
+                  (clawmacs/subagents:subagent-kill h)
+                  (clawmacs/tools:tool-result-ok (format nil "killed ~a" target)))
+                (clawmacs/tools:tool-result-error "subagent not found"))))
+         (t (clawmacs/tools:tool-result-error "unsupported action (supported: list, kill)")))))
+   :description "Minimal subagents control tool: action=list|kill"
+   :parameters '(:|type| "object" :|properties| (:|action| (:|type| "string") :|target| (:|type| "string")) :|required| #()))
+
   ;; ── eval-lisp (Emacs scratch buffer) ────────────────────────────────────────
   (clawmacs/tools:register-tool!
    registry

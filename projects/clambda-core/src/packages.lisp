@@ -300,11 +300,16 @@
   (:export
    ;; Handle struct
    #:subagent-handle
+   #:subagent-handle-id
    #:subagent-handle-thread
    #:subagent-handle-session
    #:subagent-handle-status
    #:subagent-handle-result
    #:subagent-handle-error
+   ;; Registry helpers
+   #:*subagent-registry*
+   #:list-subagents
+   #:find-subagent
    ;; Operations
    #:spawn-subagent
    #:subagent-wait

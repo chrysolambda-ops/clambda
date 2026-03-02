@@ -21,11 +21,13 @@
 (defstruct (subagent-handle (:constructor %make-subagent-handle))
   "A handle to a running or completed sub-agent.
 
+ID      — unique string handle id.
 THREAD  — the bordeaux-threads thread object.
 SESSION — the SESSION used by the subagent.
 STATUS  — one of :running :done :failed :killed.
 RESULT  — final text when STATUS is :done (or NIL).
 ERROR   — the condition when STATUS is :failed (or NIL)."
+  (id      nil)
   (thread  nil)
   (session nil)
   (status  :running :type keyword)
@@ -35,9 +37,33 @@ ERROR   — the condition when STATUS is :failed (or NIL)."
   (lock    nil)
   (cvar    nil))
 
+(defvar *subagent-registry* (make-hash-table :test #'equal)
+  "Global subagent handle registry: subagent-id string -> SUBAGENT-HANDLE.")
+
+(defvar *subagent-counter* 0)
+
+(defun next-subagent-id ()
+  (incf *subagent-counter*)
+  (format nil "sa-~d" *subagent-counter*))
+
+(defun list-subagents ()
+  "Return a list of all known SUBAGENT-HANDLEs."
+  (let ((out '()))
+    (maphash (lambda (_ h)
+               (declare (ignore _))
+               (push h out))
+             *subagent-registry*)
+    (nreverse out)))
+
+(defun find-subagent (id)
+  "Find subagent handle by ID string."
+  (gethash id *subagent-registry*))
+
 (defmethod print-object ((h subagent-handle) stream)
   (print-unreadable-object (h stream :type t)
-    (format stream "status=~a" (subagent-handle-status h))))
+    (format stream "id=~a status=~a"
+            (or (subagent-handle-id h) "?")
+            (subagent-handle-status h))))
 
 ;;; ── Spawn ────────────────────────────────────────────────────────────────────
 
@@ -68,7 +94,9 @@ Use SUBAGENT-WAIT to block for the result, or SUBAGENT-STATUS to poll."
                    :id sid :agent agent))
          (lock    (bt:make-lock "subagent-lock"))
          (cvar    (bt:make-condition-variable :name "subagent-cvar"))
+         (handle-id (next-subagent-id))
          (handle  (%make-subagent-handle
+                   :id      handle-id
                    :session sess
                    :lock    lock
                    :cvar    cvar
@@ -96,6 +124,7 @@ Use SUBAGENT-WAIT to block for the result, or SUBAGENT-STATUS to poll."
                     (funcall callback nil)))))
             :name (format nil "subagent-~a" sid))))
       (setf (subagent-handle-thread handle) thread)
+      (setf (gethash handle-id *subagent-registry*) handle)
       handle)))
 
 ;;; ── Status / Join / Kill ─────────────────────────────────────────────────────

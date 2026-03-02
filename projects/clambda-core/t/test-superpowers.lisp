@@ -353,3 +353,34 @@
                            :tool-name "t"
                            :cause "e")))
     (false (tool-execution-error-input c))))
+
+;;;; ─────────────────────────────────────────────────────────────────────────────
+;;;; § 6. Parity tool surface sanity tests
+;;;; ─────────────────────────────────────────────────────────────────────────────
+
+(define-test "builtin-registry-has-openclaw-alias-tools"
+  :description "Builtins expose OpenClaw-compatible alias names (read/write/message/session_status)."
+  (let ((reg (clawmacs/builtins:make-builtin-registry)))
+    (true (clawmacs/tools:find-tool reg "read"))
+    (true (clawmacs/tools:find-tool reg "write"))
+    (true (clawmacs/tools:find-tool reg "message"))
+    (true (clawmacs/tools:find-tool reg "session_status"))
+    (true (clawmacs/tools:find-tool reg "sessions_list"))
+    (true (clawmacs/tools:find-tool reg "sessions_spawn"))
+    (true (clawmacs/tools:find-tool reg "sessions_send"))
+    (true (clawmacs/tools:find-tool reg "subagents"))))
+
+(define-test "subagent-handle-has-id-and-registry"
+  :description "spawn-subagent registers handle and assigns a stable id."
+  (let* ((agent (clawmacs/agent:make-agent
+                :name "subagent-test"
+                :role "tester"
+                :model nil
+                :client nil
+                :tool-registry (clawmacs/tools:make-tool-registry)))
+         (h (clawmacs/subagents:spawn-subagent agent "noop"
+                                               :callback (lambda (_) (declare (ignore _))))))
+    (true (stringp (clawmacs/subagents:subagent-handle-id h)))
+    (true (clawmacs/subagents:find-subagent (clawmacs/subagents:subagent-handle-id h)))
+    ;; best-effort cleanup
+    (ignore-errors (clawmacs/subagents:subagent-kill h))))
