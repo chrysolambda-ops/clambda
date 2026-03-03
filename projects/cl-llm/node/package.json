@@ -1,0 +1,8 @@
+{
+  "name": "cl-llm-codex-oauth-helper",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@mariozechner/pi-ai": "^0.55.4"
+  }
+}

@@ -3,8 +3,33 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { createRequire } from "node:module";
 
-const PI_AI_DIST = process.env.PI_AI_DIST || "/home/slime/.npm-global/lib/node_modules/openclaw/node_modules/@mariozechner/pi-ai/dist/index.js";
+const requireFromHere = createRequire(import.meta.url);
+
+function resolvePiAiDist() {
+  const explicit = process.env.PI_AI_DIST;
+  if (explicit && fs.existsSync(explicit)) return explicit;
+
+  const here = path.dirname(new URL(import.meta.url).pathname);
+  const localCandidate = path.join(here, "node_modules", "@mariozechner", "pi-ai", "dist", "index.js");
+  if (fs.existsSync(localCandidate)) return localCandidate;
+
+  try {
+    return requireFromHere.resolve("@mariozechner/pi-ai/dist/index.js");
+  } catch {
+    // continue to final fallback candidates
+  }
+
+  const legacyCandidate = "/home/slime/.npm-global/lib/node_modules/openclaw/node_modules/@mariozechner/pi-ai/dist/index.js";
+  if (fs.existsSync(legacyCandidate)) return legacyCandidate;
+
+  throw new Error(
+    "Cannot resolve @mariozechner/pi-ai runtime. Install with `pnpm add @mariozechner/pi-ai` in projects/cl-llm/node or set PI_AI_DIST.",
+  );
+}
+
+const PI_AI_DIST = resolvePiAiDist();
 
 function readStdin() {
   return new Promise((resolve, reject) => {
@@ -73,10 +98,45 @@ function normalizeMessages(messages) {
   for (const m of messages || []) {
     const role = (m?.role || "user").toLowerCase();
     const content = String(m?.content ?? "");
-    if (role === "assistant") out.push({ role: "assistant", content: [{ type: "text", text: content }] });
-    else out.push({ role: "user", content: [{ type: "text", text: content }] });
+    if (role === "assistant") out.push({ role: "assistant", content });
+    else out.push({ role: "user", content });
   }
   return out;
+}
+
+function collectText(node, out) {
+  if (node == null) return;
+  if (typeof node === "string") {
+    const trimmed = node.trim();
+    if (trimmed) out.push(trimmed);
+    return;
+  }
+  if (Array.isArray(node)) {
+    for (const item of node) collectText(item, out);
+    return;
+  }
+  if (typeof node === "object") {
+    if (typeof node.text === "string") collectText(node.text, out);
+    if (typeof node.output_text === "string") collectText(node.output_text, out);
+    if (typeof node.value === "string") collectText(node.value, out);
+    if (typeof node.refusal === "string") collectText(node.refusal, out);
+    if (typeof node.message === "string") collectText(node.message, out);
+    if (node.content != null) collectText(node.content, out);
+  }
+}
+
+function extractText(result) {
+  if (!result) return "";
+  if (typeof result === "string") return result.trim();
+
+  const chunks = [];
+  collectText(result.output_text, chunks);
+  collectText(result.content, chunks);
+  collectText(result.output, chunks);
+  collectText(result?.choices?.[0]?.message?.content, chunks);
+
+  if (chunks.length > 0) return chunks.join("\n").trim();
+  return "";
 }
 
 async function main() {
@@ -111,9 +171,15 @@ async function main() {
       textVerbosity: "medium",
     });
 
-    const textBlocks = (result?.content || []).filter((c) => c?.type === "text").map((c) => c.text || "");
-    const text = textBlocks.join("").trim();
-    if (!text) throw new Error("Empty completion text from openai-codex runtime");
+    if (typeof result?.errorMessage === "string" && result.errorMessage.trim().length > 0) {
+      throw new Error(`openai-codex runtime error: ${result.errorMessage}`);
+    }
+
+    const text = extractText(result);
+    if (!text) {
+      const keys = result && typeof result === "object" ? Object.keys(result).join(",") : "non-object";
+      throw new Error(`Empty completion text from openai-codex runtime (result keys: ${keys})`);
+    }
 
     process.stdout.write(
       JSON.stringify({
