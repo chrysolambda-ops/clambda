@@ -102,6 +102,7 @@ Slots:
   ;; Runtime (nil = not connected)
   (socket           nil)
   (ssl-stream       nil)            ; raw cl+ssl stream — must be retained to prevent GC
+  (tls-process      nil)            ; sb-ext:process for openssl s_client subprocess
   (stream           nil)            ; flexi-stream — ALL I/O on reader thread only
   (reader-thread    nil)
   (flood-thread     nil)
@@ -320,31 +321,61 @@ Called immediately after TCP/TLS connection is established."
 
 (defun %do-connect (conn)
   "Establish TCP (or TLS) connection to the IRC server and register.
-Sets irc-socket and irc-stream slots. On failure, leaves them NIL."
+For TLS: spawns openssl s_client as a subprocess (avoids cl+ssl/OpenSSL 3.x crashes).
+For plain TCP: uses usocket directly.
+Sets irc-stream (and irc-tls-process or irc-socket). On failure, leaves them NIL."
   (let ((host  (irc-server conn))
         (port  (irc-port  conn))
         (tls-p (irc-tls-p conn)))
     (format t "~&[irc] Connecting to ~A:~A~:[~; (TLS)~]...~%" host port tls-p)
     (handler-case
-        (let* (;; For TLS we need a binary stream; for plain, character is fine
-               (element-type (if tls-p '(unsigned-byte 8) 'character))
-               (socket (usocket:socket-connect host port :element-type element-type))
-               (tcp-stream (usocket:socket-stream socket))
-               (raw-stream (if tls-p
-                               (cl+ssl:make-ssl-client-stream tcp-stream :hostname host)
-                               tcp-stream))
-               (io-stream  (if tls-p
-                               (flexi-streams:make-flexi-stream raw-stream :external-format :utf-8)
-                               raw-stream)))
-          (setf (irc-socket conn) socket
-                (irc-ssl-stream conn) (when tls-p raw-stream)
-                (irc-stream conn) io-stream)
-          ;; Send NICK/USER immediately (before flood thread loop can run)
-          (%register conn)
-          (format t "~&[irc] Registration sent. Waiting for server welcome...~%"))
+        (if tls-p
+            ;; TLS: use openssl s_client subprocess to avoid cl+ssl SIGSEGV with OpenSSL 3.x
+            (let* ((proc (sb-ext:run-program "/usr/bin/openssl"
+                           (list "s_client" "-connect"
+                                 (format nil "~A:~A" host port)
+                                 "-quiet"      ; suppress certificate info, just relay data
+                                 "-no_ign_eof") ; exit on EOF from stdin
+                           :input :stream
+                           :output :stream
+                           :error *error-output*
+                           :wait nil
+                           :search nil))
+                   ;; The process output is binary; wrap in a flexi-stream for character I/O
+                   (in-stream  (sb-ext:process-output proc))
+                   (out-stream (sb-ext:process-input proc))
+                   ;; Create a two-way-stream wrapping both directions through flexi-streams
+                   (flexi-in  (flexi-streams:make-flexi-stream in-stream :external-format :utf-8))
+                   (flexi-out (flexi-streams:make-flexi-stream out-stream :external-format :utf-8))
+                   (io-stream (make-two-way-stream flexi-in flexi-out)))
+              ;; Brief pause to let openssl establish the TLS handshake
+              (sleep 1)
+              ;; Check process is still alive
+              (unless (sb-ext:process-alive-p proc)
+                (error "openssl s_client exited immediately with code ~A"
+                       (sb-ext:process-exit-code proc)))
+              (setf (irc-tls-process conn) proc
+                    (irc-stream conn) io-stream
+                    (irc-socket conn) nil
+                    (irc-ssl-stream conn) nil)
+              ;; Send NICK/USER immediately
+              (%register conn)
+              (format t "~&[irc] Registration sent (via openssl s_client). Waiting for server welcome...~%"))
+            ;; Plain TCP: usocket as before
+            (let* ((socket (usocket:socket-connect host port :element-type 'character))
+                   (io-stream (usocket:socket-stream socket)))
+              (setf (irc-socket conn) socket
+                    (irc-ssl-stream conn) nil
+                    (irc-tls-process conn) nil
+                    (irc-stream conn) io-stream)
+              (%register conn)
+              (format t "~&[irc] Registration sent. Waiting for server welcome...~%")))
       (error (e)
         (format *error-output* "~&[irc] Connection to ~A:~A failed: ~A~%" host port e)
         ;; Clean up any partial state
+        (when (irc-tls-process conn)
+          (handler-case (sb-ext:process-kill (irc-tls-process conn) 15) (error () nil))
+          (setf (irc-tls-process conn) nil))
         (when (irc-socket conn)
           (handler-case (usocket:socket-close (irc-socket conn)) (error () nil)))
         (setf (irc-socket conn) nil
@@ -358,10 +389,22 @@ Sets irc-socket and irc-stream slots. On failure, leaves them NIL."
       (handler-case
           (progn
             (%write-raw-line stream (irc-build-line "QUIT" nil "Clawmacs signing off"))
+            (force-output stream)
             (close stream))
         (error () nil))
       (setf (irc-stream conn) nil
             (irc-ssl-stream conn) nil)))
+  ;; Kill openssl subprocess if any
+  (let ((proc (irc-tls-process conn)))
+    (when proc
+      (handler-case
+          (when (sb-ext:process-alive-p proc)
+            (sb-ext:process-kill proc 15)
+            (sb-ext:process-wait proc))
+        (error () nil))
+      (handler-case (sb-ext:process-close proc) (error () nil))
+      (setf (irc-tls-process conn) nil)))
+  ;; Close usocket if any
   (let ((socket (irc-socket conn)))
     (when socket
       (handler-case (usocket:socket-close socket) (error () nil))
@@ -630,53 +673,88 @@ Otherwise falls back to (irc-allowed-users conn)."
 
 (defun %read-one-line (stream)
   "Read one line from STREAM, returning it or NIL on EOF/error.
-Handles memory faults and SSL errors gracefully."
+Handles memory faults, SSL errors, and general stream errors gracefully."
   (handler-case (read-line stream nil nil)
     (sb-sys:memory-fault-error (e)
       (format *error-output* "~&[irc] Memory fault in read-line: ~A~%" e)
       nil)
-    (cl+ssl::ssl-error (e)
-      (format *error-output* "~&[irc] SSL error in read: ~A~%" e)
+    (stream-error (e)
+      (format *error-output* "~&[irc] Stream error in read: ~A~%" e)
+      nil)
+    (error (e)
+      (format *error-output* "~&[irc] Read error: ~A~%" e)
       nil)))
 
 (defun %read-loop (conn)
   "Single-threaded I/O loop: reads from IRC AND drains the send queue.
-ALL stream I/O (both read and write) happens in THIS thread only,
-eliminating concurrent access to the cl+ssl/flexi-stream which causes SIGSEGV.
-Uses usocket:wait-for-input with a short timeout to avoid blocking forever,
-allowing periodic queue draining between reads."
+ALL stream I/O (both read and write) happens in THIS thread only.
+
+For TLS (subprocess mode): uses a separate drain thread since read-line blocks.
+For plain TCP: uses usocket:wait-for-input with short timeout."
   (handler-case
       (let ((stream (irc-stream conn))
-            (socket (irc-socket conn)))
-        (format t "~&[irc] Read loop started (single-threaded I/O).~%")
+            (socket (irc-socket conn))
+            (tls-proc (irc-tls-process conn)))
+        (format t "~&[irc] Read loop started (~:[usocket~;openssl subprocess~]).~%"
+                (not (null tls-proc)))
         (force-output)
-        (loop
-          (unless (and (irc-running-p conn) stream (open-stream-p stream))
-            (format t "~&[irc] Read loop exiting: running=~A stream=~A open=~A~%"
-                    (irc-running-p conn) (not (null stream))
-                    (and stream (open-stream-p stream)))
-            (force-output)
-            (return))
-          ;; 1. Drain any pending outbound messages (single-threaded — safe)
-          (%drain-send-queue conn)
-          ;; 2. Wait for incoming data with a short timeout (100ms)
-          (let ((ready (handler-case
-                           (usocket:wait-for-input socket :timeout 0.1 :ready-only t)
-                         (error (e)
-                           (format *error-output* "~&[irc] wait-for-input error: ~A~%" e)
-                           nil))))
-            (when ready
-              ;; Data available — read lines
-              (loop
-                (let ((raw (%read-one-line stream)))
-                  (unless raw
-                    (format t "~&[irc] read-line returned NIL (EOF).~%")
-                    (force-output)
-                    (return-from %read-loop))
-                  (let ((line (%strip-cr raw)))
-                    (when (> (length line) 0)
-                      (%dispatch-line conn line))))
-                (unless (listen stream) (return)))))))
+        (if tls-proc
+            ;; Subprocess mode: read-line blocks, so drain queue in a helper thread
+            (let ((drain-thread
+                    (bt:make-thread
+                      (lambda ()
+                        (loop while (irc-running-p conn)
+                              do (handler-case (%drain-send-queue conn)
+                                   (error (e)
+                                     (format *error-output* "~&[irc] Drain error: ~A~%" e)
+                                     (return)))
+                                 (sleep 0.1)))
+                      :name "irc-drain-sender")))
+              (unwind-protect
+                   (loop
+                     (unless (and (irc-running-p conn)
+                                  (sb-ext:process-alive-p tls-proc))
+                       (format t "~&[irc] Read loop exiting (subprocess dead or stopped).~%")
+                       (force-output)
+                       (return))
+                     (let ((raw (%read-one-line stream)))
+                       (unless raw
+                         (format t "~&[irc] read-line returned NIL (EOF).~%")
+                         (force-output)
+                         (return))
+                       (let ((line (%strip-cr raw)))
+                         (when (> (length line) 0)
+                           (%dispatch-line conn line)))))
+                ;; Cleanup: stop drain thread
+                (setf (irc-running-p conn) (irc-running-p conn)) ; drain thread checks this
+                (ignore-errors
+                  (when (bt:thread-alive-p drain-thread)
+                    (sleep 0.2)))))
+            ;; Plain TCP mode: usocket wait-for-input
+            (loop
+              (unless (and (irc-running-p conn) stream (open-stream-p stream))
+                (format t "~&[irc] Read loop exiting: running=~A stream=~A open=~A~%"
+                        (irc-running-p conn) (not (null stream))
+                        (and stream (open-stream-p stream)))
+                (force-output)
+                (return))
+              (%drain-send-queue conn)
+              (let ((ready (handler-case
+                               (usocket:wait-for-input socket :timeout 0.1 :ready-only t)
+                             (error (e)
+                               (format *error-output* "~&[irc] wait-for-input error: ~A~%" e)
+                               nil))))
+                (when ready
+                  (loop
+                    (let ((raw (%read-one-line stream)))
+                      (unless raw
+                        (format t "~&[irc] read-line returned NIL (EOF).~%")
+                        (force-output)
+                        (return-from %read-loop))
+                      (let ((line (%strip-cr raw)))
+                        (when (> (length line) 0)
+                          (%dispatch-line conn line))))
+                    (unless (listen stream) (return))))))))
     (error (e)
       (when (irc-running-p conn)
         (format *error-output* "~&[irc] Read error: ~A~%" e)
