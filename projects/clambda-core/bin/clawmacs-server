@@ -57,6 +57,7 @@ fi
 
 exec sbcl --noinform --disable-debugger \
   --eval '(require :asdf)' \
+  --eval '(let ((ql (merge-pathnames "quicklisp/setup.lisp" (user-homedir-pathname)))) (when (probe-file ql) (load ql)))' \
   --eval "(asdf:load-system \"clawmacs-core\")" \
   --eval "(clawmacs/config:load-user-config)" \
   --eval "(clawmacs:start-server :port ${PORT} :address \"${ADDRESS}\")" \
