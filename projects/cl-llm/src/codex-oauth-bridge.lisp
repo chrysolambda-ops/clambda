@@ -18,23 +18,20 @@ One of: :helper, :fallback, :error, :uninitialized.")
   "Path to Node helper that executes openai-codex OAuth runtime via @mariozechner/pi-ai.")
 
 (defun %messages->bridge-payload (messages system-prompt max-tokens)
-  (let ((arr (make-array 0 :adjustable t :fill-pointer 0)))
+  (let ((payload (make-hash-table :test 'equal))
+        (msgs '()))
     (dolist (m messages)
-      (let ((role (string-downcase (symbol-name (cl-llm/protocol:message-role m))))
-            (content (or (cl-llm/protocol:message-content m) "")))
-        (vector-push-extend
-         (alexandria:plist-hash-table
-          (list "role" role
-                "content" content)
-          :test 'equal)
-         arr)))
-    (alexandria:plist-hash-table
-     (remove nil
-             (list "messages" arr
-                   "system" (or system-prompt "")
-                   "maxTokens" max-tokens)
-             :key #'null)
-     :test 'equal)))
+      (let ((entry (make-hash-table :test 'equal)))
+        (setf (gethash "role" entry)
+              (string-downcase (symbol-name (cl-llm/protocol:message-role m))))
+        (setf (gethash "content" entry)
+              (or (cl-llm/protocol:message-content m) ""))
+        (push entry msgs)))
+    (setf (gethash "messages" payload) (nreverse msgs))
+    (setf (gethash "system" payload) (or system-prompt ""))
+    (when max-tokens
+      (setf (gethash "maxTokens" payload) max-tokens))
+    payload))
 
 (defun %run-node-helper (payload)
   (let* ((json (com.inuoe.jzon:stringify payload))
@@ -43,7 +40,7 @@ One of: :helper, :fallback, :error, :uninitialized.")
       (error "Codex OAuth helper not found: ~A" helper))
     (multiple-value-bind (out err code)
         (uiop:run-program (list "node" helper)
-                          :input json
+                          :input (make-string-input-stream json)
                           :output :string
                           :error-output :string
                           :ignore-error-status t)
