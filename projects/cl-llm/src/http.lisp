@@ -63,7 +63,9 @@ BASE-DELAY   — base delay in seconds (default: *RETRY-BASE-DELAY-SECONDS*)."
            (return
              (dexador:post url
                            :headers headers
-                           :content body-string))
+                           :content body-string
+                           :connect-timeout 30
+                           :read-timeout 120))
          (dexador:http-request-failed (e)
            (let ((status (dexador:response-status e))
                  (body   (dexador:response-body e)))
@@ -118,7 +120,9 @@ BASE-DELAY   — base delay in seconds (default: *RETRY-BASE-DELAY-SECONDS*)."
              (let ((stream (dexador:post url
                                          :headers headers
                                          :content body-string
-                                         :want-stream t)))
+                                         :want-stream t
+                                         :connect-timeout 30
+                                         :read-timeout 120)))
                (unwind-protect
                     (loop :for line := (read-line stream nil nil)
                           :while line
