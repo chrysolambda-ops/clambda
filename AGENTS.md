@@ -253,3 +253,18 @@ For more details, see README.md and docs/QUICKSTART.md.
 - If push fails, resolve and retry until it succeeds
 
 <!-- END BEADS INTEGRATION -->
+
+## Git Commit Standard
+
+All commits MUST follow the KVC commit standard defined in `docs/COMMITS.md`.
+A `.gitmessage` template is configured for interactive use.
+
+### Co-authorship
+
+All commits MUST include the following footer:
+
+```
+Co-authored-by: htayj <htayj@users.noreply.github.com>
+```
+
+This applies to every commit you make, in every repo.
